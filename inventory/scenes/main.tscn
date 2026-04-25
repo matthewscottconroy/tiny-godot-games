@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Title" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 36.0
+text = "Grid Inventory"
+theme_override_font_sizes/font_size = 24
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 42.0
+offset_right = 632.0
+offset_bottom = 64.0
+text = "Click item in world to pick up.  Click inventory slot to drop.  Right-click slot to remove."
+theme_override_font_sizes/font_size = 13
+modulate = Color(1, 1, 1, 0.65)
+
+[node name="WorldLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 72.0
+offset_right = 200.0
+offset_bottom = 94.0
+text = "World items:"
+theme_override_font_sizes/font_size = 15
+
+[node name="WorldItems" type="Node2D" parent="."]
+
+[node name="InvPanel" type="PanelContainer" parent="."]
+offset_left = 320.0
+offset_top = 72.0
+offset_right = 632.0
+offset_bottom = 460.0
+
+[node name="VBox" type="VBoxContainer" parent="InvPanel"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 308.0
+offset_bottom = 384.0
+
+[node name="InvTitle" type="Label" parent="InvPanel/VBox"]
+text = "Inventory (4×4)"
+theme_override_font_sizes/font_size = 15
+
+[node name="Grid" type="GridContainer" parent="InvPanel/VBox"]
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+columns = 4
+
+[node name="InfoLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 440.0
+offset_right = 310.0
+offset_bottom = 474.0
+text = ""
+theme_override_font_sizes/font_size = 13

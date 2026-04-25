@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(320, 240)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Title" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 34.0
+text = "VisibleOnScreenNotifier2D — CPU culling demo"
+theme_override_font_sizes/font_size = 20
+
+[node name="StatsLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 40.0
+offset_right = 632.0
+offset_bottom = 64.0
+text = "Scroll to pan.  Objects outside the viewport pause their _process()."
+theme_override_font_sizes/font_size = 14
+modulate = Color(1, 1, 1, 0.7)
+
+[node name="CountLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 64.0
+offset_right = 632.0
+offset_bottom = 88.0
+text = ""
+theme_override_font_sizes/font_size = 14
+
+[node name="Objects" type="Node2D" parent="."]

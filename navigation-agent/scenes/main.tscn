@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 14.0
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+
+[node name="Agent" type="CharacterBody2D" parent="."]
+position = Vector2(80, 380)
+motion_mode = 1
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="Agent"]
+path_desired_distance = 8.0
+target_desired_distance = 12.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Agent"]
+shape = SubResource("1")
+
+[node name="TargetMarker" type="Node2D" parent="."]
+position = Vector2(560, 100)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="HintLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 32.0
+text = "Left-click: set navigation target   NavigationAgent2D finds A* path automatically"
+theme_override_font_sizes/font_size = 13
+
+[node name="StatusLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 444.0
+offset_right = 632.0
+offset_bottom = 472.0
+text = "Click anywhere to navigate"
+theme_override_font_sizes/font_size = 14

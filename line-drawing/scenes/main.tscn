@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 32.0
+text = "Line Drawing  —  click and drag to draw"
+theme_override_font_sizes/font_size = 18
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 36.0
+offset_right = 632.0
+offset_bottom = 56.0
+text = "Left-drag = draw   |   Right-click = undo last stroke   |   C = clear"
+theme_override_font_sizes/font_size = 13
+modulate = Color(1, 1, 1, 0.65)
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 440.0
+offset_right = 500.0
+offset_bottom = 474.0
+theme_override_constants/separation = 8
+
+[node name="ClearBtn" type="Button" parent="Buttons"]
+text = "Clear  (C)"
+
+[node name="ThinBtn" type="Button" parent="Buttons"]
+text = "Thin"
+
+[node name="MedBtn" type="Button" parent="Buttons"]
+text = "Medium"
+
+[node name="ThickBtn" type="Button" parent="Buttons"]
+text = "Thick"
+
+[node name="RedBtn" type="Button" parent="Buttons"]
+text = "Red"
+
+[node name="BlueBtn" type="Button" parent="Buttons"]
+text = "Blue"
+
+[node name="GreenBtn" type="Button" parent="Buttons"]
+text = "Green"

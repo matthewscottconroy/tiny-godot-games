@@ -1,0 +1,76 @@
+# Thread Loading
+
+Demonstrates `ResourceLoader.load_threaded_request()` — loading multiple resources on a background thread while tracking progress and updating a UI on the main thread.
+
+## Purpose
+
+Loading large resources on the main thread causes hitches and freezes. `ResourceLoader`'s threaded API lets you kick off loads, poll their status each frame, and retrieve results when ready — keeping the game responsive during loading screens. This is the foundation of any real loading screen implementation.
+
+## Controls
+
+- **Start Loading**: Creates 8 test resources and loads them via background threads with progress tracking
+- **Reset**: Clear results and return to initial state
+
+## How It Works
+
+### Node Tree
+
+```
+Main (Control)         ← main.gd
+└── VBox
+    ├── TitleLabel
+    ├── DescLabel
+    ├── StatusLabel
+    ├── ProgressBar
+    ├── LoadButton
+    ├── ResetButton
+    └── ResultList (VBoxContainer)
+```
+
+### `scripts/main.gd`
+
+- **`_setup_resources()`** — Saves 8 `StyleBoxFlat` resources to `user://thread_loading_demo/` using `ResourceSaver`. These serve as the "assets" to be loaded.
+- **`_on_load_pressed()`** — Calls `ResourceLoader.load_threaded_request(path, "", false, CACHE_MODE_IGNORE)` for each path. `CACHE_MODE_IGNORE` forces a fresh disk read even if the resource is already cached.
+- **`_process(delta)`** — Each frame, polls every pending path with `ResourceLoader.load_threaded_get_status()`. When status is `THREAD_LOAD_LOADED`, calls `ResourceLoader.load_threaded_get(path)` to retrieve the resource and adds it to the results list.
+- **ProgressBar** — Value = `done_count / total * 100`. Updates every frame during loading.
+
+### The Threaded Load API
+
+```gdscript
+# 1. Request a load (non-blocking)
+ResourceLoader.load_threaded_request(path, type_hint, use_sub_threads, cache_mode)
+
+# 2. Poll status each frame
+var status := ResourceLoader.load_threaded_get_status(path, progress_arr)
+# Returns: THREAD_LOAD_IN_PROGRESS, THREAD_LOAD_LOADED, THREAD_LOAD_FAILED
+
+# 3. Retrieve when done
+var resource := ResourceLoader.load_threaded_get(path)
+```
+
+The polling loop in `_process()` is the standard pattern. Call `load_threaded_get()` only when status is `THREAD_LOAD_LOADED`; calling it earlier returns `null`.
+
+### CACHE_MODE_IGNORE
+
+By default, `ResourceLoader` caches loaded resources. A second request for the same path returns the cached version instantly. `CACHE_MODE_IGNORE` bypasses the cache, forcing an actual disk read — which makes the loading delay visible in this demo.
+
+### progress_arr
+
+```gdscript
+var progress := []
+ResourceLoader.load_threaded_get_status(path, progress)
+# progress[0] is a float in [0.0, 1.0] for individual file progress
+```
+
+This optional array is filled with per-file progress. For the overall loading bar, counting completed files is simpler.
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `ResourceLoader.load_threaded_request(path, ...)` | Start background load |
+| `ResourceLoader.load_threaded_get_status(path, progress)` | Poll load state |
+| `ResourceLoader.load_threaded_get(path)` | Retrieve loaded resource |
+| `ResourceLoader.THREAD_LOAD_LOADED` | Status constant — load complete |
+| `ResourceLoader.CACHE_MODE_IGNORE` | Force fresh disk read, bypass cache |
+| `ResourceSaver.save(resource, path)` | Write a Resource to disk as .tres |

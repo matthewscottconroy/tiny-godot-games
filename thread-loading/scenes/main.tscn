@@ -1,0 +1,56 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Control"]
+script = ExtResource("1")
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="."]
+offset_left = 80.0
+offset_top = 40.0
+offset_right = 560.0
+offset_bottom = 440.0
+
+[node name="TitleLabel" type="Label" parent="VBox"]
+text = "Thread Loading"
+theme_override_font_sizes/font_size = 28
+
+[node name="DescLabel" type="Label" parent="VBox"]
+text = "ResourceLoader.load_threaded_request() loads resources on a background thread so the main thread stays responsive."
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 13
+
+[node name="Separator1" type="HSeparator" parent="VBox"]
+
+[node name="StatusLabel" type="Label" parent="VBox"]
+text = "Press 'Start Loading' to begin"
+theme_override_font_sizes/font_size = 14
+
+[node name="ProgressBar" type="ProgressBar" parent="VBox"]
+custom_minimum_size = Vector2(0, 28)
+max_value = 100.0
+value = 0.0
+
+[node name="Separator2" type="HSeparator" parent="VBox"]
+
+[node name="Buttons" type="HBoxContainer" parent="VBox"]
+
+[node name="LoadButton" type="Button" parent="VBox/Buttons"]
+custom_minimum_size = Vector2(160, 36)
+text = "Start Loading"
+theme_override_font_sizes/font_size = 14
+
+[node name="ResetButton" type="Button" parent="VBox/Buttons"]
+custom_minimum_size = Vector2(120, 36)
+text = "Reset"
+theme_override_font_sizes/font_size = 14
+
+[node name="Separator3" type="HSeparator" parent="VBox"]
+
+[node name="ResultTitle" type="Label" parent="VBox"]
+text = "Loaded resources:"
+theme_override_font_sizes/font_size = 13
+
+[node name="ResultList" type="VBoxContainer" parent="VBox"]

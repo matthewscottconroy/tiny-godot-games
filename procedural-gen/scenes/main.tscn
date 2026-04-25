@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 34.0
+text = "Procedural Generation — FastNoiseLite"
+theme_override_font_sizes/font_size = 22
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 38.0
+offset_right = 632.0
+offset_bottom = 60.0
+text = "Each mode uses the same noise with different thresholds / interpretations."
+theme_override_font_sizes/font_size = 14
+modulate = Color(1, 1, 1, 0.7)
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 440.0
+offset_right = 632.0
+offset_bottom = 474.0
+theme_override_constants/separation = 8
+
+[node name="TerrainBtn" type="Button" parent="Buttons"]
+text = "Terrain"
+
+[node name="CaveBtn" type="Button" parent="Buttons"]
+text = "Caves"
+
+[node name="IslandBtn" type="Button" parent="Buttons"]
+text = "Island"
+
+[node name="MoistureBtn" type="Button" parent="Buttons"]
+text = "Moisture"
+
+[node name="RegenerateBtn" type="Button" parent="Buttons"]
+text = "Re-generate (R)"
+
+[node name="ModeLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 412.0
+offset_right = 632.0
+offset_bottom = 436.0
+text = "Mode: Terrain"
+theme_override_font_sizes/font_size = 14

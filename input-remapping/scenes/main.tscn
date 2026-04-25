@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 36.0
+text = "Input Remapping — InputMap at runtime"
+theme_override_font_sizes/font_size = 22
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 42.0
+offset_right = 632.0
+offset_bottom = 64.0
+text = "Click a binding row, then press any key to remap it. Reset restores defaults."
+theme_override_font_sizes/font_size = 14
+modulate = Color(1, 1, 1, 0.7)
+
+[node name="BindingContainer" type="VBoxContainer" parent="."]
+offset_left = 40.0
+offset_top = 80.0
+offset_right = 600.0
+offset_bottom = 380.0
+theme_override_constants/separation = 6
+
+[node name="CurrentLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 390.0
+offset_right = 632.0
+offset_bottom = 420.0
+text = "Move the player square to test the bindings."
+theme_override_font_sizes/font_size = 14
+modulate = Color(1, 1, 0.4)
+
+[node name="ResetBtn" type="Button" parent="."]
+offset_left = 8.0
+offset_top = 440.0
+offset_right = 200.0
+offset_bottom = 474.0
+text = "Reset to Defaults"

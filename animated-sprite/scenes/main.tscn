@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Player" type="Node2D" parent="."]
+position = Vector2(320, 280)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player"]
+scale = Vector2(4, 4)
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 34.0
+text = "AnimatedSprite2D — SpriteFrames built in code"
+theme_override_font_sizes/font_size = 20
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 38.0
+offset_right = 632.0
+offset_bottom = 60.0
+text = "Arrow keys / WASD to move.  Animations switch: idle → walk → jump → fall"
+theme_override_font_sizes/font_size = 14
+modulate = Color(1, 1, 1, 0.7)
+
+[node name="AnimLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 440.0
+offset_right = 400.0
+offset_bottom = 466.0
+text = ""
+theme_override_font_sizes/font_size = 14
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(0, 450)
+
+[node name="Collision" type="CollisionShape2D" parent="Ground"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
