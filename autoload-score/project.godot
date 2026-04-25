@@ -1,0 +1,22 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Autoload Score"
+config/features=PackedStringArray("4.2", "Forward Plus")
+config/icon="res://icon.svg"
+run/main_scene="res://scenes/main.tscn"
+
+[display]
+
+window/size/viewport_width=640
+window/size/viewport_height=480
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+
+[autoload]
+
+ScoreManager="*res://scripts/score_manager.gd"

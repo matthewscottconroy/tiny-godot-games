@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#f39c12" rx="16"/>
+  <circle cx="64" cy="64" r="36" fill="gold" stroke="#f39c12" stroke-width="4"/>
+  <text x="64" y="78" font-size="40" text-anchor="middle" fill="#b7860b" font-family="sans-serif" font-weight="bold">$</text>
+</svg>

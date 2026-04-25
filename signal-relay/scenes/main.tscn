@@ -1,0 +1,59 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/transmitter.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/receiver.gd" id="3"]
+
+[node name="Main" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Title" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 120.0
+horizontal_alignment = 1
+text = "Signal Relay Demo"
+theme_override_font_sizes/font_size = 28
+
+[node name="Transmitter" type="Button" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -50.0
+offset_right = 100.0
+offset_bottom = -10.0
+text = "Send Signal"
+script = ExtResource("2")
+
+[node name="Receiver" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = 10.0
+offset_right = 180.0
+offset_bottom = 50.0
+horizontal_alignment = 1
+text = "Waiting for signal..."
+script = ExtResource("3")
+
+[node name="Hint" type="Label" parent="."]
+anchor_left = 0.5
+anchor_bottom = 1.0
+anchor_right = 0.5
+offset_left = -240.0
+offset_top = -40.0
+offset_right = 240.0
+offset_bottom = -10.0
+horizontal_alignment = 1
+text = "Button emits a custom signal → Label receives it via connection in main.gd"
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)

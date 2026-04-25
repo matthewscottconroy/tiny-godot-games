@@ -1,0 +1,98 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/coin.gd" id="3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(28, 40)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_coin"]
+radius = 12.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(640, 20)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="ScoreLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 400.0
+offset_bottom = 40.0
+text = "Coins: 0 / 0"
+theme_override_font_sizes/font_size = 22
+
+[node name="Hint" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 475.0
+text = "Arrow keys to move. Area2D body_entered signal fires when player overlaps a coin."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(320, 420)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(320, 470)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Coins" type="Node2D" parent="."]
+
+[node name="Coin1" type="Area2D" parent="Coins"]
+position = Vector2(100, 200)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin1"]
+shape = SubResource("CircleShape2D_coin")
+
+[node name="Coin2" type="Area2D" parent="Coins"]
+position = Vector2(220, 300)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin2"]
+shape = SubResource("CircleShape2D_coin")
+
+[node name="Coin3" type="Area2D" parent="Coins"]
+position = Vector2(340, 150)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin3"]
+shape = SubResource("CircleShape2D_coin")
+
+[node name="Coin4" type="Area2D" parent="Coins"]
+position = Vector2(460, 260)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin4"]
+shape = SubResource("CircleShape2D_coin")
+
+[node name="Coin5" type="Area2D" parent="Coins"]
+position = Vector2(560, 180)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin5"]
+shape = SubResource("CircleShape2D_coin")
+
+[node name="Coin6" type="Area2D" parent="Coins"]
+position = Vector2(180, 100)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin6"]
+shape = SubResource("CircleShape2D_coin")
+
+[node name="Coin7" type="Area2D" parent="Coins"]
+position = Vector2(490, 80)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coins/Coin7"]
+shape = SubResource("CircleShape2D_coin")
