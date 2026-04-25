@@ -1,0 +1,85 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/draggable.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/drop_zone.gd" id="3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_item"]
+size = Vector2(48, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(72, 72)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 34.0
+text = "Drag and Drop Demo — drag colored boxes into the slots"
+theme_override_font_sizes/font_size = 16
+
+[node name="StatusLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 40.0
+offset_right = 500.0
+offset_bottom = 66.0
+text = "Filled: 0 / 3"
+theme_override_font_sizes/font_size = 16
+
+[node name="Items" type="Node2D" parent="."]
+
+[node name="Item1" type="Area2D" parent="Items"]
+position = Vector2(120, 180)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Items/Item1"]
+shape = SubResource("RectangleShape2D_item")
+
+[node name="Item2" type="Area2D" parent="Items"]
+position = Vector2(220, 180)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Items/Item2"]
+shape = SubResource("RectangleShape2D_item")
+
+[node name="Item3" type="Area2D" parent="Items"]
+position = Vector2(320, 180)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Items/Item3"]
+shape = SubResource("RectangleShape2D_item")
+
+[node name="Zones" type="Node2D" parent="."]
+
+[node name="Zone1" type="Area2D" parent="Zones"]
+position = Vector2(160, 370)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Zones/Zone1"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Zone2" type="Area2D" parent="Zones"]
+position = Vector2(320, 370)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Zones/Zone2"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Zone3" type="Area2D" parent="Zones"]
+position = Vector2(480, 370)
+script = ExtResource("3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Zones/Zone3"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 475.0
+text = "Area2D input_event detects mouse on overlap. get_overlapping_areas() checks the drop target."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)

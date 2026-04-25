@@ -1,18 +1,18 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3 uid="uid://dxdfbhnee2wh5"]
 
-[ext_resource type="Script" path="res://scripts/player.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/far_layer.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/mid_layer.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/near_layer.gd" id="4"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
-size = Vector2(24, 36)
+[ext_resource type="Script" uid="uid://fmhh52yb0b4h" path="res://scripts/player.gd" id="1"]
+[ext_resource type="Script" uid="uid://bn740lv44kevd" path="res://scripts/far_layer.gd" id="2"]
+[ext_resource type="Script" uid="uid://7t3q2kjkktl5" path="res://scripts/mid_layer.gd" id="3"]
+[ext_resource type="Script" uid="uid://c6333s6c2nhid" path="res://scripts/near_layer.gd" id="4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(4000, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_left"]
 size = Vector2(20, 480)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(24, 36)
 
 [node name="Main" type="Node2D"]
 
@@ -68,14 +68,14 @@ offset_left = 8.0
 offset_top = 8.0
 offset_right = 500.0
 offset_bottom = 32.0
-text = "Parallax Scroll — left/right arrows to walk"
 theme_override_font_sizes/font_size = 14
+text = "Parallax Scroll — left/right arrows to walk"
 
 [node name="HintLabel" type="Label" parent="HUD"]
+modulate = Color(1, 1, 1, 0.8)
 offset_left = 8.0
 offset_top = 450.0
 offset_right = 632.0
 offset_bottom = 475.0
-text = "3 ParallaxLayers at motion_scale 0.1, 0.4, 0.75. motion_mirroring tiles them infinitely."
 theme_override_font_sizes/font_size = 12
-modulate = Color(1, 1, 1, 0.8)
+text = "3 ParallaxLayers at motion_scale 0.1, 0.4, 0.75. motion_mirroring tiles them infinitely."

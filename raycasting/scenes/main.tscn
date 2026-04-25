@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://bn8ywtxcktxfb"]
 
-[ext_resource type="Script" path="res://scripts/ray_demo.gd" id="1"]
+[ext_resource type="Script" uid="uid://kolcqbxkvqkv" path="res://scripts/ray_demo.gd" id="1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall1"]
 size = Vector2(20, 200)
@@ -16,7 +16,6 @@ script = ExtResource("1")
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
 position = Vector2(320, 240)
-enabled = true
 target_position = Vector2(0, -100)
 
 [node name="Line2D" type="Line2D" parent="."]
@@ -43,18 +42,18 @@ position = Vector2(340, 310)
 shape = SubResource("RectangleShape2D_wall3")
 
 [node name="HintLabel" type="Label" parent="."]
+modulate = Color(1, 1, 1, 0.6)
 offset_left = 8.0
 offset_top = 450.0
 offset_right = 632.0
 offset_bottom = 475.0
-text = "Move mouse to aim. RayCast2D fires from center — ray stops at first collision (red dot)."
 theme_override_font_sizes/font_size = 12
-modulate = Color(1, 1, 1, 0.6)
+text = "Move mouse to aim. RayCast2D fires from center — ray stops at first collision (red dot)."
 
 [node name="TitleLabel" type="Label" parent="."]
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 350.0
 offset_bottom = 32.0
-text = "Raycasting Demo — move your mouse"
 theme_override_font_sizes/font_size = 14
+text = "Raycasting Demo — move your mouse"

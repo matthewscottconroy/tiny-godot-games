@@ -1,0 +1,66 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 400.0
+offset_bottom = 34.0
+text = "Particle Effects Demo"
+theme_override_font_sizes/font_size = 22
+
+[node name="ModeLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 40.0
+offset_right = 500.0
+offset_bottom = 66.0
+text = "Mode: Fire (looping)"
+theme_override_font_sizes/font_size = 16
+
+[node name="Particles" type="CPUParticles2D" parent="."]
+position = Vector2(320, 280)
+amount = 40
+lifetime = 0.9
+direction = Vector2(0, -1)
+spread = 22.0
+gravity = Vector2(0, -30)
+initial_velocity_min = 60.0
+initial_velocity_max = 120.0
+scale_amount_min = 4.0
+scale_amount_max = 8.0
+color = Color(1, 0.27, 0, 1)
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+offset_left = 60.0
+offset_top = 390.0
+offset_right = 580.0
+offset_bottom = 426.0
+theme_override_constants/separation = 8
+
+[node name="FireBtn" type="Button" parent="Buttons"]
+text = "Fire"
+
+[node name="SmokeBtn" type="Button" parent="Buttons"]
+text = "Smoke"
+
+[node name="SparkleBtn" type="Button" parent="Buttons"]
+text = "Sparkle"
+
+[node name="ExplosionBtn" type="Button" parent="Buttons"]
+text = "Explosion"
+
+[node name="StopBtn" type="Button" parent="Buttons"]
+text = "Stop"
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 475.0
+text = "CPUParticles2D — tweak amount, lifetime, velocity, spread, gravity, color at runtime."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)

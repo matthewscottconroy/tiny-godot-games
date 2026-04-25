@@ -1,0 +1,58 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_p1"]
+size = Vector2(28, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_p2"]
+size = Vector2(28, 40)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("2")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 34.0
+text = "Local Multiplayer — P1: WASD    P2: Arrow keys"
+theme_override_font_sizes/font_size = 16
+
+[node name="ScoreLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 38.0
+offset_right = 632.0
+offset_bottom = 64.0
+text = "P1 (WASD): 0     P2 (Arrows): 0"
+theme_override_font_sizes/font_size = 16
+
+[node name="Player1" type="CharacterBody2D" parent="."]
+position = Vector2(120, 400)
+script = ExtResource("1")
+player_id = 1
+player_color = Color(0.39, 0.58, 0.93, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player1"]
+shape = SubResource("RectangleShape2D_p1")
+
+[node name="Player2" type="CharacterBody2D" parent="."]
+position = Vector2(520, 400)
+script = ExtResource("1")
+player_id = 2
+player_color = Color(0.91, 0.3, 0.24, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player2"]
+shape = SubResource("RectangleShape2D_p2")
+
+[node name="Coins" type="Node2D" parent="."]
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 475.0
+text = "Same player.gd script, different player_id @export. P1 uses is_key_pressed; P2 uses actions."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
