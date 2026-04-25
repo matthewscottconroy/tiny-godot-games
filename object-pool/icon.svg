@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#1f618d" rx="16"/>
+  <!-- Pool container -->
+  <rect x="12" y="40" width="104" height="72" fill="none" stroke="white" stroke-width="3" rx="6"/>
+  <!-- Active bullets (filled) -->
+  <circle cx="32" cy="64" r="8" fill="#f39c12"/>
+  <circle cx="56" cy="64" r="8" fill="#f39c12"/>
+  <circle cx="80" cy="64" r="8" fill="#f39c12"/>
+  <!-- Inactive bullets (empty) -->
+  <circle cx="32" cy="88" r="8" fill="none" stroke="white" stroke-width="2" opacity="0.4"/>
+  <circle cx="56" cy="88" r="8" fill="none" stroke="white" stroke-width="2" opacity="0.4"/>
+  <circle cx="80" cy="88" r="8" fill="none" stroke="white" stroke-width="2" opacity="0.4"/>
+  <circle cx="104" cy="88" r="8" fill="none" stroke="white" stroke-width="2" opacity="0.4"/>
+  <text x="64" y="30" font-size="14" text-anchor="middle" fill="white" font-family="sans-serif">POOL</text>
+</svg>

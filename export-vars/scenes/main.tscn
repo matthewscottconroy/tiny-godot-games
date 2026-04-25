@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ball.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Title" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 32.0
+text = "@export Demo — three instances of the same script, different inspector values"
+theme_override_font_sizes/font_size = 14
+
+[node name="Hint" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 475.0
+text = "Same ball.gd script on all three nodes. Values like color, radius, velocity set per-instance."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="BallRed" type="Node2D" parent="."]
+position = Vector2(120, 200)
+script = ExtResource("1")
+color = Color(0.92, 0.25, 0.2, 1.0)
+radius = 36.0
+velocity = Vector2(110, 85)
+label_text = "radius=36"
+
+[node name="BallBlue" type="Node2D" parent="."]
+position = Vector2(340, 150)
+script = ExtResource("1")
+color = Color(0.2, 0.5, 0.9, 1.0)
+radius = 20.0
+velocity = Vector2(-160, 130)
+label_text = "radius=20"
+
+[node name="BallGreen" type="Node2D" parent="."]
+position = Vector2(520, 300)
+script = ExtResource("1")
+color = Color(0.18, 0.8, 0.44, 1.0)
+radius = 50.0
+velocity = Vector2(70, -60)
+label_text = "radius=50"

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#922b21" rx="16"/>
+  <!-- Hurtbox (target) -->
+  <rect x="60" y="30" width="52" height="68" fill="none" stroke="#e74c3c" stroke-width="3" stroke-dasharray="6,3" rx="4"/>
+  <!-- Hitbox (attack) -->
+  <rect x="16" y="44" width="52" height="40" fill="#e74c3c" opacity="0.5" rx="4"/>
+  <rect x="16" y="44" width="52" height="40" fill="none" stroke="white" stroke-width="2" rx="4"/>
+  <!-- Overlap indicator -->
+  <rect x="60" y="44" width="8" height="40" fill="white" opacity="0.8"/>
+</svg>

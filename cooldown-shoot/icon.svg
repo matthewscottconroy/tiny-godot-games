@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#784212" rx="16"/>
+  <!-- Gun -->
+  <rect x="16" y="56" width="64" height="16" fill="white" rx="4"/>
+  <rect x="64" y="50" width="20" height="12" fill="white" rx="2"/>
+  <!-- Bullets flying -->
+  <circle cx="96" cy="64" r="5" fill="#f39c12"/>
+  <circle cx="112" cy="64" r="5" fill="#f39c12" opacity="0.5"/>
+  <!-- Cooldown arc -->
+  <path d="M 32 88 A 20 20 0 0 1 52 88" stroke="#e74c3c" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 32 88 A 20 20 0 1 0 52 88" stroke="white" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.3"/>
+</svg>

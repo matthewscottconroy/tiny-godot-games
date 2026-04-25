@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#1a5276" rx="16"/>
+  <!-- Sky -->
+  <rect x="0" y="0" width="128" height="128" fill="#2471a3" rx="16"/>
+  <!-- Far mountains -->
+  <polygon points="0,90 30,50 60,90" fill="#1a5276"/>
+  <polygon points="40,90 80,40 120,90" fill="#1a5276"/>
+  <!-- Near hills -->
+  <ellipse cx="30" cy="100" rx="50" ry="30" fill="#145a32"/>
+  <ellipse cx="100" cy="108" rx="50" ry="30" fill="#145a32"/>
+  <!-- Ground -->
+  <rect x="0" y="108" width="128" height="20" fill="#1d8348" rx="0"/>
+</svg>

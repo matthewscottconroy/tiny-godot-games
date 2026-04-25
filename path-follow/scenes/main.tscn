@@ -1,0 +1,64 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/patrol.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2"]
+
+[sub_resource type="Curve2D" id="Curve2D_1"]
+point_count = 4
+point_0/position = Vector2(120, 180)
+point_0/in = Vector2(0, 60)
+point_0/out = Vector2(0, -60)
+point_1/position = Vector2(380, 120)
+point_1/in = Vector2(-80, 0)
+point_1/out = Vector2(80, 0)
+point_2/position = Vector2(520, 340)
+point_2/in = Vector2(0, -80)
+point_2/out = Vector2(0, 80)
+point_3/position = Vector2(180, 380)
+point_3/in = Vector2(80, 0)
+point_3/out = Vector2(-80, 0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(28, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(640, 20)
+
+[node name="Main" type="Node2D"]
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 32.0
+text = "Path Follow Demo — red dot patrols the curve, arrow keys to move player"
+theme_override_font_sizes/font_size = 14
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 475.0
+text = "PathFollow2D.progress += speed * delta advances along the Path2D curve automatically."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="PatrolPath" type="Path2D" parent="."]
+curve = SubResource("Curve2D_1")
+
+[node name="Patrol" type="PathFollow2D" parent="PatrolPath"]
+loop = true
+script = ExtResource("1")
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(320, 400)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(320, 465)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#1a1a2e" rx="16"/>
+  <ellipse cx="48" cy="64" rx="20" ry="28" fill="#e94560"/>
+  <rect x="48" y="52" width="32" height="24" fill="#e94560"/>
+  <polygon points="80,52 96,40 96,88 80,76" fill="#e94560"/>
+  <!-- Sound waves -->
+  <path d="M 100 52 Q 116 64 100 76" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 108 44 Q 128 64 108 84" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+</svg>
