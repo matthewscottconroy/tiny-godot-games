@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#c0420a" rx="16"/>
+  <circle cx="64" cy="88" r="26" fill="white" opacity="0.9"/>
+  <text x="52" y="96" font-family="monospace" font-size="18" fill="#c0420a" font-weight="bold">-24</text>
+  <text x="48" y="60" font-family="monospace" font-size="22" fill="white" opacity="0.8">-42</text>
+  <text x="44" y="28" font-family="monospace" font-size="16" fill="white" opacity="0.4">-18</text>
+  <line x1="64" y1="32" x2="64" y2="16" stroke="white" stroke-width="2" stroke-dasharray="3,2" opacity="0.3"/>
+</svg>

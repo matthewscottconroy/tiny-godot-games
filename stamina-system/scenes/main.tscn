@@ -1,0 +1,75 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(24, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(640, 25)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat1"]
+size = Vector2(180, 14)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat2"]
+size = Vector2(140, 14)
+
+[node name="Main" type="Node2D"]
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 520.0
+offset_bottom = 30.0
+text = "Stamina System — Arrow keys / WASD to move, hold Shift to sprint"
+theme_override_font_sizes/font_size = 13
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "Stamina drains while sprinting (gold), regens after a delay. Blocked at zero."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(80, 390)
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="StaminaBar" type="ProgressBar" parent="Player"]
+offset_left = -50.0
+offset_top = -68.0
+offset_right = 50.0
+offset_bottom = -56.0
+max_value = 100.0
+value = 100.0
+
+[node name="InfoLabel" type="Label" parent="Player"]
+offset_left = -36.0
+offset_top = -82.0
+offset_right = 80.0
+offset_bottom = -68.0
+text = "READY"
+theme_override_font_sizes/font_size = 11
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(320, 467)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(260, 350)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("RectangleShape2D_plat1")
+
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(480, 260)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("RectangleShape2D_plat2")

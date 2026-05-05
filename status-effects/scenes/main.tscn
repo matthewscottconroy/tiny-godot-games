@@ -1,0 +1,83 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(24, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(130, 65)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(640, 25)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 30.0
+text = "Status Effects — Walk into colored zones to apply effects"
+theme_override_font_sizes/font_size = 13
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "Poison: DoT | Burn: fast DoT | Freeze: slow movement. Effects stack and expire on their own."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(80, 390)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="HPBar" type="ProgressBar" parent="Player"]
+offset_left = -40.0
+offset_top = -64.0
+offset_right = 40.0
+offset_bottom = -52.0
+max_value = 100.0
+value = 100.0
+
+[node name="FXLabel" type="Label" parent="Player"]
+offset_left = -60.0
+offset_top = -84.0
+offset_right = 120.0
+offset_bottom = -66.0
+text = "(none)"
+theme_override_font_sizes/font_size = 11
+
+[node name="PoisonZone" type="Area2D" parent="."]
+position = Vector2(225, 427)
+metadata/effect = "poison"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PoisonZone"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="BurnZone" type="Area2D" parent="."]
+position = Vector2(370, 427)
+metadata/effect = "burn"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BurnZone"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="FreezeZone" type="Area2D" parent="."]
+position = Vector2(515, 427)
+metadata/effect = "freeze"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FreezeZone"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(320, 467)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")

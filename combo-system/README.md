@@ -1,0 +1,85 @@
+# Combo System
+
+Timed attack chains: press Light (Space) and Heavy (Escape) in sequence to trigger named combos. Inputs expire after 0.6 seconds. Longer patterns take priority over shorter ones.
+
+## Purpose
+
+Action games need combo recognition — the ability to detect that the player pressed Light, Light, Heavy in the right order, within a timing window. This demo shows the minimal implementation: a history array of timestamped inputs, a purge step to expire old ones, and a list of patterns checked longest-first. The pattern matching is O(combos × inputs) — fast enough for any practical list.
+
+## Controls
+
+- **Arrow keys / WASD**: Move, Up to jump
+- **Space / Enter**: Light attack (L)
+- **Escape**: Heavy attack (H)
+- Watch the history string above the player as you build chains
+
+## Combos
+
+| Sequence | Name |
+|----------|------|
+| L+L+L | Triple Slash |
+| L+H+L | Spin Attack |
+| H+H+H | Ground Slam |
+| L+L | Double Cut |
+| L+H | Launcher |
+| H+L | Counter |
+| H+H | Overhead Slam |
+
+## How It Works
+
+### `scripts/combo_system.gd`
+
+**History with timestamps:**
+```gdscript
+var _history: Array[Dictionary] = []  # [{input, time}]
+
+func add_input(inp: String) -> String:
+    _purge_old()
+    _history.append({"input": inp, "time": Time.get_ticks_msec() / 1000.0})
+    return _check()
+```
+
+**Purge expired inputs:**
+```gdscript
+func _purge_old() -> void:
+    var now := Time.get_ticks_msec() / 1000.0
+    var keep: Array[Dictionary] = []
+    for h in _history:
+        if now - h["time"] < WINDOW:
+            keep.append(h)
+    _history = keep
+```
+Inputs older than `WINDOW = 0.6s` are removed before each new input is added. This means if you wait too long between presses, the chain resets.
+
+**Longest-first matching:**
+```gdscript
+const COMBOS: Array[Dictionary] = [
+    {"pattern": ["L", "L", "L"], "name": "Triple Slash"},  # 3-input first
+    ...
+    {"pattern": ["L", "L"], "name": "Double Cut"},          # 2-input later
+]
+
+func _check() -> String:
+    var recent := _history.map(func(h) -> String: return h["input"])
+    for combo in COMBOS:
+        var pat: Array = combo["pattern"]
+        if recent.size() >= pat.size():
+            var tail := recent.slice(recent.size() - pat.size())
+            if tail == pat:
+                _history.clear()
+                return combo["name"]
+    return ""
+```
+
+`slice(-n)` extracts the last `n` elements. Comparing the tail to a pattern checks if the most recent inputs match. Combos are listed longest-first so `L+L+L` is tested before `L+L` — otherwise Triple Slash would never fire because Double Cut would match first.
+
+After a combo triggers, `_history.clear()` prevents the same inputs from matching again.
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Time.get_ticks_msec()` | Milliseconds since engine start — used for timestamps |
+| `Array.slice(start)` | Returns elements from `start` to end |
+| `Array.map(callable)` | Transform each element — extracts input strings from history dicts |
+| `Input.is_action_just_pressed(a)` | Edge-triggered: fires once per key press |

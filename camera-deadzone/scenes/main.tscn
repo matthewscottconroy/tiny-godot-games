@@ -1,0 +1,58 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(24, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(3000, 20)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(320, 240)
+position_smoothing_enabled = false
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(200, 400)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(1000, 467)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 30.0
+text = "Camera Deadzone — Arrow keys / WASD to move, walk far right to see camera lag"
+theme_override_font_sizes/font_size = 13
+
+[node name="StatusLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 600.0
+offset_bottom = 474.0
+text = "Camera: STATIC"
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 0.5, 1)
+
+[node name="HintLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 432.0
+offset_right = 632.0
+offset_bottom = 450.0
+text = "Yellow box = dead zone. Camera only follows when player exits it."
+theme_override_font_sizes/font_size = 11
+modulate = Color(1, 1, 1, 0.55)

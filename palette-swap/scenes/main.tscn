@@ -1,0 +1,51 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Shader" path="res://shaders/palette_swap.gdshader" id="2"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_swap"]
+shader = ExtResource("2")
+shader_parameter/body_src = Color(0.12, 0.56, 1, 1)
+shader_parameter/armor_src = Color(1, 0.84, 0, 1)
+shader_parameter/body_dst = Color(0.12, 0.56, 1, 1)
+shader_parameter/armor_dst = Color(1, 0.84, 0, 1)
+shader_parameter/threshold = 0.18
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="CharSprite" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_swap")
+offset_left = 272.0
+offset_top = 160.0
+offset_right = 368.0
+offset_bottom = 328.0
+texture_filter = 0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 30.0
+text = "Palette Swap — Left/Right arrows or Enter to cycle palettes"
+theme_override_font_sizes/font_size = 13
+
+[node name="PalLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "Palette: Original (1/5)"
+theme_override_font_sizes/font_size = 13
+modulate = Color(1, 1, 0.6, 1)
+
+[node name="HintLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 432.0
+offset_right = 632.0
+offset_bottom = 450.0
+text = "Shader compares each pixel's RGB to source colors; if close enough, replaces with destination."
+theme_override_font_sizes/font_size = 11
+modulate = Color(1, 1, 1, 0.55)

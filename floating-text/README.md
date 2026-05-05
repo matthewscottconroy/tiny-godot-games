@@ -1,0 +1,83 @@
+# Floating Text
+
+Damage numbers, pickups, and status messages that rise from a position and fade out — implemented as a self-managing `Label` that spawns, tweens, and frees itself. No scene file needed.
+
+## Purpose
+
+Floating text is one of the most effective forms of game feedback: the player immediately sees how much damage they dealt, what they picked up, or what just happened. This demo shows the minimal, reusable implementation: a static `spawn()` method on a Label subclass that handles its own animation and cleanup. Calling code only needs one line.
+
+## Controls
+
+- **Click any target** to deal damage
+- Watch the numbers rise and fade above each target
+- HP bars show remaining health; targets revive when HP reaches 0
+
+## How It Works
+
+### `scripts/floating_text.gd`
+
+The entire implementation is a single static method:
+
+```gdscript
+class_name FloatingText
+extends Label
+
+static func spawn(parent: Node, pos: Vector2, msg: String, col: Color = Color.WHITE) -> void:
+    var ft := FloatingText.new()
+    ft.text = msg
+    ft.add_theme_font_size_override("font_size", 22)
+    ft.modulate = col
+    ft.position = pos
+    parent.add_child(ft)
+
+    var tw := ft.create_tween()
+    tw.set_parallel(true)
+    tw.tween_property(ft, "position:y", pos.y - 72.0, 0.9).set_ease(Tween.EASE_OUT)
+    tw.tween_property(ft, "modulate:a", 0.0, 0.9).set_delay(0.25)
+    tw.chain().tween_callback(ft.queue_free)
+```
+
+**`set_parallel(true)`** lets the position and alpha tweens run simultaneously. Without it, they would run sequentially — position first, then fade.
+
+**`.set_delay(0.25)`** on the alpha tween makes the label stay fully visible for a quarter-second before starting to fade. This gives the player time to read the number.
+
+**`.chain().tween_callback(ft.queue_free)`** chains a callback AFTER the parallel block completes (chained tweens run in sequence after the previous step). When both tweens finish, the Label removes itself.
+
+### Calling it
+
+```gdscript
+FloatingText.spawn(get_parent(), global_position + Vector2(0, -44), "-%d" % dmg, Color.RED)
+```
+
+The caller doesn't hold a reference, doesn't need to clean up, and doesn't need to pre-instantiate anything.
+
+### `scripts/target.gd`
+
+Targets use `input_event` signal on `Area2D` (requires `input_pickable = true`):
+```gdscript
+func _on_click(_viewport, event, _idx) -> void:
+    if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+        FloatingText.spawn(get_parent(), global_position + offset, "-%d" % dmg, col)
+```
+
+## Tween Technique: Parallel + Chain
+
+```
+tween.set_parallel(true)           ← steps A and B run at the same time
+    A: position.y moves up         ← ease_out for natural deceleration
+    B: alpha fades out (delay 0.25) ← starts 0.25s later
+tween.chain()                      ← next step runs after A and B finish
+    C: queue_free                  ← self-cleanup
+```
+
+The `set_ease(Tween.EASE_OUT)` on the position makes the label start fast and slow down, simulating a number "popping" out of the hit.
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Label.add_theme_font_size_override("font_size", n)` | Set label font size without a theme |
+| `Tween.set_parallel(true)` | Run all following tween steps simultaneously |
+| `TweenStep.set_delay(t)` | Wait `t` seconds before this step starts |
+| `Tween.chain()` | Switch back to sequential after a parallel block |
+| `Area2D.input_pickable` | Must be true for `input_event` signal to fire |

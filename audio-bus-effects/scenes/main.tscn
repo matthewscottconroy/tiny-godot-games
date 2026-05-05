@@ -1,0 +1,55 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+bus = &"Master"
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 632.0
+offset_bottom = 30.0
+text = "Audio Bus Effects — Space to play tone"
+theme_override_font_sizes/font_size = 14
+
+[node name="BusLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 60.0
+offset_right = 632.0
+offset_bottom = 86.0
+text = "Bus: Dry  (Left/Right to switch, Space to play)"
+theme_override_font_sizes/font_size = 14
+modulate = Color(1, 1, 0.5, 1)
+
+[node name="InfoLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 100.0
+offset_right = 632.0
+offset_bottom = 140.0
+text = "Direct signal — no effects"
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.8, 0.9, 0.8, 1)
+
+[node name="DiagramLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 180.0
+offset_right = 632.0
+offset_bottom = 340.0
+text = "Bus routing:\n\n  Dry        → Master\n  Reverb     → Master  (AudioEffectReverb)\n  Echo       → Master  (AudioEffectDelay × 2)\n  Compressed → Master  (AudioEffectCompressor)\n\nAll buses feed into Master, which goes to speakers.\nEach bus applies its effects in the effect chain before output."
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.8, 1)
+
+[node name="HintLabel" type="Label" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "AudioStreamPlayer.bus = 'Reverb' routes all output through the Reverb bus chain."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.55)

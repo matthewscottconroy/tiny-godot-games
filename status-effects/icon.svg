@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#0a1a0a" rx="16"/>
+  <ellipse cx="30" cy="64" rx="16" ry="24" fill="#22aa22" opacity="0.8"/>
+  <text x="24" y="70" font-size="20" fill="white" opacity="0.9">☠</text>
+  <ellipse cx="64" cy="64" rx="16" ry="24" fill="#cc3300" opacity="0.8"/>
+  <text x="58" y="70" font-size="20" fill="white" opacity="0.9">🔥</text>
+  <ellipse cx="98" cy="64" rx="16" ry="24" fill="#2266cc" opacity="0.8"/>
+  <text x="90" y="70" font-size="20" fill="white" opacity="0.9">❄</text>
+  <rect x="8" y="92" width="30" height="6" fill="#22aa22" rx="2"/>
+  <rect x="46" y="92" width="30" height="6" fill="#cc3300" rx="2"/>
+  <rect x="84" y="92" width="30" height="6" fill="#2266cc" rx="2"/>
+</svg>

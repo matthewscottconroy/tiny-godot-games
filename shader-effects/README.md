@@ -1,0 +1,75 @@
+# Shader Effects
+
+Three applied `canvas_item` shaders beyond the basics: **dissolve** (noise-based pixel discard with a burning edge), **pixelate** (snapped UV sampling), and **wave warp** (UV distortion over time). Each is swapped onto a Sprite2D at runtime.
+
+## Purpose
+
+`shader-intro` shows tint, flash, and outline. This demo shows the next tier of practical effects: dissolve for deaths and pickups, pixelation for transitions or damage states, and wave distortion for environmental effects. All three manipulate UV coordinates in the fragment shader — the core technique behind most 2D shader tricks.
+
+## Controls
+
+- **None / Dissolve / Pixelate / Wave Warp buttons**: Switch the active shader
+
+## How It Works
+
+### `shaders/dissolve.gdshader`
+
+```glsl
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float noise(vec2 p) { ... }  // smooth value noise from hash
+
+void fragment() {
+    float n = noise(UV * 7.0);
+    if (n < dissolve_amount) { discard; }   // cut the pixel
+    float edge = step(n, dissolve_amount + 0.06) * col.a;
+    COLOR = mix(col, edge_color, edge);     // hot edge glow
+}
+```
+
+**`discard`** removes the pixel entirely (no depth write, no color). The noise function produces a spatially coherent pattern so pixels disappear in clusters, not randomly. The `edge` calculation adds a hot orange outline just above the dissolve threshold: pixels between `dissolve_amount` and `dissolve_amount + 0.06` show the edge color.
+
+### `shaders/pixelate.gdshader`
+
+```glsl
+void fragment() {
+    vec2 tex_size = vec2(textureSize(TEXTURE, 0));
+    vec2 pixels   = floor(UV * tex_size / pixel_size) * pixel_size;
+    vec2 snapped  = pixels / tex_size;
+    COLOR = texture(TEXTURE, snapped);
+}
+```
+
+Rounds UV coordinates to the nearest `pixel_size`-sized block. Every pixel in a block reads the same texel, producing the pixelated look. Increasing `pixel_size` makes the blocks larger.
+
+### `shaders/wave_distort.gdshader`
+
+```glsl
+void fragment() {
+    float offset_x = sin(UV.y * frequency + TIME * speed) * amplitude;
+    float offset_y = cos(UV.x * frequency + TIME * speed) * amplitude;
+    vec2 distorted  = UV + vec2(offset_x, offset_y);
+    COLOR = texture(TEXTURE, clamp(distorted, 0.001, 0.999));
+}
+```
+
+**`TIME`** is a built-in uniform in `canvas_item` shaders that advances each frame. Sine/cosine waves offset the UV — each pixel samples from a slightly shifted position, creating a ripple effect. `clamp` prevents out-of-bounds sampling at edges.
+
+### Animating uniforms in GDScript
+
+```gdscript
+(sprite.material as ShaderMaterial).set_shader_parameter("dissolve_amount", _dissolve)
+```
+
+`set_shader_parameter()` updates a uniform by its string name. Cast to `ShaderMaterial` first since `material` is typed as the base `Material` class.
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `ShaderMaterial` | Material that holds a shader + its parameters |
+| `ShaderMaterial.set_shader_parameter(name, value)` | Set a uniform value from GDScript |
+| `textureSize(TEXTURE, 0)` | Built-in GLSL — returns texture pixel dimensions |
+| `TIME` | Built-in GLSL uniform — seconds since shader start |
+| `discard` | GLSL — skips writing the current fragment entirely |

@@ -1,0 +1,87 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/destructible.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b1"]
+size = Vector2(48, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b2"]
+size = Vector2(56, 56)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b3"]
+size = Vector2(36, 60)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b4"]
+size = Vector2(64, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(640, 20)
+
+[node name="Main" type="Node2D"]
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 30.0
+text = "Destructibles — click boxes to break them"
+theme_override_font_sizes/font_size = 14
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "On shatter: spawn RigidBody2D fragments with Polygon2D visuals and random impulse velocity."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(320, 450)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Box1" type="Area2D" parent="."]
+position = Vector2(110, 390)
+script = ExtResource("1")
+box_color = Color(0.76, 0.60, 0.42)
+box_size = Vector2(48, 48)
+frag_count = 8
+hp = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Box1"]
+shape = SubResource("RectangleShape2D_b1")
+
+[node name="Box2" type="Area2D" parent="."]
+position = Vector2(230, 386)
+script = ExtResource("1")
+box_color = Color(0.55, 0.35, 0.20)
+box_size = Vector2(56, 56)
+frag_count = 12
+hp = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Box2"]
+shape = SubResource("RectangleShape2D_b2")
+
+[node name="Box3" type="Area2D" parent="."]
+position = Vector2(355, 388)
+script = ExtResource("1")
+box_color = Color(0.30, 0.55, 0.80)
+box_size = Vector2(36, 60)
+frag_count = 6
+hp = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Box3"]
+shape = SubResource("RectangleShape2D_b3")
+
+[node name="Box4" type="Area2D" parent="."]
+position = Vector2(480, 394)
+script = ExtResource("1")
+box_color = Color(0.75, 0.20, 0.20)
+box_size = Vector2(64, 40)
+frag_count = 16
+hp = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Box4"]
+shape = SubResource("RectangleShape2D_b4")

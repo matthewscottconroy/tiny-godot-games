@@ -1,0 +1,74 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(24, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(640, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat1"]
+size = Vector2(160, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat2"]
+size = Vector2(120, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat3"]
+size = Vector2(100, 16)
+
+[node name="Main" type="Node2D"]
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 30.0
+text = "Dash Ability — Arrow keys / WASD to move, Up to jump, Space to dash"
+theme_override_font_sizes/font_size = 13
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "Yellow = dashing  |  Red tint = iframes (invincible)  |  CD timer = cooldown remaining"
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(80, 390)
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="InfoLabel" type="Label" parent="Player"]
+position = Vector2(-52, -58)
+custom_minimum_size = Vector2(110, 0)
+text = "READY"
+theme_override_font_sizes/font_size = 12
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(320, 465)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(220, 340)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("RectangleShape2D_plat1")
+
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(460, 250)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("RectangleShape2D_plat2")
+
+[node name="Platform3" type="StaticBody2D" parent="."]
+position = Vector2(200, 160)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform3"]
+shape = SubResource("RectangleShape2D_plat3")

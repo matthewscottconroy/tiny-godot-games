@@ -1,0 +1,109 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[sub_resource type="Shader" id="Shader_water"]
+code = "shader_type canvas_item;
+uniform float wave_speed     : hint_range(0.1, 5.0) = 1.2;
+uniform float wave_amplitude : hint_range(0.0, 0.05) = 0.018;
+uniform float wave_frequency : hint_range(1.0, 20.0) = 6.0;
+uniform float foam_threshold : hint_range(0.0, 1.0)  = 0.85;
+uniform vec4  water_color    : source_color = vec4(0.05, 0.35, 0.75, 0.88);
+uniform vec4  foam_color     : source_color = vec4(0.8,  0.9,  1.0,  0.95);
+uniform vec4  deep_color     : source_color = vec4(0.02, 0.15, 0.45, 1.0);
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float noise(vec2 p) {
+	vec2 i = floor(p); vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+void fragment() {
+	float wave1 = sin(UV.x * wave_frequency + TIME * wave_speed) * wave_amplitude;
+	float wave2 = sin(UV.x * wave_frequency * 1.7 - TIME * wave_speed * 0.8) * wave_amplitude * 0.5;
+	vec2 uv_warp = UV + vec2(wave1 + wave2, wave1 * 0.5);
+	float depth = UV.y;
+	vec4 base_color = mix(water_color, deep_color, depth * 0.7);
+	float foam_noise = noise(uv_warp * 10.0 + TIME * 0.3);
+	float foam_mask  = step(foam_threshold, foam_noise) * smoothstep(0.2, 0.0, UV.y);
+	float shimmer = noise(uv_warp * 14.0 + vec2(TIME * 0.6, 0.0));
+	float highlight = pow(shimmer, 4.0) * 0.4 * (1.0 - depth);
+	vec4 final = mix(base_color, foam_color, foam_mask);
+	final.rgb += highlight;
+	COLOR = final;
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_water"]
+shader = SubResource("Shader_water")
+shader_parameter/wave_speed = 1.2
+shader_parameter/wave_amplitude = 0.018
+shader_parameter/wave_frequency = 6.0
+shader_parameter/foam_threshold = 0.85
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Water" type="ColorRect" parent="."]
+offset_left = 0.0
+offset_top = 260.0
+offset_right = 640.0
+offset_bottom = 460.0
+material = SubResource("ShaderMaterial_water")
+color = Color(0.05, 0.35, 0.75, 0.88)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TitleLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 28.0
+text = "2D Water — Arrow keys / WASD to move, Up to jump / swim"
+theme_override_font_sizes/font_size = 13
+
+[node name="SpeedRow" type="HBoxContainer" parent="HUD"]
+offset_left = 8.0
+offset_top = 32.0
+offset_right = 360.0
+offset_bottom = 52.0
+
+[node name="SpeedLbl" type="Label" parent="HUD/SpeedRow"]
+custom_minimum_size = Vector2(80, 0)
+text = "Wave speed"
+theme_override_font_sizes/font_size = 12
+
+[node name="SpeedSlider" type="HSlider" parent="HUD/SpeedRow"]
+custom_minimum_size = Vector2(140, 0)
+min_value = 0.1
+max_value = 5.0
+step = 0.1
+value = 1.2
+
+[node name="AmpRow" type="HBoxContainer" parent="HUD"]
+offset_left = 8.0
+offset_top = 56.0
+offset_right = 360.0
+offset_bottom = 76.0
+
+[node name="AmpLbl" type="Label" parent="HUD/AmpRow"]
+custom_minimum_size = Vector2(80, 0)
+text = "Amplitude"
+theme_override_font_sizes/font_size = 12
+
+[node name="AmpSlider" type="HSlider" parent="HUD/AmpRow"]
+custom_minimum_size = Vector2(140, 0)
+min_value = 0.0
+max_value = 0.05
+step = 0.002
+value = 0.018
+
+[node name="HintLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "ColorRect with ShaderMaterial. UV.y drives depth color. TIME animates wave offsets."
+theme_override_font_sizes/font_size = 12
+modulate = Color(1, 1, 1, 0.6)
