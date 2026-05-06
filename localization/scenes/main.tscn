@@ -1,0 +1,140 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="BG" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.10, 0.10, 0.13, 1.0)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+
+[node name="TitleLabel" type="Label" parent="VBox"]
+text = "Adventure Quest"
+theme_override_font_sizes/font_size = 28
+
+[node name="GreetingLabel" type="Label" parent="VBox"]
+text = "Welcome, hero!"
+theme_override_font_sizes/font_size = 16
+
+[node name="Spacer1" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 12)
+
+[node name="Grid" type="GridContainer" parent="VBox"]
+columns = 2
+
+[node name="KeyLabel0" type="Label" parent="VBox/Grid"]
+text = "TITLE"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel0" type="Label" parent="VBox/Grid"]
+text = "Adventure Quest"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel1" type="Label" parent="VBox/Grid"]
+text = "GREETING"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel1" type="Label" parent="VBox/Grid"]
+text = "Welcome, hero!"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel2" type="Label" parent="VBox/Grid"]
+text = "SCORE"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel2" type="Label" parent="VBox/Grid"]
+text = "Score"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel3" type="Label" parent="VBox/Grid"]
+text = "LIVES"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel3" type="Label" parent="VBox/Grid"]
+text = "Lives"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel4" type="Label" parent="VBox/Grid"]
+text = "GAME_OVER"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel4" type="Label" parent="VBox/Grid"]
+text = "Game Over"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel5" type="Label" parent="VBox/Grid"]
+text = "START"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel5" type="Label" parent="VBox/Grid"]
+text = "Start Game"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel6" type="Label" parent="VBox/Grid"]
+text = "QUIT"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel6" type="Label" parent="VBox/Grid"]
+text = "Quit"
+theme_override_font_sizes/font_size = 13
+
+[node name="KeyLabel7" type="Label" parent="VBox/Grid"]
+text = "SETTINGS"
+custom_minimum_size = Vector2(160, 0)
+theme_override_font_sizes/font_size = 13
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="ValLabel7" type="Label" parent="VBox/Grid"]
+text = "Settings"
+theme_override_font_sizes/font_size = 13
+
+[node name="Separator" type="HSeparator" parent="VBox"]
+
+[node name="LangRow" type="HBoxContainer" parent="VBox"]
+
+[node name="LangHintLabel" type="Label" parent="VBox/LangRow"]
+text = "Language: "
+vertical_alignment = 1
+
+[node name="BtnEN" type="Button" parent="VBox/LangRow"]
+text = "English"
+custom_minimum_size = Vector2(90, 0)
+
+[node name="BtnES" type="Button" parent="VBox/LangRow"]
+text = "Español"
+custom_minimum_size = Vector2(90, 0)
+
+[node name="BtnFR" type="Button" parent="VBox/LangRow"]
+text = "Français"
+custom_minimum_size = Vector2(90, 0)
+
+[node name="CurrentLangLabel" type="Label" parent="VBox"]
+text = "Locale: en"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.8, 0.8, 0.8, 1.0)

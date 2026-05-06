@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 30.0
+text = "Undo / Redo Drawing Demo"
+theme_override_font_sizes/font_size = 16
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 8.0
+offset_top = 32.0
+offset_right = 632.0
+offset_bottom = 52.0
+text = "Draw with mouse.   Ctrl+Z = Undo   Ctrl+Y = Redo"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.3, 0.3, 0.3, 1.0)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="HistoryLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 450.0
+offset_right = 500.0
+offset_bottom = 472.0
+text = "Strokes: 0  |  Undo: Ctrl+Z   Redo: Ctrl+Y"
+theme_override_font_sizes/font_size = 13
+
+[node name="ClearButton" type="Button" parent="HUD"]
+offset_left = 540.0
+offset_top = 446.0
+offset_right = 632.0
+offset_bottom = 474.0
+text = "Clear All"

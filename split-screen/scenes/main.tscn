@@ -1,0 +1,127 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(320.0, 20.0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat"]
+size = Vector2(100.0, 12.0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(20.0, 40.0)
+
+[node name="Main" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="LeftContainer" type="SubViewportContainer" parent="."]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 320.0
+offset_bottom = 480.0
+stretch = true
+
+[node name="LeftViewport" type="SubViewport" parent="LeftContainer"]
+size = Vector2i(320, 480)
+own_world_2d = true
+
+[node name="World1" type="Node2D" parent="LeftContainer/LeftViewport"]
+script = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="LeftContainer/LeftViewport/World1"]
+position_smoothing_enabled = false
+
+[node name="Floor" type="StaticBody2D" parent="LeftContainer/LeftViewport/World1"]
+position = Vector2(160.0, 470.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftContainer/LeftViewport/World1/Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Platform1" type="StaticBody2D" parent="LeftContainer/LeftViewport/World1"]
+position = Vector2(80.0, 386.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftContainer/LeftViewport/World1/Platform1"]
+shape = SubResource("RectangleShape2D_plat")
+
+[node name="Platform2" type="StaticBody2D" parent="LeftContainer/LeftViewport/World1"]
+position = Vector2(240.0, 326.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftContainer/LeftViewport/World1/Platform2"]
+shape = SubResource("RectangleShape2D_plat")
+
+[node name="Player" type="CharacterBody2D" parent="LeftContainer/LeftViewport/World1"]
+position = Vector2(50.0, 430.0)
+script = ExtResource("3")
+use_wasd = true
+body_color = Color(0.39, 0.58, 0.93, 1.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftContainer/LeftViewport/World1/Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="RightContainer" type="SubViewportContainer" parent="."]
+offset_left = 320.0
+offset_top = 0.0
+offset_right = 640.0
+offset_bottom = 480.0
+stretch = true
+
+[node name="RightViewport" type="SubViewport" parent="RightContainer"]
+size = Vector2i(320, 480)
+own_world_2d = true
+
+[node name="World2" type="Node2D" parent="RightContainer/RightViewport"]
+script = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="RightContainer/RightViewport/World2"]
+position_smoothing_enabled = false
+
+[node name="Floor" type="StaticBody2D" parent="RightContainer/RightViewport/World2"]
+position = Vector2(160.0, 470.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightContainer/RightViewport/World2/Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Platform1" type="StaticBody2D" parent="RightContainer/RightViewport/World2"]
+position = Vector2(100.0, 376.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightContainer/RightViewport/World2/Platform1"]
+shape = SubResource("RectangleShape2D_plat")
+
+[node name="Platform2" type="StaticBody2D" parent="RightContainer/RightViewport/World2"]
+position = Vector2(220.0, 316.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightContainer/RightViewport/World2/Platform2"]
+shape = SubResource("RectangleShape2D_plat")
+
+[node name="Player" type="CharacterBody2D" parent="RightContainer/RightViewport/World2"]
+position = Vector2(270.0, 430.0)
+script = ExtResource("3")
+use_wasd = false
+body_color = Color(1.0, 0.39, 0.28, 1.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightContainer/RightViewport/World2/Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="P1Label" type="Label" parent="CanvasLayer"]
+offset_left = 10.0
+offset_top = 5.0
+offset_right = 310.0
+offset_bottom = 22.0
+text = "Player 1  —  WASD + W to jump"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.9, 0.9, 0.9, 0.85)
+
+[node name="P2Label" type="Label" parent="CanvasLayer"]
+offset_left = 330.0
+offset_top = 5.0
+offset_right = 630.0
+offset_bottom = 22.0
+text = "Player 2  —  Arrows + Up to jump"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.9, 0.9, 0.9, 0.85)
