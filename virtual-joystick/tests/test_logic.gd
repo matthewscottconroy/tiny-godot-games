@@ -92,9 +92,7 @@ func _test_direction_partial() -> void:
 	expect_approx(joy.direction.y, diag.y / BASE_RADIUS, "diagonal y component correct")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[virtual-joystick] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

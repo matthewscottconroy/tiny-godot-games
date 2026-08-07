@@ -74,9 +74,7 @@ func _test_already_activated() -> void:
 	expect(emitted_ids[0] == 1, "first activation id is correct")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[checkpoint-system] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

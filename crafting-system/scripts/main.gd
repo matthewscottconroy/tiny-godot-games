@@ -48,9 +48,14 @@ var _selected: Array[String] = []
 var _result: String = ""
 var _result_timer: float = 0.0
 
+# The recipe engine (scripts/crafting_system.gd). RECIPES is the demo's data;
+# the reusable lookup/matching lives in CraftingSystem.
+var _crafting := CraftingSystem.new()
+
 
 func _ready() -> void:
-	pass
+	for key in RECIPES:
+		_crafting.add_recipe(key.split("+"), RECIPES[key])
 
 
 func _get_ingredient_rect(index: int) -> Rect2:
@@ -94,13 +99,8 @@ func _try_craft() -> void:
 		_result = "Select 2 ingredients first!"
 		_result_timer = 2.0
 		return
-	var sorted_pair := _selected.duplicate()
-	sorted_pair.sort()
-	var key := "%s+%s" % [sorted_pair[0], sorted_pair[1]]
-	if RECIPES.has(key):
-		_result = "Crafted: " + RECIPES[key] + "!"
-	else:
-		_result = "Unknown recipe"
+	var result := _crafting.craft(_selected)
+	_result = "Crafted: %s!" % result if result != "" else "Unknown recipe"
 	_result_timer = 2.5
 	_selected.clear()
 

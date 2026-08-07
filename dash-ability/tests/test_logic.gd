@@ -19,13 +19,13 @@ func expect(cond: bool, label: String) -> void:
 		print("  PASS  ", label)
 	else:
 		_fail += 1
-		push_error("  FAIL  " + label)
+		print("  FAIL  ", label)
 
 func _report() -> void:
-	var msg := "[dash-ability] %d/%d passed" % [_pass, _pass + _fail]
-	print("\n", msg)
+	var summary := "[dash-ability] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
 	if _fail > 0:
-		push_error(msg)
+		push_error(summary)
 
 const DASH_DURATION := 0.14
 const DASH_COOLDOWN := 0.65

@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var _notif: CanvasLayer = $NotifManager
+@onready var _notif: NotificationQueue = $NotifManager
 
 func _process(_delta: float) -> void:
 	if Input.is_key_just_pressed(KEY_1):

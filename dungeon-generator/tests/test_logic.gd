@@ -81,9 +81,7 @@ func _test_grid_cell_count() -> void:
 	expect(MAP_W * MAP_H == 4480, "grid has 80*56 = 4480 cells")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[dungeon-generator] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

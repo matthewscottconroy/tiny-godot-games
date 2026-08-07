@@ -3,11 +3,13 @@ extends Node2D
 const NODE_RADIUS := 28.0
 const HOVER_RADIUS := 32.0
 
-var _skill_points: int = 3
+# Unlock rules (points, prerequisites) live in the reusable SkillTree
+# (scripts/skill_tree.gd). `_skills` aliases `_tree.skills` so the drawing code
+# keeps reading it directly; this file owns rendering and hover hit-testing.
+var _tree: SkillTree
+var _skills: Array = []
 var _hovered: int = -1
 var _pulse_time: float = 0.0
-
-var _skills: Array = []
 
 func _ready() -> void:
 	_build_skills()
@@ -26,19 +28,7 @@ func _build_skills() -> void:
 		{"id": 8, "name": "Ultimate",    "desc": "Unleash devastating ultimate attack.",  "pos": Vector2(320, 130), "prereqs": [7],   "unlocked": false, "cost": 2},
 		{"id": 9, "name": "Passive",     "desc": "Passively regenerate 1 HP/sec.",       "pos": Vector2(520, 310), "prereqs": [0],   "unlocked": false, "cost": 1},
 	]
-
-func _can_unlock(skill_idx: int) -> bool:
-	if skill_idx < 0 or skill_idx >= _skills.size():
-		return false
-	var skill = _skills[skill_idx]
-	if skill.unlocked:
-		return false
-	if _skill_points < skill.cost:
-		return false
-	for prereq_id in skill.prereqs:
-		if not _skills[prereq_id].unlocked:
-			return false
-	return true
+	_tree = SkillTree.new(_skills, 3)   # shares the same array
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
@@ -53,20 +43,16 @@ func _input(event: InputEvent) -> void:
 		queue_redraw()
 
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if _hovered >= 0 and _can_unlock(_hovered):
-			_skills[_hovered].unlocked = true
-			_skill_points -= _skills[_hovered].cost
+		if _hovered >= 0 and _tree.unlock(_hovered):
 			queue_redraw()
 
 	elif event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_R:
-				for skill in _skills:
-					skill.unlocked = false
-				_skill_points = 3
+				_tree.reset(3)
 				queue_redraw()
 			KEY_EQUAL, KEY_KP_ADD, KEY_PLUS:
-				_skill_points += 1
+				_tree.points += 1
 				queue_redraw()
 
 func _process(delta: float) -> void:
@@ -91,7 +77,7 @@ func _draw() -> void:
 		var skill = _skills[i]
 		var is_hovered := (i == _hovered)
 		var radius := HOVER_RADIUS if is_hovered else NODE_RADIUS
-		var can_buy := _can_unlock(i)
+		var can_buy := _tree.can_unlock(i)
 
 		# Node fill color
 		var fill_color: Color
@@ -143,7 +129,7 @@ func _draw() -> void:
 	# Skill points counter
 	draw_rect(Rect2(8, 8, 160, 28), Color(0.05, 0.05, 0.12, 0.9))
 	draw_rect(Rect2(8, 8, 160, 28), Color(0.4, 0.4, 0.6), false, 1)
-	draw_string(ThemeDB.fallback_font, Vector2(14, 26), "Skill Points: %d" % _skill_points,
+	draw_string(ThemeDB.fallback_font, Vector2(14, 26), "Skill Points: %d" % _tree.points,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1.0, 0.85, 0.3))
 
 	# Hints
@@ -178,7 +164,7 @@ func _draw_tooltip(skill_idx: int) -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.8, 0.8, 0.9))
 
 	# Cost
-	var cost_color := Color(0.9, 0.7, 0.1) if _skill_points >= skill.cost else Color(0.8, 0.3, 0.3)
+	var cost_color := Color(0.9, 0.7, 0.1) if _tree.points >= skill.cost else Color(0.8, 0.3, 0.3)
 	draw_string(ThemeDB.fallback_font, Vector2(tip_x + 6, tip_y + 64),
 		"Cost: %d point%s" % [skill.cost, "s" if skill.cost > 1 else ""],
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, cost_color)

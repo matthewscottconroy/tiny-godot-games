@@ -7,17 +7,19 @@ const N := 8
 const SEG_LEN := 28.0
 const ITERS := 8
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
+func expect(cond: bool, label: String) -> void:
+	if cond:
 		_pass += 1
-		print("  PASS: ", label)
+		print("  PASS  ", label)
 	else:
 		_fail += 1
-		print("  FAIL: ", label)
+		print("  FAIL  ", label)
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
+	var summary := "[procedural-animation] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)
 
 # Standalone FABRIK solver for testing
 func _fabrik_solve(joints: PackedVector2Array, target: Vector2, base: Vector2) -> PackedVector2Array:

@@ -75,9 +75,7 @@ func _test_combo_resets_on_miss() -> void:
 	expect(combo == 0, "combo resets to 0 on miss")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[rhythm-minigame] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

@@ -13,7 +13,7 @@ This demo solves that cleanly with a `Phase` enum and a single float timer. Tran
 ### Node Tree
 
 ```
-Main (Node2D)          ← main.gd
+Main (Node2D)          ← main.gd  (spawns + draws enemies)
 ├── WaveLabel
 ├── StatusLabel
 ├── EnemyCountLabel
@@ -22,7 +22,12 @@ Main (Node2D)          ← main.gd
     └── [StartBtn, SkipBtn]
 ```
 
-### Phase State Machine
+The phase machine lives in a reusable class, `WaveSpawner`
+(`scripts/wave_spawner.gd`), a plain `RefCounted`. It emits signals; `main.gd`
+responds by spawning/ticking enemies and calls `wave_cleared()` when the arena
+empties. The spawner never touches a node.
+
+### Phase State Machine (`WaveSpawner`)
 
 ```gdscript
 enum Phase { IDLE, INTERMISSION, WAVE }
@@ -30,11 +35,11 @@ enum Phase { IDLE, INTERMISSION, WAVE }
 
 | Phase | Condition to enter | Condition to exit |
 |-------|--------------------|-------------------|
-| `IDLE` | Game start, or all 5 waves cleared | Player presses Start |
-| `INTERMISSION` | After Start pressed, or wave cleared | Timer reaches 0 |
-| `WAVE` | Intermission countdown ends | All enemies destroyed |
+| `IDLE` | Game start, or all waves cleared | `start()` called |
+| `INTERMISSION` | After `start()`, or a wave cleared | Countdown reaches 0 |
+| `WAVE` | Intermission ends (`wave_started`) | Game calls `wave_cleared()` |
 
-Transitions happen in three dedicated functions: `_start()`, `_begin_intermission()`, and `_begin_wave()`. `_process()` uses a `match` on `phase` — there are no cross-phase side effects.
+Transitions live in `start()`, `_begin_intermission()`, and `update()`. The game reacts to `intermission_started` / `wave_started` / `all_waves_cleared` — no cross-phase side effects, and the spawner is decoupled from how enemies actually work.
 
 ### Difficulty Scaling
 
@@ -138,6 +143,26 @@ Phase.INTERMISSION:
 - **Difficulty curves**: replace linear formulas with `curve_resource.sample(wave / max_waves)` for fine-tuned pacing over 20+ waves.
 - **Persistence**: serialize `wave`, `phase`, and enemy positions via `var_to_bytes()` to implement mid-wave checkpointing.
 
+## Use as a building block
+
+**Copy:** `scripts/wave_spawner.gd` (the `WaveSpawner` class). It's a `RefCounted` — the phase/countdown/scaling loop, with no knowledge of your enemies.
+
+**Public API**
+- tuning: `max_waves`, `intermission_duration`, `base_count`, `count_per_wave`
+- state: `wave`, `phase`, `timer`; `enemy_count_for(w)`
+- `start()`, `skip_intermission()`, `wave_cleared()`, `update(delta)`
+- signals `intermission_started(wave, duration)`, `wave_started(wave, enemy_count)`, `all_waves_cleared`
+
+**Integrate**
+1. `var waves := WaveSpawner.new()`; connect the three signals.
+2. On `wave_started(wave, count)`: spawn `count` enemies (scale *their* speed/HP however you like — that's game-specific).
+3. Each frame: `waves.update(delta)`; when your enemy container is empty during a wave, call `waves.wave_cleared()`.
+
+**Notes**
+- `class_name WaveSpawner` is global — rename if it collides.
+- It scales *count* (`enemy_count_for`); scale enemy stats in your `wave_started` handler using `waves.wave`.
+- Reference its enum as `WaveSpawner.Phase.WAVE`.
+
 ## Key Godot APIs
 
 | API | Purpose |
@@ -174,5 +199,6 @@ var intermission_duration := 3.0  # seconds between waves
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | Phase state machine, spawning, movement, click damage |
+| `scripts/wave_spawner.gd` | **`WaveSpawner`** — reusable phase/wave loop (`start`/`update`/`wave_cleared`) |
+| `scripts/main.gd` | Spawning, enemy movement, click damage; drives a `WaveSpawner` |
 | `scenes/main.tscn` | Root scene with labels, Enemies container, and buttons |

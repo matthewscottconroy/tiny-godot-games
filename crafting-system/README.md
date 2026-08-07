@@ -27,22 +27,29 @@ const RECIPES := {
 
 Keys are two ingredient names joined with `+`, sorted alphabetically. `"Fire+Wood"` not `"Wood+Fire"`. This means each recipe has exactly one key regardless of selection order.
 
-### Commutative Lookup
+### Commutative Lookup (`scripts/crafting_system.gd`)
+
+The matching logic lives in a reusable class, `CraftingSystem`. Its `craft()`
+sorts the ingredients so order never matters, then looks up the result:
 
 ```gdscript
-func _try_craft() -> void:
-    var sorted_pair := _selected.duplicate()
-    sorted_pair.sort()                               # alphabetical sort
-    var key := "%s+%s" % [sorted_pair[0], sorted_pair[1]]
-    if RECIPES.has(key):
-        _result = "Crafted: " + RECIPES[key] + "!"
-    else:
-        _result = "Unknown recipe"
-    _result_timer = 2.5
-    _selected.clear()
+func craft(ingredients: Array) -> String:
+    return _recipes.get(_key(ingredients), "")   # "" = no match
+
+func _key(ingredients: Array) -> String:
+    var sorted := ingredients.duplicate()
+    sorted.sort()                                # alphabetical
+    return "+".join(sorted)
 ```
 
-`Array.sort()` sorts strings alphabetically. `"Fire"` comes before `"Wood"`, so `["Wood", "Fire"]` becomes `["Fire", "Wood"]` and the key `"Fire+Wood"` matches the entry. Neither order needs its own entry in the Dictionary.
+The demo's `_try_craft()` is now just UI feedback around it:
+
+```gdscript
+var result := _crafting.craft(_selected)
+_result = "Crafted: %s!" % result if result != "" else "Unknown recipe"
+```
+
+`Array.sort()` sorts strings alphabetically, so `["Wood", "Fire"]` becomes the key `"Fire+Wood"` and matches the entry — neither order needs its own recipe. (This also scales to 3+ ingredients: `_key` joins however many you pass.)
 
 ### Selection State
 
@@ -76,6 +83,27 @@ Maximum two selections enforced by `pop_front()` on the third click. The FIFO re
 - **Discoverable recipes**: Start with all recipes hidden. When a craft succeeds, add the key to a `_known_recipes: Array` and only show the recipe hint panel for known recipes.
 - **Crafting time**: Add a `CRAFT_DURATIONS` Dictionary. When Craft is pressed, set `_crafting_timer = CRAFT_DURATIONS.get(key, 0.0)` and show a progress bar. Complete the craft when the timer expires.
 - **Output quantities**: Change recipe values from strings to `{"name": "Torch", "count": 3}` Dictionaries to produce multiple outputs per craft.
+
+## Use as a building block
+
+**Copy:** `scripts/crafting_system.gd` (the `CraftingSystem` class). It's a `RefCounted` — no scene, no UI.
+
+**Public API**
+- `add_recipe(ingredients: Array, result: String) -> CraftingSystem` — register a recipe (order-independent); chainable.
+- `craft(ingredients: Array) -> String` — the result, or `""` if no recipe matches.
+
+**Integrate**
+```gdscript
+var crafting := CraftingSystem.new()
+crafting.add_recipe(["Iron", "Wood"], "Sword").add_recipe(["Herbs", "Water"], "Potion")
+var made := crafting.craft(player_selection)   # order doesn't matter
+if made != "": inventory.add(made)
+```
+
+**Notes**
+- `class_name CraftingSystem` is global — rename if it collides.
+- Works for any number of ingredients — `_key` sorts and joins the whole array.
+- For quantity recipes, encode counts in the ingredient strings (`"Iron:1"`, `"Wood:2"`) before passing them in; the commutative key logic is unchanged.
 
 ## Key Godot APIs
 
@@ -126,7 +154,8 @@ const INGREDIENTS := ["Wood", "Stone", "Iron", "Fire", "Water", "Herbs", "Cloth"
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | Ingredient grid, selection state, recipe lookup, rendering |
+| `scripts/crafting_system.gd` | **`CraftingSystem`** — reusable commutative recipe book (`add_recipe`/`craft`) |
+| `scripts/main.gd` | Ingredient grid, selection state, rendering; owns a `CraftingSystem` |
 | `tests/test_logic.gd` | Unit tests: lookup, commutativity, unknown recipe, FIFO selection, post-craft clear |
 | `scenes/main.tscn` | Scene root (Node2D with script) |
 | `tests/test.tscn` | Test runner scene |

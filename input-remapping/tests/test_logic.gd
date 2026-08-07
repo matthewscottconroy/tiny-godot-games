@@ -70,9 +70,7 @@ func _test_listen_state() -> void:
 	expect(listening_for.is_empty(), "listen state cleared after key press")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[input-remapping] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

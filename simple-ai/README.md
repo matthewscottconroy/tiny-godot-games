@@ -111,6 +111,26 @@ Quote marks around the path are required when the path contains characters like 
 
 `Line2D` draws a line between a list of points. `set_point_position(index, position)` updates an individual point without recreating the line. The line is defined in world space (global positions), so no coordinate conversion is needed.
 
+## Use as a building block
+
+This demo is intentionally the "**AI in two lines**" example, so there's nothing
+to extract — the reusable idea *is* how short it is:
+
+```gdscript
+var dir := (player.global_position - global_position).normalized()
+velocity = dir * speed
+move_and_slide()
+```
+
+Drop those three lines into any `CharacterBody2D` for a homing chaser. From here:
+- **Flee** instead of chase: negate the direction (`-dir`).
+- **Keep distance** (ranged enemy): move toward the player when far, away when close, idle in a band between.
+- **Smooth turning:** instead of snapping `velocity`, steer it — see [homing-projectile](../homing-projectile) (`lerp_angle`) or [steering-behaviors](../steering-behaviors) (`SteeringAgent`) for reusable versions.
+- **Stop chasing through walls:** gate movement on [line-of-sight](../line-of-sight)'s `LineOfSight.is_clear`.
+
+`speed` is `@export`ed for per-enemy tuning. The enemy finds the player via
+`$"../Player"`; in a real project prefer an `@export var target: Node2D`.
+
 ## Key Godot APIs
 
 | API | Purpose |

@@ -35,19 +35,28 @@ func _check_los() -> void:
 
 Distance check first (one float comparison), raycast only when within range.
 
-### The Raycast
+### The Raycast (`scripts/line_of_sight.gd`)
+
+The raycast itself is packaged as a one-call static helper, `LineOfSight.is_clear`, so any enemy can reuse it:
+
+```gdscript
+static func is_clear(space_state, from, to, obstacle_mask, exclude := []) -> bool:
+    var params := PhysicsRayQueryParameters2D.create(from, to)
+    params.exclude        = exclude
+    params.collision_mask = obstacle_mask
+    return space_state.intersect_ray(params).is_empty()   # empty = clear LOS
+```
+
+The enemy calls it with its world's space state, the wall mask, and the RIDs to ignore:
 
 ```gdscript
 func _has_los(from: Vector2, to: Vector2) -> bool:
-    var space  := get_world_2d().direct_space_state
-    var params := PhysicsRayQueryParameters2D.create(from, to)
-    params.exclude        = [self.get_rid(), _player.get_rid()]
-    params.collision_mask = 2   # walls only
-    var result := space.intersect_ray(params)
-    return result.is_empty()    # empty = nothing blocking = clear LOS
+    return LineOfSight.is_clear(
+        get_world_2d().direct_space_state, from, to, 2,
+        [self.get_rid(), _player.get_rid()])
 ```
 
-`params.exclude` is an `Array[RID]` — the enemy excludes itself and the player so the ray doesn't immediately collide with its origin or destination body. `intersect_ray` returns an empty Dictionary when nothing is hit, and a dictionary with `position`, `normal`, and `collider` when it hits something. `result.is_empty()` is the idiomatic Godot 4 check.
+`exclude` is an `Array[RID]` — the enemy excludes itself and the player so the ray doesn't immediately collide with its origin or destination body. `intersect_ray` returns an empty Dictionary when nothing is hit, so `is_empty()` means "clear line of sight."
 
 ### Player Movement (`scripts/player.gd`)
 
@@ -103,6 +112,23 @@ This combines the cone logic from the vision-cone demo with the physics raycast 
 - For performance with many enemies, throttle `_check_los` to run every 3–5 frames with a staggered offset per enemy (use `Engine.get_process_frames() % 4 == enemy_id % 4`).
 - `params.hit_from_inside = true` allows the ray to detect when it starts inside a shape — useful for detecting the player inside a trigger zone.
 
+## Use as a building block
+
+**Copy:** `scripts/line_of_sight.gd` (the `LineOfSight` class — one static method, no dependencies).
+
+**Public API**
+- `LineOfSight.is_clear(space_state, from, to, obstacle_mask, exclude := []) -> bool`
+
+**Integrate**
+1. `var ss := get_world_2d().direct_space_state`.
+2. `if LineOfSight.is_clear(ss, eyes, target, WALL_MASK, [get_rid(), target_rid]): can_see = true`.
+3. Gate it behind a cheap distance check (as the enemy does) so the raycast only runs when the target is in range.
+
+**Notes**
+- `class_name LineOfSight` is global — rename if it collides.
+- Put walls/occluders on their own collision layer and pass that as `obstacle_mask`, so characters don't block each other's sight.
+- Combine with [vision-cone](../vision-cone)'s `VisionCone` for a full FOV-cone + physics-occlusion detector.
+
 ## Key Godot APIs
 
 | API | Purpose |
@@ -140,7 +166,8 @@ const GRAVITY := 900.0        # px/s²
 
 | File | Purpose |
 |------|---------|
-| `scripts/enemy.gd` | `CharacterBody2D` enemy: `_check_los`, `_has_los`, `_draw` |
+| `scripts/line_of_sight.gd` | **`LineOfSight`** — reusable raycast occlusion test (`is_clear`) |
+| `scripts/enemy.gd` | `CharacterBody2D` enemy: range gate + `LineOfSight.is_clear`, `_draw` |
 | `scripts/player.gd` | `CharacterBody2D` player: movement and jump |
 | `scenes/main.tscn` | Side-scrolling scene with two enemies, walls, and floor |
 | `tests/` | Unit tests for LOS logic |

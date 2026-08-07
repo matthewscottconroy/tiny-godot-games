@@ -2,8 +2,8 @@ extends Node
 
 # Pure GDScript tests — no scene tree dependencies.
 
-var _pass_count := 0
-var _fail_count := 0
+var _pass := 0
+var _fail := 0
 var _results: Array = []
 
 const MAGNET_STRENGTH := 18000.0
@@ -20,13 +20,13 @@ func _ready() -> void:
 
 # --------------- helpers ---------------
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
-		_pass_count += 1
-		_results.append("[PASS] " + label)
+func expect(cond: bool, label: String) -> void:
+	if cond:
+		_pass += 1
+		print("  PASS  ", label)
 	else:
-		_fail_count += 1
-		_results.append("[FAIL] " + label)
+		_fail += 1
+		print("  FAIL  ", label)
 
 func _compute_force(magnet_pos: Vector2, ball_pos: Vector2, attract: bool) -> Vector2:
 	var diff := magnet_pos - ball_pos
@@ -88,7 +88,7 @@ func _test_max_force_clamp() -> void:
 # --------------- report ---------------
 
 func _report() -> void:
-	print("=== Magnet Tests ===")
-	for r in _results:
-		print(r)
-	print("Results: %d passed, %d failed" % [_pass_count, _fail_count])
+	var summary := "[magnet] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

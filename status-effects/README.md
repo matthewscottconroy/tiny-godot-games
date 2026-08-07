@@ -12,50 +12,57 @@ This demo also shows stacking: all active effects run simultaneously, and the mo
 
 ## How It Works
 
+The stacking/timing logic lives in a reusable class, `StatusEffectStack`
+(`scripts/status_effect_stack.gd`), a plain `RefCounted`. The player owns one,
+hands it a catalog of effect definitions, and calls `tick(delta)` each frame;
+the stack returns how much damage to apply and the movement multiplier. The
+player keeps only the catalog (which includes demo-only data like colour) and
+the presentation.
+
 ### Data-Driven Config
 
 ```gdscript
-# scripts/player.gd
+# scripts/player.gd — the catalog is game data, handed to the stack
 const EFFECT_CFG := {
     "poison": {"color": Color(0.20, 0.90, 0.20), "dps": 10.0, "slow": 1.00, "duration": 5.0},
     "burn":   {"color": Color(1.00, 0.30, 0.10), "dps": 22.0, "slow": 1.00, "duration": 3.0},
     "freeze": {"color": Color(0.30, 0.70, 1.00), "dps":  0.0, "slow": 0.35, "duration": 4.0},
 }
 
-var _active: Dictionary = {}   # {effect_name: time_remaining}
+var _fx := StatusEffectStack.new(EFFECT_CFG)
 ```
 
-Each effect is fully described by its config entry. `_active` stores only the remaining duration — no per-effect state beyond time.
+Each effect is fully described by its catalog entry. The stack stores only the remaining duration per active effect — no per-effect state beyond time.
 
 ### Applying Effects
 
 ```gdscript
 func apply_effect(name: String) -> void:
-    _active[name] = EFFECT_CFG[name]["duration"]
+    _fx.apply(name)     # resets the timer to the catalog duration
 ```
 
-Re-entering a zone refreshes the duration (overwrites the existing entry). This is the standard "refresh on reapply" behavior. An alternative design would `maxf` the existing and new duration to prevent refresh exploitation.
+Re-applying refreshes the duration (overwrites the existing timer) — the standard "refresh on reapply" behavior. An alternative would `maxf` the existing and new duration to prevent refresh exploitation.
 
-### Ticking All Active Effects
+### Ticking All Active Effects (inside `StatusEffectStack.tick`)
 
 ```gdscript
-func _physics_process(delta: float) -> void:
-    var slow: float          = 1.0
-    var to_remove: Array[String] = []
-    for fx in _active.keys():
-        _active[fx] -= delta
-        var cfg := EFFECT_CFG[fx]
-        _hp  -= cfg["dps"] * delta
-        slow  = minf(slow, cfg["slow"])
-        if _active[fx] <= 0.0:
-            to_remove.append(fx)
-    for fx in to_remove:
-        _active.erase(fx)
-    _hp = maxf(_hp, 0.0)
-    velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED * slow
+func tick(delta: float) -> Dictionary:
+    var damage := 0.0
+    var slow := 1.0
+    var expired: Array = []
+    for effect in _remaining:
+        _remaining[effect] -= delta
+        var cfg: Dictionary = catalog[effect]
+        damage += cfg.get("dps", 0.0) * delta
+        slow = minf(slow, cfg.get("slow", 1.0))
+        if _remaining[effect] <= 0.0:
+            expired.append(effect)
+    for effect in expired:
+        _remaining.erase(effect); effect_expired.emit(effect)
+    return {"damage": damage, "slow": slow}
 ```
 
-The `slow` multiplier uses `minf` (takes the minimum) so the most restrictive active effect always wins. Expired effects are collected in `to_remove` and erased after the loop — modifying a dictionary while iterating over it is unsafe.
+The `slow` multiplier uses `minf` so the most restrictive active effect always wins. Expired effects are collected in `expired` and erased after the loop — modifying a dictionary while iterating it is unsafe. The player then applies the result: `_hp -= result["damage"]` and `velocity.x = input * SPEED * result["slow"]`.
 
 ### Zone Connections
 
@@ -79,12 +86,12 @@ func _on_zone_entered(body: Node2D, effect_name: String) -> void:
 ```gdscript
 func _draw() -> void:
     var col := Color.DODGER_BLUE
-    for fx in _active.keys():
+    for fx in _fx.active():
         col = col.lerp(EFFECT_CFG[fx]["color"], 0.65)
     draw_rect(Rect2(-12, -24, 24, 48), col)
 ```
 
-The player's color blends toward each active effect's color. With both poison and freeze active, the player turns a cyan-green mix, giving intuitive multi-effect feedback.
+The player's color blends toward each active effect's color (read from the catalog via `_fx.active()`). With both poison and freeze active, the player turns a cyan-green mix, giving intuitive multi-effect feedback.
 
 ## Effect Stack Design
 
@@ -105,7 +112,27 @@ Reapplying the same effect overwrites the duration. An alternative: cap at `maxf
 - **New effects**: Add one entry to `EFFECT_CFG` with `dps`, `slow`, `duration`, and `color`. No other code changes needed.
 - **Persistent effects from items**: Call `player.apply_effect("regen")` from item pickup code; add `"regen"` to `EFFECT_CFG` with negative `dps` (-5.0 = 5 HP/s healing).
 - **Boss aura**: Attach a `Timer` to a boss node; on `timeout`, call `player.apply_effect("curse")` to reapply every 2 seconds regardless of the player's position.
-- **UI icons**: Iterate `_active.keys()` in a HUD script and show/hide icon nodes by effect name — the data is already there.
+- **UI icons**: Iterate `_fx.active()` in a HUD script and show/hide icon nodes by effect name — the data is already there.
+
+## Use as a building block
+
+**Copy:** `scripts/status_effect_stack.gd` (the `StatusEffectStack` class). It's a `RefCounted` with no scene dependencies; effect definitions are plain dictionaries you supply.
+
+**Public API**
+- `_init(catalog)` / `catalog` — `name -> {dps, slow, duration, ...}` (extra keys like `color` are ignored by the stack, read by you).
+- `apply(effect)` — start/refresh an effect.
+- `tick(delta) -> {"damage": float, "slow": float}` — call each frame; apply the result to HP and movement.
+- `active() -> Array`, `time_left(effect) -> float`.
+- signals `effect_applied(effect)`, `effect_expired(effect)`.
+
+**Integrate**
+1. Define a catalog and `var fx := StatusEffectStack.new(catalog)`.
+2. Apply from traps/abilities: `fx.apply("poison")`.
+3. Each frame: `var r := fx.tick(delta); hp -= r.damage; speed_mult = r.slow`.
+
+**Notes**
+- `class_name StatusEffectStack` is global — rename if it collides.
+- The stack aggregates `dps` (summed) and `slow` (min). For other modifiers (defense, damage-boost) add keys to the catalog and aggregate them in your own `tick` wrapper, or extend the return dictionary.
 
 ## Key Godot APIs
 
@@ -149,6 +176,7 @@ const MAX_HP   := 100.0
 
 | File | Purpose |
 |------|---------|
-| `scripts/player.gd` | Effect config, apply/tick/expire logic, movement, visual feedback |
+| `scripts/status_effect_stack.gd` | **`StatusEffectStack`** — reusable timing/stacking (`apply`/`tick`) |
+| `scripts/player.gd` | Effect catalog, movement, visual feedback; owns a `StatusEffectStack` |
 | `scripts/main.gd` | Zone setup, meta reads, body_entered connections, world drawing |
 | `scenes/main.tscn` | Scene tree with Player, PoisonZone, BurnZone, FreezeZone |

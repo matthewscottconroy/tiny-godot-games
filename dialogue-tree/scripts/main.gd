@@ -10,11 +10,12 @@ var _game_state: Dictionary = {
 }
 
 # Each node: { speaker, text, choices: [{text, condition, target, effect}] }
-# condition: "" means always available; otherwise must be a key in _game_state that is truthy
-# effect: optional callable applied when choice is selected
-var _dialogue: Dictionary = {}
+# condition: "" means always available; otherwise the game decides in _is_condition_met().
+# effect: optional string applied to _game_state when the choice is selected.
+# Graph navigation lives in DialogueTree (scripts/dialogue_tree.gd); this file
+# owns _game_state, effects, movement, and drawing.
+var _tree: DialogueTree
 
-var _current_node: String = "start"
 var _active: bool = false
 var _npc_pos: Vector2 = Vector2(320, 300)
 var _player_pos: Vector2 = Vector2(200, 380)
@@ -23,7 +24,7 @@ func _ready() -> void:
 	_build_dialogue()
 
 func _build_dialogue() -> void:
-	_dialogue = {
+	var nodes := {
 		"start": {
 			"speaker": "Old Merchant",
 			"text": "Ah, a traveler! Welcome, welcome. I haven't seen you around here before. What brings you to my humble stall?",
@@ -116,21 +117,17 @@ func _build_dialogue() -> void:
 			"choices": []
 		},
 	}
+	_tree = DialogueTree.new(nodes, "start")
 
 func _get_available_choices() -> Array:
-	var node = _dialogue.get(_current_node, {})
-	var choices: Array = node.get("choices", [])
-	var result: Array = []
-	for choice in choices:
-		var cond: String = choice.get("condition", "")
-		if cond == "":
-			result.append(choice)
-		elif cond == "gold_gte_5":
-			if _game_state.get("gold", 0) >= 5:
-				result.append(choice)
-		elif _game_state.get(cond, false):
-			result.append(choice)
-	return result
+	return _tree.available_choices(_is_condition_met)
+
+## Game-specific condition check. DialogueTree calls this for any non-empty
+## condition string on a choice.
+func _is_condition_met(cond: String) -> bool:
+	if cond == "gold_gte_5":
+		return _game_state.get("gold", 0) >= 5
+	return _game_state.get(cond, false)
 
 func _apply_effect(effect_name: String) -> void:
 	match effect_name:
@@ -143,7 +140,7 @@ func _apply_effect(effect_name: String) -> void:
 
 func _open_dialogue() -> void:
 	_active = true
-	_current_node = "start_again" if _game_state.get("talked_before", false) else "start"
+	_tree.current = "start_again" if _game_state.get("talked_before", false) else "start"
 
 func _input(event: InputEvent) -> void:
 	if not _active:
@@ -179,7 +176,7 @@ func _input(event: InputEvent) -> void:
 				if target == "_close":
 					_active = false
 				else:
-					_current_node = target
+					_tree.goto(target)
 				queue_redraw()
 
 func _process(delta: float) -> void:
@@ -248,7 +245,7 @@ func _draw_dialogue_panel() -> void:
 	draw_rect(panel, Color(0.04, 0.04, 0.12, 0.97))
 	draw_rect(panel, Color(0.5, 0.5, 0.8), false, 2)
 
-	var node_data = _dialogue.get(_current_node, {})
+	var node_data = _tree.node()
 	var speaker: String = node_data.get("speaker", "???")
 	var text: String = node_data.get("text", "")
 	var choices := _get_available_choices()
@@ -269,24 +266,11 @@ func _draw_dialogue_panel() -> void:
 		draw_string(ThemeDB.fallback_font, Vector2(28, choice_y), "[Space/Enter to close]",
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.6, 0.6, 0.8))
 	else:
-		# Show filtered choices
-		var shown_idx := 0
-		for choice in all_choices:
-			var cond: String = choice.get("condition", "")
-			var available := false
-			if cond == "":
-				available = true
-			elif cond == "gold_gte_5":
-				available = _game_state.get("gold", 0) >= 5
-			else:
-				available = _game_state.get(cond, false)
-
-			if available:
-				var choice_color := Color(0.8, 1.0, 0.8)
-				draw_string(ThemeDB.fallback_font, Vector2(28, choice_y + shown_idx * 18),
-					"%d. %s" % [shown_idx + 1, choice.get("text", "")],
-					HORIZONTAL_ALIGNMENT_LEFT, -1, 11, choice_color)
-				shown_idx += 1
+		# `choices` is already filtered by DialogueTree — just number them.
+		for i in choices.size():
+			draw_string(ThemeDB.fallback_font, Vector2(28, choice_y + i * 18),
+				"%d. %s" % [i + 1, choices[i].get("text", "")],
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.8, 1.0, 0.8))
 
 func _wrap_text(text: String, max_chars: int) -> Array:
 	var words := text.split(" ")

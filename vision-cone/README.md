@@ -12,25 +12,29 @@ For dynamic or rotated obstacles, prefer the physics raycast approach demonstrat
 
 ## How It Works
 
-### Detection Pipeline (`scripts/main.gd`)
+The detection math lives in a reusable class, `VisionCone`
+(`scripts/vision_cone.gd`), a plain `RefCounted`. `main.gd` moves the player and
+enemy and draws everything, then asks the cone one question per frame:
+`_vision.can_see(enemy_pos, enemy_dir, player_pos, walls)`.
+
+### Detection Pipeline (`VisionCone.can_see`)
 
 Detection uses three ordered gates, cheapest first:
 
 ```gdscript
-func _check_detection() -> bool:
+func can_see(origin, facing, target, walls := []) -> bool:
     # Gate 1: distance
-    if _enemy_pos.distance_to(_player_pos) > CONE_RANGE:
+    if origin.distance_to(target) > max_range:
         return false
-
-    # Gate 2: angle — is player within the cone half-angle?
-    var to_player := _player_pos - _enemy_pos
-    var angle_to_player := to_player.angle()
-    var angle_diff := angle_difference(angle_to_player, _enemy_dir)
-    if absf(angle_diff) > CONE_ANGLE:
+    # Gate 2: angle — is the target within the cone half-angle?
+    var angle_diff := angle_difference((target - origin).angle(), facing)
+    if absf(angle_diff) > half_angle:
         return false
-
     # Gate 3: occlusion — does any wall block the line?
-    return not _wall_blocks_segment(_enemy_pos, _player_pos)
+    for w in walls:
+        if _segment_intersects_rect(origin, target, w):
+            return false
+    return true
 ```
 
 `angle_difference` is a Godot built-in that correctly handles the ±π wrap-around (e.g., comparing 170° to −170° gives 20°, not 340°).
@@ -101,9 +105,27 @@ For large numbers of walls (> ~50), replace the linear wall scan with a spatial 
 ## How to Adapt This in Your Project
 
 - To support rotating walls, replace the Liang-Barsky test with a separating-axis (SAT) test against an OBB, or use Godot's `intersect_ray` with collision layers.
-- For a wider FOV (e.g., a 180° floodlight), increase `CONE_ANGLE` toward `PI / 2`. For a narrow sniper scope, decrease it toward 0.1 radians.
+- For a wider FOV (e.g., a 180° floodlight), increase `half_angle` toward `PI / 2`. For a narrow sniper scope, decrease it toward 0.1 radians.
 - Add a `memory_timer` to the enemy: after losing sight of the player, keep `_detected = true` for 1–2 seconds before returning to patrol. This prevents the jittery "blink" effect at detection boundaries.
 - The same three-gate structure works in 3D: replace the 2D angle test with a `dot(forward, to_player.normalized()) > cos(half_angle)` check, then fire a `Raycast3D`.
+
+## Use as a building block
+
+**Copy:** `scripts/vision_cone.gd` (the `VisionCone` class). It's a `RefCounted` with no scene or physics dependency — pure geometry over positions and `Rect2` walls.
+
+**Public API**
+- `_init(half_angle := PI/3, range := 180)` — construct with FOV and range.
+- `half_angle`, `max_range` — tunable fields.
+- `can_see(origin, facing, target, walls := []) -> bool` — the three-gate test.
+
+**Integrate**
+1. `var _vision := VisionCone.new(deg_to_rad(60), 300)`.
+2. Each frame: `if _vision.can_see(guard.position, guard.facing_angle, player.position, wall_rects): alert()`.
+3. Supply obstacles as `Array[Rect2]` (or `[]` for open sight).
+
+**Notes**
+- `class_name VisionCone` is global — rename if it collides.
+- For physics-body walls instead of `Rect2`s, swap the occlusion gate for a raycast — see the [line-of-sight](../line-of-sight) demo's `LineOfSight` helper.
 
 ## Key Godot APIs
 
@@ -126,19 +148,23 @@ Step behind a wall to break line of sight. When detected the enemy turns red and
 ## Key Constants
 
 ```gdscript
+# main.gd — demo tuning (also passed into the VisionCone)
 const CONE_ANGLE  := PI / 3.0  # 60° half-angle → 120° total FOV
 const CONE_RANGE  := 180.0     # detection radius in pixels
 const ENEMY_SPEED := 80.0      # patrol speed px/s
 const PLAYER_SPEED := 150.0
-const _PATROL_LEFT  := 80.0
-const _PATROL_RIGHT := 260.0
+
+# vision_cone.gd — fields (defaults match the demo)
+var half_angle := PI / 3.0
+var max_range  := 180.0
 ```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | All logic: patrol, detection pipeline, Liang-Barsky test, `_draw()` |
+| `scripts/vision_cone.gd` | **`VisionCone`** — reusable FOV + occlusion test (`can_see`) |
+| `scripts/main.gd` | Player/enemy movement and `_draw()`; owns a `VisionCone` |
 | `scenes/main.tscn` | `Node2D` root with `main.gd` attached |
 | `tests/test_logic.gd` | Headless unit tests for detection and wall intersection |
 | `tests/test.tscn` | Test runner scene |

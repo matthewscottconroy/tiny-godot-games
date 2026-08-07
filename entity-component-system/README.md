@@ -44,6 +44,32 @@ for e in _world.query([&"Position", &"Velocity"]):
 
 Each entity has `Position`, `Velocity`, `Health`, and `Render` components. The arc drawn around each circle shows remaining HP — green when above 50%, red below.
 
+## Use as a building block
+
+**Copy:** `scripts/ecs_world.gd` (the `ECSWorld` class). It's a `RefCounted` with no dependencies — components are plain dictionaries, so there's nothing else to copy.
+
+**Public API**
+- `create_entity() -> int`
+- `add_component(entity, type: StringName, data: Dictionary)`
+- `get_component(entity, type) -> Dictionary`, `has_component(entity, type) -> bool`, `remove_component(entity, type)`
+- `query(types: Array) -> Array` — entity ids that carry *all* the given component types.
+
+**Integrate**
+1. `var world := ECSWorld.new()`.
+2. Build entities: `var e := world.create_entity(); world.add_component(e, &"Position", {"x": 0, "y": 0})`.
+3. Write systems as plain functions that iterate a query:
+   ```gdscript
+   for e in world.query([&"Position", &"Velocity"]):
+       var p := world.get_component(e, &"Position")
+       var v := world.get_component(e, &"Velocity")
+       p.x += v.x * delta
+   ```
+
+**Notes**
+- `class_name ECSWorld` is global — rename if it collides.
+- This is a teaching-scale ECS (dictionary storage, linear `query`). It's ideal for hundreds of entities; for many thousands, a dedicated ECS addon with packed arrays will scale better.
+- `get_component` returns the live dictionary — mutating it mutates the component in place, which is what the systems rely on.
+
 ## Project Structure
 
 ```

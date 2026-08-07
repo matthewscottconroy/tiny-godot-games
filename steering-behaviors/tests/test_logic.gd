@@ -12,8 +12,8 @@ const WANDER_DIST   := 80.0
 var _pass := 0
 var _fail := 0
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
+func expect(cond: bool, label: String) -> void:
+	if cond:
 		_pass += 1
 		print("  PASS  ", label)
 	else:
@@ -21,8 +21,10 @@ func expect(condition: bool, label: String) -> void:
 		print("  FAIL  ", label)
 
 func _report() -> void:
-	print("")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
+	var summary := "[steering-behaviors] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)
 
 # ── Mirrored steering logic ──────────────────────────────────────────────────
 

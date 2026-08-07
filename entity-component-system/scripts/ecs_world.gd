@@ -1,4 +1,8 @@
+## A minimal Entity-Component-System: entities are integer ids, components are
+## data dictionaries stored per type, and systems are plain functions that
+## `query()` for the entities carrying a set of components and mutate them.
 class_name ECSWorld
+extends RefCounted
 
 var _next_id  := 0
 var _components: Dictionary = {}  # type -> {entity_id -> data}

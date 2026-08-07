@@ -124,6 +124,48 @@ func take_damage(amount: int) -> void:
     $Hurtbox.monitorable = true    # vulnerable again
 ```
 
+## Use as a building block
+
+This demo is kept as **direct, scene-authored `Area2D` nodes** rather than
+extracted into `HitBox` / `HurtBox` classes — on purpose. The lesson here *is*
+the collision-layer wiring (`Bodies=2`, `Hitboxes=4`, `Hurtboxes=8`) and the
+`monitoring` / `monitorable` flags, and those are clearest read straight off the
+scene. A wrapper would hide exactly what the demo is teaching, and a mis-set
+layer or flag fails silently (no hits register).
+
+When you're ready to package it for reuse, promote the two areas to typed nodes:
+
+```gdscript
+# hurt_box.gd
+class_name HurtBox
+extends Area2D                 # scene sets it to the Hurtbox layer
+signal took_hit(damage: int)
+
+func _ready() -> void:
+    area_entered.connect(_on_area_entered)
+
+func _on_area_entered(area: Area2D) -> void:
+    if area is HitBox:
+        took_hit.emit(area.damage)
+```
+
+```gdscript
+# hit_box.gd
+class_name HitBox
+extends Area2D                 # scene sets it to the Hitbox layer
+@export var damage := 1        # active only while `monitoring` is true
+```
+
+The owner then connects `$HurtBox.took_hit` to its own `take_damage()` — the
+same flow this demo wires by hand, but reusable and type-checked. Keep the
+**layer assignments in the scene** either way; that separation is the actual
+pattern.
+
+**Notes**
+- Keep bodies, hitboxes, and hurtboxes on separate layers so world collision never interferes with hit detection.
+- `class_name HitBox` / `HurtBox` are global — rename if they collide.
+- Demo input uses the built-in `ui_*` actions; define your own in a real project.
+
 ## Key Godot APIs
 
 | API | Purpose |

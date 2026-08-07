@@ -1,7 +1,5 @@
 extends Node2D
 
-const ProjectileScript := preload("res://scripts/projectile.gd")
-
 @onready var _target: Node2D = $Target
 
 var _fired := 0
@@ -14,8 +12,7 @@ func _input(event: InputEvent) -> void:
 		_fire()
 
 func _fire() -> void:
-	var proj := Node2D.new()
-	proj.set_script(ProjectileScript)
+	var proj := HomingProjectile.new()
 	add_child(proj)
 	proj.init(Vector2(90, 240), Vector2.RIGHT, _target)
 	_fired += 1

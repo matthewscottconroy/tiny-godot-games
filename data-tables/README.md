@@ -118,7 +118,24 @@ This dictionary is the only place rarity → color is defined. The list and deta
 - To add a new field (e.g., `damage: int`), add `@export var damage := 0` to `item_data.gd`. All existing `.tres` files load without error; the new field defaults to 0.
 - For sorted display, add `_db.items.sort_custom(func(a, b): return a.value < b.value)` before `_refresh_list()`.
 - For a search box, filter `_db.items` by `it.item_name.to_lower().contains(search_text.to_lower())`.
-- To make `ItemDB` an `Autoload` (singleton), register it in Project Settings → Autoload. Every scene can then access items via `ItemDB.find_by_name("Fire Staff")` without passing references.
+- To share one database everywhere, hold an `ItemDB` inside an Autoload singleton (a small Node that does `var db := ItemDB.new()`), then call `Game.db.find_by_name("Fire Staff")`. (`ItemDB` is a `RefCounted`, so it can't be an Autoload directly — Autoloads must be Nodes.)
+
+## Use as a building block
+
+**Copy:** `scripts/item_data.gd` (`ItemData`) and `scripts/item_db.gd` (`ItemDB`). Both are self-contained — `ItemData` is a `Resource`, `ItemDB` is a `RefCounted`. Neither needs the demo's UI.
+
+**Public API**
+- `ItemData` — an `@export`ed data schema; add/remove fields freely.
+- `ItemDB` — populates itself in `_init()`; exposes `items: Array[ItemData]`, `find_by_name(name)`, `filter_by_type(type)`, `filter_by_rarity(rarity)`.
+
+**Integrate**
+1. Replace `ItemDB._populate()` with your real data source — hand-authored `.tres` files loaded from a folder is the production pattern (see *Resource System Theory* above).
+2. `var db := ItemDB.new()` — it's ready to query immediately (no tree, no `_ready()`).
+3. Query with `db.find_by_name(...)` / `db.filter_by_type(...)`.
+
+**Notes**
+- `class_name ItemData` / `ItemDB` are global — rename if either collides with your project.
+- Because `ItemDB` is `RefCounted`, it's freed automatically when no longer referenced; keep a reference (e.g. in an Autoload) to keep it alive.
 
 ## Key Godot APIs
 
@@ -144,6 +161,6 @@ This dictionary is the only place rarity → color is defined. The list and deta
 | File | Purpose |
 |------|---------|
 | `scripts/item_data.gd` | `ItemData` Resource subclass — the data schema |
-| `scripts/item_db.gd` | `ItemDB` node — array of items plus filter/lookup methods |
+| `scripts/item_db.gd` | `ItemDB` (RefCounted) — array of items plus filter/lookup methods |
 | `scripts/main.gd` | UI: filter buttons, item list, detail panel |
 | `scenes/main.tscn` | `Control` root with `MainPanel`, filter row, list pane, detail pane |

@@ -16,8 +16,7 @@ var _selected: ItemData = null
 @onready var _filter_row: HBoxContainer = $MainPanel/FilterRow
 
 func _ready() -> void:
-	_db = ItemDB.new()
-	_db._ready()  # populate manually since not in tree
+	_db = ItemDB.new()  # populates itself in _init()
 
 	var filter_defs := [
 		["All",       "all"],

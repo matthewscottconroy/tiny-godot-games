@@ -11,16 +11,19 @@ func _ready() -> void:
 	_test_clear()
 	_report()
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
+func expect(cond: bool, label: String) -> void:
+	if cond:
 		_pass += 1
-		print("  PASS: %s" % label)
+		print("  PASS  ", label)
 	else:
 		_fail += 1
-		print("  FAIL: %s" % label)
+		print("  FAIL  ", label)
 
 func _report() -> void:
-	print("--- Results: %d passed, %d failed ---" % [_pass, _fail])
+	var summary := "[quadtree] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)
 
 func _make_obj(x: float, y: float, r: float = 5.0) -> Dictionary:
 	return {"pos": Vector2(x, y), "radius": r}

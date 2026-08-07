@@ -3,8 +3,8 @@ extends Node
 const MANA_REGEN := 8.0
 const MAX_MANA := 100.0
 
-var _pass_count := 0
-var _fail_count := 0
+var _pass := 0
+var _fail := 0
 
 
 func _ready() -> void:
@@ -16,18 +16,20 @@ func _ready() -> void:
 	_report()
 
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
-		_pass_count += 1
-		print("[PASS] ", label)
+func expect(cond: bool, label: String) -> void:
+	if cond:
+		_pass += 1
+		print("  PASS  ", label)
 	else:
-		_fail_count += 1
-		print("[FAIL] ", label)
+		_fail += 1
+		print("  FAIL  ", label)
 
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass_count, _fail_count])
+	var summary := "[ability-system] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)
 
 
 func _test_ability_costs_mana() -> void:

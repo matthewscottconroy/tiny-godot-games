@@ -71,9 +71,7 @@ func _test_preset_colors() -> void:
 		expect(f.tween_duration > 0.0, "%s flash has positive duration" % p["name"])
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[screen-flash] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

@@ -65,9 +65,7 @@ func _test_stick_vector_deadzone() -> void:
 	expect(val != Vector2.ZERO, "large stick vector passes deadzone filter")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[gamepad-input] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

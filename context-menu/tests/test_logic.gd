@@ -7,17 +7,20 @@ var _pass := 0
 var _fail := 0
 
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
+func expect(cond: bool, label: String) -> void:
+	if cond:
 		_pass += 1
-		print("  PASS: %s" % label)
+		print("  PASS  ", label)
 	else:
 		_fail += 1
-		print("  FAIL: %s" % label)
+		print("  FAIL  ", label)
 
 
 func _report() -> void:
-	print("\n=== Context Menu Tests: %d passed, %d failed ===" % [_pass, _fail])
+	var summary := "[context-menu] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)
 
 
 # ---------------------------------------------------------------------------

@@ -16,16 +16,19 @@ func _ready() -> void:
 	_test_start_equals_goal()
 	_report()
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
+func expect(cond: bool, label: String) -> void:
+	if cond:
 		_pass += 1
-		print("  PASS: %s" % label)
+		print("  PASS  ", label)
 	else:
 		_fail += 1
-		print("  FAIL: %s" % label)
+		print("  FAIL  ", label)
 
 func _report() -> void:
-	print("--- Results: %d passed, %d failed ---" % [_pass, _fail])
+	var summary := "[pathfinding-astar] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)
 
 # ──────────────────────── Standalone A* ────────────────────────
 

@@ -87,6 +87,24 @@ To support priority (e.g., combat alerts interrupting achievement popups), repla
 4. Call `_queue.clear()` to flush pending notifications when changing scenes or entering cutscenes.
 5. Add a `max_queue_size` constant and drop messages if the queue exceeds it — this prevents a backlog from appearing long after the event that triggered it.
 
+## Use as a building block
+
+`NotificationQueue` (`scripts/notification_manager.gd`) is a self-contained UI node — copy the script and its `NotifPanel`/`Label` subtree.
+
+**Public API**
+- `push(msg: String)` — queue a message; shown when earlier ones finish.
+- `@export slide_in_time` / `show_time` / `slide_out_time` — tune the animation.
+
+**Integrate**
+1. Add the `NotificationQueue` node (it's a `CanvasLayer`, so it renders above the world).
+2. Best as an **Autoload** so any script can call `Notifications.push("Saved!")` without a node reference.
+3. Fire from game events: `quest.completed.connect(func(): Notifications.push("Quest complete!"))`.
+
+**Notes**
+- `class_name NotificationQueue` is global — rename if it collides.
+- FIFO, one-at-a-time by design. For stacked banners, keep an array of panels and manage their y-offsets.
+- `SHOW_X`/`HIDE_X` are layout constants tied to the panel geometry — adjust them if you resize or reposition the panel.
+
 ## Key Godot APIs
 
 | API | Purpose |
@@ -110,11 +128,11 @@ To support priority (e.g., combat alerts interrupting achievement popups), repla
 ## Key Constants
 
 ```gdscript
-const SLIDE_IN_TIME  := 0.2    # seconds to slide panel onto screen
-const SHOW_TIME      := 2.0    # seconds the notification stays visible
-const SLIDE_OUT_TIME := 0.15   # seconds to slide panel off screen
-const SHOW_X         := 390.0  # on-screen x position of panel
-const HIDE_X         := 660.0  # off-screen x position (past right edge)
+@export var slide_in_time  := 0.2    # seconds to slide panel onto screen
+@export var show_time      := 2.0    # seconds the notification stays visible
+@export var slide_out_time := 0.15   # seconds to slide panel off screen
+const SHOW_X := 390.0  # on-screen x position of panel
+const HIDE_X := 660.0  # off-screen x position (past right edge)
 ```
 
 ## Files

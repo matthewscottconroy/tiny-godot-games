@@ -6,6 +6,10 @@ const COIN_RANGE := 15.0
 const BEACON_RANGE := 30.0
 const ENEMY_RESPAWN_COUNT := 5
 
+# Quest tracking lives in the reusable QuestSystem (scripts/quest_system.gd).
+# `_quests` aliases `_quests_sys.quests` (same array) so the drawing code can
+# keep reading it directly.
+var _quests_sys: QuestSystem
 var _quests: Array = []
 var _enemies: Array = []
 var _coins: Array = []
@@ -53,6 +57,7 @@ func _setup_quests() -> void:
 			"reward_xp": 50
 		}
 	]
+	_quests_sys = QuestSystem.new(_quests)   # shares the same array
 
 func _setup_enemies() -> void:
 	_enemies = [
@@ -113,16 +118,10 @@ func _process(delta: float) -> void:
 
 	# Update quests
 	_update_quest_progress()
-
-	# Check all complete
-	_all_complete = true
-	for quest in _quests:
-		if not quest.completed:
-			_all_complete = false
-			break
+	_all_complete = _quests_sys.is_all_completed()
 
 	# Respawn enemies if all dead and kill quest not done
-	var kill_quest = _quests[0]
+	var kill_quest = _quests_sys.get_quest("kill")
 	if not kill_quest.completed:
 		var all_dead := true
 		for e in _enemies:
@@ -139,34 +138,22 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _update_quest_progress() -> void:
-	# Kill quest
-	var kill_quest = _quests[0]
-	if not kill_quest.completed:
-		var dead_count := 0
-		for e in _enemies:
-			if not e.alive:
-				dead_count += 1
-		kill_quest.current_count = dead_count
-		if kill_quest.current_count >= kill_quest.target_count:
-			kill_quest.completed = true
+	# Translate game state into quest progress; QuestSystem handles clamping,
+	# completion, and the "all done" signal.
+	var dead_count := 0
+	for e in _enemies:
+		if not e.alive:
+			dead_count += 1
+	_quests_sys.set_progress("kill", dead_count)
 
-	# Collect quest
-	var collect_quest = _quests[1]
-	if not collect_quest.completed:
-		var collected_count := 0
-		for c in _coins:
-			if c.collected:
-				collected_count += 1
-		collect_quest.current_count = collected_count
-		if collect_quest.current_count >= collect_quest.target_count:
-			collect_quest.completed = true
+	var collected_count := 0
+	for c in _coins:
+		if c.collected:
+			collected_count += 1
+	_quests_sys.set_progress("collect", collected_count)
 
-	# Reach quest
-	var reach_quest = _quests[2]
-	if not reach_quest.completed:
-		if _player_pos.distance_to(_beacon_pos) <= BEACON_RANGE:
-			reach_quest.current_count = 1
-			reach_quest.completed = true
+	if _player_pos.distance_to(_beacon_pos) <= BEACON_RANGE:
+		_quests_sys.set_progress("reach", 1)
 
 func _draw() -> void:
 	# Background

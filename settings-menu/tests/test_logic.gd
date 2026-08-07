@@ -122,9 +122,7 @@ func _test_reset_defaults() -> void:
 	expect_approx(s.ui_vol, 1.0, "UI volume shows reset value")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[settings-menu] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

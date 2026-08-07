@@ -33,28 +33,30 @@ const ITEM_DEFS := [
 
 Items are plain Dictionaries with `name`, `color`, and `symbol`. `null` in a slot means empty.
 
-### The Held-Item Pattern
+### Model vs View
+
+The slot data lives in a reusable class, `Inventory` (`scripts/inventory.gd`),
+which owns place/take/swap semantics and emits `changed`. `main.gd` is the
+*view* — the grid of Buttons, the held-item cursor, and world items:
 
 ```gdscript
-var _held_item: Dictionary = {}   # empty dict = nothing held
-var _slots: Array = []            # 16 entries, each null or item dict
+var _inv := Inventory.new(ROWS * COLS)   # the model — null or item per slot
+var _held_item: Dictionary = {}          # empty dict = nothing held (view state)
 ```
 
-`_on_slot_clicked(idx)` is the single handler for all slot interactions:
+`_on_slot_clicked(idx)` translates a click into a model operation:
 
 ```gdscript
-func _on_slot_clicked(idx: int) -> void:
-    if _held_item.is_empty():
-        if _slots[idx] != null:          # pick up
-            _held_item = _slots[idx]
-            _slots[idx] = null
-    else:
-        var temp = _slots[idx]
-        _slots[idx] = _held_item         # place or swap
-        _held_item = temp if temp != null else {}
+if _inv.is_empty(idx) and not _held_item.is_empty():
+    _inv.place(idx, _held_item)                 # drop held into empty slot
+    _held_item = {}
+elif not _inv.is_empty(idx) and _held_item.is_empty():
+    _held_item = _inv.take(idx)                 # pick up
+elif not _inv.is_empty(idx) and not _held_item.is_empty():
+    _held_item = _inv.swap(idx, _held_item)     # swap held with slot
 ```
 
-If `_held_item` is empty, a non-empty slot picks up its item. If `_held_item` is non-empty, the slot contents swap with the held item — an empty slot simply places, a full slot swaps, and clicking the same item twice returns it to the slot (swap with `{}` then normalize).
+Each model call emits `changed`, which is connected to `_refresh_slots` — so the buttons repaint automatically, and the view never reads or writes the slot array directly.
 
 ### Cursor Rendering
 
@@ -85,7 +87,28 @@ This avoids all the complexity of dragging actual scene nodes and works correctl
 - **Equipment slots**: Add named `_equipment: Dictionary` (`{"head": null, "chest": null, ...}`) alongside `_slots`. Route equip-compatible items to equipment slots on right-click.
 - **Item categories / filters**: Add a `"type": "weapon"|"consumable"` field to item defs and check it before allowing placement into restricted slots.
 - **Tooltip on hover**: Connect `Button.mouse_entered` to show a tooltip Label with `_slots[idx]["name"]` and any stats.
-- **Drag between multiple inventories**: Use a global `HeldItemManager` Autoload so merchant inventory and player inventory share the same `_held_item` state.
+- **Drag between multiple inventories**: Give each container its own `Inventory` and share one `_held_item` cursor (e.g. via a `HeldItemManager` Autoload); moving an item is `dst.place(i, src.take(j))`.
+
+## Use as a building block
+
+**Copy:** `scripts/inventory.gd` (the `Inventory` class). It's a `RefCounted` slot container — no UI, no scene.
+
+**Public API**
+- `_init(slot_count)` — fixed-size inventory (slots start `null`).
+- `size()`, `get_item(i)`, `is_empty(i)`.
+- `place(i, item) -> bool` (fails if occupied), `take(i) -> item?`, `swap(i, item) -> prev`.
+- signal `changed` — emitted on every mutation, for UI refresh.
+
+**Integrate**
+1. `var inv := Inventory.new(20)`.
+2. `inv.changed.connect(_redraw_hotbar)`.
+3. Pickup: find the first empty slot and `inv.place(i, item)`; move between containers with `dst.place(i, src.take(j))`.
+
+**Notes**
+- `class_name Inventory` is global — rename if it collides.
+- Items are any `Variant` (dictionaries here) — store `ItemData` resources ([data-tables](../data-tables)) or item ids instead.
+- Stacking, weight limits, and equipment slots layer on top: subclass or wrap `Inventory`, keeping the slot array as the source of truth.
+- Serializes trivially: `JSON.stringify(inv.slots)` (with item ids rather than resources).
 
 ## Key Godot APIs
 
@@ -122,5 +145,6 @@ This avoids all the complexity of dragging actual scene nodes and works correctl
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | Item definitions, slot array, held-item logic, rendering |
+| `scripts/inventory.gd` | **`Inventory`** — reusable slot model (`place`/`take`/`swap` + `changed`) |
+| `scripts/main.gd` | Item definitions, button grid, held-item cursor, rendering |
 | `scenes/main.tscn` | Scene with Control root, GridContainer, Button slots |

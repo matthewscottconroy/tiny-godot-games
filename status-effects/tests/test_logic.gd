@@ -18,13 +18,13 @@ func expect(cond: bool, label: String) -> void:
 		print("  PASS  ", label)
 	else:
 		_fail += 1
-		push_error("  FAIL  " + label)
+		print("  FAIL  ", label)
 
 func _report() -> void:
-	var msg := "[status-effects] %d/%d passed" % [_pass, _pass + _fail]
-	print("\n", msg)
+	var summary := "[status-effects] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
 	if _fail > 0:
-		push_error(msg)
+		push_error(summary)
 
 const EFFECT_CFG := {
 	"poison": {"dps": 10.0, "slow": 1.00, "duration": 5.0},

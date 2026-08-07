@@ -17,7 +17,8 @@ Health is one of the most common game systems, yet implementing it cleanly requi
 ### Node Tree
 
 ```
-Main (Node2D)                   ← main.gd
+Main (Node2D)                   ← main.gd  (the view)
+├── Health (Node)               ← health.gd  →  class_name Health (the model)
 ├── HPBar (ProgressBar)
 ├── HPLabel (Label)
 ├── GameOverLabel (Label)
@@ -26,37 +27,47 @@ Main (Node2D)                   ← main.gd
 └── HealBtn (Button)
 ```
 
-### `scripts/main.gd` — The HP Controller
+This is a **model / view** split. `Health` owns the number and the rules; `main.gd` owns the presentation and reacts to the model's signals. That separation is what makes the health system reusable — the model has no idea a `ProgressBar` exists.
 
-Holds the single authoritative HP value and all mutation logic.
+### `scripts/health.gd` — The HP Model (`class_name Health`)
+
+Holds the single authoritative HP value and all mutation logic, and announces changes via signals.
 
 ```gdscript
-const MAX_HP := 100
-var hp := MAX_HP
+signal health_changed(hp: int, max_hp: int)
+signal died
 
-func _damage() -> void:
-    if hp <= 0: return
-    hp = max(0, hp - 10)
-    _refresh()
-    _flash(Color.TOMATO)
+@export var max_hp := 100
+var hp: int
+
+func damage(amount: int) -> void:
+    if hp <= 0: return          # can't hurt the dead
+    hp = maxi(0, hp - amount)   # never negative
+    health_changed.emit(hp, max_hp)
     if hp == 0:
-        game_over_label.visible = true
+        died.emit()
 ```
 
-- `max(0, hp - 10)` prevents HP from going negative.
-- `_refresh()` triggers a Tween on `hp_bar.value` and propagates `hp_ratio` to `PlayerDisplay`.
-- `_flash(color)` briefly tints the progress bar red (damage) or green (heal).
+`heal()` mirrors this (clamped to `max_hp`, can revive from 0). The model never touches UI — it only emits `health_changed` / `died`.
 
-**Animated bar:**
+### `scripts/main.gd` — The View
+
+The buttons call `health.damage(10)` / `health.heal(10)`; everything visual happens in response to `health_changed`:
+
 ```gdscript
-func _refresh() -> void:
+func _on_health_changed(hp: int, max_hp: int) -> void:
+    # direction of change picks the flash colour
+    if hp < _shown_hp: _flash(Color.TOMATO)
+    elif hp > _shown_hp: _flash(Color.LIME_GREEN)
+    _shown_hp = hp
     var tween := create_tween()
     tween.tween_property(hp_bar, "value", float(hp), 0.2)
-    hp_label.text = "HP: %d / %d" % [hp, MAX_HP]
-    player_display.hp_ratio = float(hp) / MAX_HP
+    hp_label.text = "HP: %d / %d" % [hp, max_hp]
+    player_display.hp_ratio = float(hp) / max_hp
+    game_over_label.visible = hp == 0
 ```
 
-Tweening `hp_bar.value` gives a smooth bar drain/fill rather than a snap. `hp_label` updates instantly (numbers should be exact); the bar is decorative and can lag by 200 ms.
+Tweening `hp_bar.value` gives a smooth drain/fill rather than a snap. `hp_label` updates instantly (numbers should be exact); the bar is decorative and can lag by 200 ms.
 
 **Flash feedback:**
 ```gdscript
@@ -95,16 +106,16 @@ The dead state draws crossed lines over the eye positions instead of rectangles,
 
 ### Single Source of Truth
 
-`hp` lives only in `main.gd`. `HPBar` and `PlayerDisplay` do not store HP — they receive it on each update. This means there is no possibility of the bar and the display showing different values.
+`hp` lives only inside the `Health` model. `HPBar` and `PlayerDisplay` do not store HP — they receive it on each `health_changed` signal. This means there is no possibility of the bar and the display showing different values.
 
 ### Clamping
 
 ```gdscript
-hp = max(0, hp - 10)   # cannot go below 0
-hp = min(MAX_HP, hp + 10)  # cannot exceed MAX_HP
+hp = maxi(0, hp - amount)        # cannot go below 0
+hp = mini(max_hp, hp + amount)   # cannot exceed max_hp
 ```
 
-These clamps are applied at the point of mutation, not at the display layer. Every display reads the already-clamped value.
+These clamps are applied inside `Health` at the point of mutation, not at the display layer. Every view reads the already-clamped value.
 
 ### Tween for UX Polish
 
@@ -113,6 +124,25 @@ Instant value jumps are jarring. A 200ms tween on the bar gives the player's eye
 ### Color Lerp for State Communication
 
 Rather than switching between two fixed colors, `lerp` gives a continuous spectrum. At 60% HP the character is slightly purple — a visual warning that communicates HP without requiring the player to read the number. This is a common game UX technique.
+
+## Use as a building block
+
+**Copy:** `scripts/health.gd` (the `Health` class). It's a plain `Node` with no UI or scene dependencies.
+
+**Public API**
+- `@export max_hp: int`
+- `hp: int` — current value (set to `max_hp` on `_ready`).
+- `damage(amount)` / `heal(amount)` — clamped mutation; `heal` can revive from 0.
+- signals `health_changed(hp, max_hp)`, `died`.
+
+**Integrate**
+1. Add a `Health` node under any entity (player, enemy, destructible), set `max_hp` in the Inspector.
+2. Deal damage from a hitbox/trap: `$Health.damage(10)`.
+3. Wire the view: `health.health_changed.connect(_update_bar)` and `health.died.connect(_on_death)` — the model stays UI-agnostic, so the same `Health` drives a bar, a shader, or nothing.
+
+**Notes**
+- `class_name Health` is global — rename if it collides.
+- For regeneration, call `heal()` from a `Timer`; for armor/resistance, scale `amount` before calling `damage()`.
 
 ## Key Godot APIs
 

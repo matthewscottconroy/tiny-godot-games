@@ -19,7 +19,7 @@ Save systems are one of the most important non-gameplay features in any project.
 ### Node Tree
 
 ```
-Main (Control)           ← main.gd
+Main (Control)           ← main.gd  (form + status; delegates I/O)
 ├── Fields (VBoxContainer)
 │   ├── NameRow (HBoxContainer) → NameInput (LineEdit)
 │   ├── ScoreRow (HBoxContainer) → ScoreInput (LineEdit), IncrBtn
@@ -28,52 +28,49 @@ Main (Control)           ← main.gd
 └── LoadDisplay (Label)
 ```
 
-### `scripts/main.gd`
+The file I/O lives in a reusable class, `SaveSystem` (`scripts/save_system.gd`),
+so it can drop into any project. `main.gd` is only the demo form: it builds the
+data dictionary, calls the system, and shows status.
+
+### `scripts/save_system.gd`  (`class_name SaveSystem`)
 
 **Save:**
 ```gdscript
-func _on_save() -> void:
-    var data := {
-        "player_name": name_input.text,
-        "score":       int(score_input.text) if score_input.text.is_valid_int() else 0,
-        "timestamp":   Time.get_datetime_string_from_system(),
-    }
-    var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+func save(data: Dictionary) -> void:
+    var file := FileAccess.open(path, FileAccess.WRITE)
     file.store_string(JSON.stringify(data, "\t"))
     file.close()
 ```
 
-`JSON.stringify(data, "\t")` serializes the dictionary to a human-readable JSON string with tab indentation. `"\t"` is the indent string — use `"  "` (two spaces) for compact pretty-print.
-
-`FileAccess.open(path, FileAccess.WRITE)` creates or truncates the file. `store_string()` writes the text. **`file.close()` is required** to flush the write buffer to disk; omitting it risks data loss.
+`JSON.stringify(data, "\t")` serializes the dictionary to a human-readable JSON string with tab indentation. `FileAccess.open(path, FileAccess.WRITE)` creates or truncates the file, `store_string()` writes it, and **`file.close()` flushes the buffer to disk** — omitting it risks data loss.
 
 **Load:**
 ```gdscript
-func _on_load() -> void:
-    if not FileAccess.file_exists(SAVE_PATH):
-        # show error
-        return
-    var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+func load() -> Dictionary:
+    if not FileAccess.file_exists(path):
+        return {}
+    var file := FileAccess.open(path, FileAccess.READ)
     var text := file.get_as_text()
     file.close()
-
-    var data = JSON.parse_string(text)
-    if not data is Dictionary:
-        # show error
-        return
-
-    name_input.text  = data.get("player_name", "")
-    score_input.text = str(data.get("score", 0))
+    var parsed = JSON.parse_string(text)
+    return parsed if parsed is Dictionary else {}
 ```
 
-`JSON.parse_string()` returns `null` on failure or a `Variant` on success. The type check `not data is Dictionary` guards against malformed files. `Dictionary.get(key, default)` provides fallbacks for missing keys.
+`JSON.parse_string()` returns `null` on failure or a `Variant` on success. Returning `{}` for both "missing" and "malformed" keeps the API simple; the caller uses `has_save()` first to tell those cases apart.
 
-**Input validation:**
+### `scripts/main.gd`
+
+The driver builds the payload and reports status, validating input on the way in:
 ```gdscript
-"score": int(score_input.text) if score_input.text.is_valid_int() else 0,
+func _on_save() -> void:
+    _save.save({
+        "player_name": name_input.text,
+        "score":       int(score_input.text) if score_input.text.is_valid_int() else 0,
+        "timestamp":   Time.get_datetime_string_from_system(),
+    })
 ```
 
-`is_valid_int()` checks whether the string represents a valid integer before calling `int()`. Without this guard, `int("abc")` would silently return 0 with a possible error in the output.
+`is_valid_int()` guards the conversion — without it, `int("abc")` would silently return 0. On load it calls `_save.has_save()` (no file) then checks `data.is_empty()` (bad file) before filling the form.
 
 ## Save System Theory
 
@@ -133,3 +130,23 @@ JSON has five scalar types: `null`, `boolean`, `number`, `string`, and array/obj
 | `JSON.parse_string(text)` | Parse JSON string to Variant |
 | `String.is_valid_int()` | Validate integer string before conversion |
 | `Time.get_datetime_string_from_system()` | Current timestamp as string |
+
+## Use as a building block
+
+**Copy:** `scripts/save_system.gd` (the `SaveSystem` class). It's a `RefCounted` with no scene or demo dependencies.
+
+**Public API**
+- `_init(save_path := "user://save.json")` — pick where the file lives.
+- `has_save() -> bool`
+- `save(data: Dictionary)` — writes pretty-printed JSON.
+- `load() -> Dictionary` — parsed data, or `{}` if missing/invalid.
+
+**Integrate**
+1. `var saves := SaveSystem.new("user://slot1.json")` (one instance per save slot).
+2. Gather your game state into a `Dictionary` and call `saves.save(state)`.
+3. On load: `if saves.has_save(): apply(saves.load())`.
+
+**Notes**
+- `class_name SaveSystem` is global — rename if it collides.
+- JSON stores only JSON-native types. Convert `Vector2`/custom objects to arrays/dicts before saving (e.g. `{"x": pos.x, "y": pos.y}`) and back on load.
+- For tamper-resistant saves, swap `FileAccess.open` for `FileAccess.open_encrypted_with_pass()` — the rest of the class is unchanged.

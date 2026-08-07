@@ -2,6 +2,9 @@
 .godot/
 .nomedia
 
+# Godot 4.4+ generated resource UID sidecar files (regenerated on import)
+*.uid
+
 # Godot-specific ignores
 .import/
 export.cfg

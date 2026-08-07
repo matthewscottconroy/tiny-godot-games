@@ -119,6 +119,28 @@ One line flips the boolean. `_dirty` is set so the explicit Save button knows th
 - **Version migration**: Add a `[meta] version=2` section and check it on load. If the version is older, map old key names to new ones before using the values.
 - **Encrypted settings**: For anti-cheat sensitive values, use `ConfigFile.save_encrypted_pass(path, password)` and `load_encrypted_pass()`.
 
+## Use as a building block
+
+This demo is deliberately **kept as one file** rather than extracted into a
+generic `Settings` class. The whole point is to show the raw `ConfigFile` API —
+`get_value` / `set_value` / `save` / `load` — and hiding those calls behind a
+wrapper would defeat the lesson. So reuse it by **lifting the pattern**, which is
+already isolated in three named methods:
+
+- **`DEFAULTS`** — a dictionary of every setting and its default. This is your schema.
+- **`_load_settings()`** — `ConfigFile.load()` then `get_value(section, key, DEFAULTS[key])` for each key, falling back to the default when a key is absent (handles first run and added settings).
+- **`_save_settings()`** — `set_value(section, key, value)` for each key, then `save()`.
+- **`_clamp_all()`** — validate ranges after load so a hand-edited file can't inject bad values.
+
+**Drop it in:** copy those four pieces, replace the demo's custom-drawn sliders
+with real `HSlider` / `CheckButton` nodes wired to `_settings`, and call
+`_save_settings()` on change. To *apply* settings live, see the first bullet
+under *How to Adapt* above.
+
+> `class_name` isn't used here because the reusable thing is the pattern, not a
+> type. If you do want a shared `Settings` object, wrap these methods in a
+> `RefCounted` and expose `get(key)` / `set(key, value)` / `save()`.
+
 ## Key Godot APIs
 
 | API | Purpose |

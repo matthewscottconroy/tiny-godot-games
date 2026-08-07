@@ -70,9 +70,7 @@ func _test_normal_gravity_when_not_sliding() -> void:
 	expect_near(grav_scale, 1.0, "grav_scale is 1.0 when not sliding")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[wall-slide] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

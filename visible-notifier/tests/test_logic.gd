@@ -57,9 +57,7 @@ func _test_object_positions() -> void:
 	expect(positions[1] == Vector2(SPACING, 0), "second position is one spacing right")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[visible-notifier] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

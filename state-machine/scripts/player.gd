@@ -2,9 +2,16 @@ extends CharacterBody2D
 
 enum State { IDLE, WALK, JUMP, FALL }
 
-const SPEED    := 200.0
-const JUMP_VEL := -420.0
-const GRAVITY  := 900.0
+## Emitted whenever the derived state changes. Other systems — an
+## AnimationPlayer, an audio manager, a UI — can react to transitions without
+## polling `state` every frame. This is the FSM's reuse hook.
+signal state_changed(new_state: State)
+
+@export var speed := 200.0
+@export var jump_velocity := -420.0
+@export var gravity := 900.0
+## Horizontal speed (px/s) above which a grounded character counts as WALK.
+@export var walk_threshold := 10.0
 
 var state := State.IDLE
 
@@ -23,11 +30,11 @@ func _draw() -> void:
 
 func _physics_process(delta: float) -> void:
 	var dir := Input.get_axis("ui_left", "ui_right")
-	velocity.x = dir * SPEED
+	velocity.x = dir * speed
 	if not is_on_floor():
-		velocity.y += GRAVITY * delta
+		velocity.y += gravity * delta
 	if is_on_floor() and Input.is_action_just_pressed("ui_up"):
-		velocity.y = JUMP_VEL
+		velocity.y = jump_velocity
 	move_and_slide()
 	_transition()
 	queue_redraw()
@@ -35,11 +42,12 @@ func _physics_process(delta: float) -> void:
 func _transition() -> void:
 	var prev := state
 	if is_on_floor():
-		state = State.WALK if abs(velocity.x) > 10 else State.IDLE
+		state = State.WALK if abs(velocity.x) > walk_threshold else State.IDLE
 	else:
 		state = State.JUMP if velocity.y < 0 else State.FALL
 	if state != prev:
 		state_label.text = State.keys()[state]
+		state_changed.emit(state)
 
 func _ready() -> void:
 	state_label.text = State.keys()[state]

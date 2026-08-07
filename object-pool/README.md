@@ -17,38 +17,41 @@ Instantiating and freeing nodes is expensive. In performance-critical scenarios 
 ### Node Tree
 
 ```
-Main (Node2D)                   ← main.gd
-├── BulletPool (Node2D)         ← bullet_pool.gd  (contains pre-created bullets)
-│   ├── Bullet0 (Node2D)        ← bullet.gd  (×20, created at startup)
+Main (Node2D)                   ← main.gd  (demo driver + stats display)
+├── BulletPool (Node2D)         ← object_pool.gd  →  class_name ObjectPool
+│   ├── Bullet (Node2D)         ← bullet.tscn  (×20, instanced at startup)
 │   └── ...
 ├── Player (CharacterBody2D)    ← player.gd
 └── StatsLabel (Label)
 ```
 
-### `scripts/bullet_pool.gd`
+The pool is a **reusable component** (`ObjectPool`) with no knowledge of bullets or the demo. It pools whatever `PackedScene` you assign to its `scene` export. The demo assigns `bullet.tscn` and owns the stats label itself.
+
+### `scripts/object_pool.gd`  (`class_name ObjectPool`)
 
 ```gdscript
-const POOL_SIZE := 20
+@export var scene: PackedScene   # what to pool
+@export var size := 20           # how many to pre-allocate
 
 func _ready() -> void:
-    for i in POOL_SIZE:
-        var b := Node2D.new()
-        b.set_script(load("res://scripts/bullet.gd"))
-        b.visible = false
-        add_child(b)
+    assert(scene != null, "ObjectPool: `scene` is not set")
+    for i in size:
+        var instance := scene.instantiate()
+        instance.visible = false
+        add_child(instance)
 
-func request_bullet() -> Node2D:
+func acquire() -> Node:
     for child in get_children():
         if not child.visible:
-            _hits += 1
-            _update_stats()
+            reuse_count += 1
+            acquired.emit(child)
             return child
-    _misses += 1
-    _update_stats()
+    miss_count += 1          # pool exhausted
+    exhausted.emit()
     return null
 ```
 
-`_ready()` pre-creates 20 bullet nodes, all invisible. `request_bullet()` scans children for the first invisible one and returns it. If all 20 are active (pool exhausted), it returns `null` and logs a miss. The caller is responsible for activating and firing the returned bullet.
+`_ready()` instantiates `size` copies of `scene`, all hidden. `acquire()` scans children for the first hidden one and returns it. If all are active (pool exhausted), it returns `null` and increments `miss_count`. The caller is responsible for activating (showing) and firing the returned instance. The pool emits `acquired`/`exhausted` signals and exposes `reuse_count` / `miss_count` / `active_count()` so a driver can display stats without the pool touching any UI.
 
 ### `scripts/bullet.gd`
 
@@ -71,11 +74,11 @@ func _process(delta: float) -> void:
         _return_to_pool()
 ```
 
-The bullet's "lifecycle" is managed through visibility and `_lifetime`. `fire()` activates and positions it. When the lifetime expires, `_return_to_pool()` hides it — making it available for reuse on the next `request_bullet()` call.
+The bullet's "lifecycle" is managed through visibility and `_lifetime`. `fire()` activates and positions it. When the lifetime expires, `_return_to_pool()` hides it — making it available for reuse on the next `acquire()` call.
 
 ### `scripts/main.gd`
 
-Connects `player.fired` (emitted when `ui_accept` is pressed) to a handler that calls `pool.request_bullet()` and then `bullet.fire(from, dir)`.
+The demo driver connects `player.fired` (emitted when `ui_accept` is pressed) to a handler that calls `pool.acquire()` and then `bullet.fire(from, dir)`, and each frame refreshes the stats label from the pool's public counters (`active_count()`, `reuse_count`, `miss_count`). Keeping the display here — rather than inside the pool — is what lets `ObjectPool` drop into any project unchanged.
 
 ### `scripts/player.gd`
 
@@ -113,7 +116,7 @@ The alternative is a separate `var in_use := false` flag, which works but adds a
 
 ### Pool Exhaustion
 
-When `request_bullet()` returns `null`, the caller can:
+When `acquire()` returns `null`, the caller can:
 - Skip the shot (implemented here)
 - Dynamically grow the pool (add more bullets)
 - Force-reclaim the oldest bullet
@@ -128,9 +131,31 @@ For games where pool exhaustion is common, dynamic growth is safest. For control
 
 | API | Purpose |
 |-----|---------|
-| `Node.new()` + `set_script(script)` | Create a node with a script |
+| `@export var scene: PackedScene` | The scene the pool pre-instantiates |
+| `PackedScene.instantiate()` | Create an instance of the pooled scene |
 | `Node.visible` | Show/hide node (used as pool active flag) |
 | `Node.add_child(node)` | Add to scene tree |
 | `Node.get_children()` | Array of direct children |
 | `Array.filter(callable)` | Filter array by condition |
-| `signal fired(from, dir)` | Decouple player from pool management |
+| `signal acquired(instance)` / `exhausted` | Report pool events without UI coupling |
+
+## Use as a building block
+
+**Copy:** `scripts/object_pool.gd` (the `ObjectPool` class). It has no demo dependencies.
+
+**Public API**
+- `@export scene: PackedScene` — the scene pooled `size` times.
+- `@export size: int` — instances pre-allocated at startup (default 20).
+- `acquire() -> Node` — returns a hidden instance, or `null` if all are active.
+- `active_count() -> int`, `reuse_count`, `miss_count` — stats for a HUD/debug view.
+- signals `acquired(instance)`, `exhausted`.
+
+**Integrate**
+1. Add an `ObjectPool` node (a `Node2D`), set its `scene` and `size` in the Inspector.
+2. To spawn: `var obj := pool.acquire()`, then activate it (`obj.show()` + reset its state).
+3. To recycle: hide the instance (`obj.hide()`) — the pool treats hidden instances as available.
+
+**Notes**
+- `class_name ObjectPool` is global to the project — rename it if you already define an `ObjectPool`.
+- The "hidden means available" contract assumes visual nodes. For non-visual objects, swap `visible` for a boolean flag or a free-list.
+- Demo input uses the built-in `ui_*` actions for zero setup; in a real project define your own actions (e.g. `move_up`, `fire`) and use those instead.

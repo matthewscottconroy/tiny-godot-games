@@ -1,14 +1,12 @@
 extends Node2D
 
+## Demo driver. The wave/phase loop lives in WaveSpawner (scripts/wave_spawner.gd);
+## this file responds to its signals by spawning and ticking enemies, and reports
+## `wave_cleared()` when the arena is empty.
+
 const ENEMY_COLORS := [Color.TOMATO, Color.ORANGE_RED, Color.FIREBRICK]
 
-enum Phase { IDLE, INTERMISSION, WAVE }
-
-var wave        := 0
-var phase       := Phase.IDLE
-var alive       := 0
-var timer       := 0.0
-var intermission_duration := 3.0
+var _spawner := WaveSpawner.new()
 
 @onready var wave_label  : Label = $WaveLabel
 @onready var status      : Label = $StatusLabel
@@ -16,41 +14,37 @@ var intermission_duration := 3.0
 @onready var enemies     : Node2D = $Enemies
 
 func _ready() -> void:
-	$Buttons/StartBtn.pressed.connect(_start)
-	$Buttons/SkipBtn.pressed.connect(func(): if phase == Phase.INTERMISSION: timer = 0.0)
+	$Buttons/StartBtn.pressed.connect(_spawner.start)
+	$Buttons/SkipBtn.pressed.connect(_spawner.skip_intermission)
+	_spawner.intermission_started.connect(_on_intermission_started)
+	_spawner.wave_started.connect(_on_wave_started)
+	_spawner.all_waves_cleared.connect(_on_all_cleared)
 
-func _start() -> void:
-	if phase != Phase.IDLE:
-		return
-	wave = 0
-	_begin_intermission()
-
-func _begin_intermission() -> void:
-	phase = Phase.INTERMISSION
-	timer = intermission_duration
-	wave += 1
+func _on_intermission_started(wave: int, duration: float) -> void:
 	status.modulate = Color.GOLD
-	status.text = "Wave %d incoming in %.0f…" % [wave, timer]
+	status.text = "Wave %d incoming in %.0f…" % [wave, duration]
 
-func _begin_wave() -> void:
-	phase = Phase.WAVE
-	var count := 3 + (wave - 1) * 2   # grows each wave
+func _on_wave_started(wave: int, count: int) -> void:
 	var speed := 40.0 + wave * 12.0
 	for i in count:
 		_spawn_enemy(speed)
-	alive = enemies.get_child_count()
 	status.modulate = Color.TOMATO
 	status.text = "Wave %d — survive!" % wave
 	wave_label.text = "Wave %d" % wave
 	_refresh_count()
+
+func _on_all_cleared() -> void:
+	status.modulate = Color.SEA_GREEN
+	status.text = "You survived all %d waves!" % _spawner.max_waves
 
 func _spawn_enemy(speed: float) -> void:
 	var e := Node2D.new()
 	var vel := Vector2(randf_range(-speed, speed), randf_range(-speed, speed))
 	if vel.length() < 10: vel = Vector2(speed, 0)
 	e.set_meta("vel", vel)
-	e.set_meta("hp", 2 + wave)
+	e.set_meta("hp", 2 + _spawner.wave)
 	e.position = Vector2(randf_range(60, 580), randf_range(120, 420))
+	var wave := _spawner.wave
 	e.draw.connect(func():
 		e.draw_circle(Vector2.ZERO, 14, ENEMY_COLORS[wave % ENEMY_COLORS.size()])
 		e.draw_circle(Vector2(-4, -3), 3, Color.WHITE)
@@ -58,22 +52,15 @@ func _spawn_enemy(speed: float) -> void:
 	enemies.add_child(e)
 
 func _process(delta: float) -> void:
-	match phase:
-		Phase.INTERMISSION:
-			timer -= delta
-			status.text = "Wave %d incoming in %.1f…" % [wave, maxf(timer, 0.0)]
-			if timer <= 0.0:
-				_begin_wave()
-		Phase.WAVE:
+	_spawner.update(delta)
+	match _spawner.phase:
+		WaveSpawner.Phase.INTERMISSION:
+			status.text = "Wave %d incoming in %.1f…" % [_spawner.wave, maxf(_spawner.timer, 0.0)]
+		WaveSpawner.Phase.WAVE:
 			_tick_enemies(delta)
 			_refresh_count()
 			if enemies.get_child_count() == 0:
-				if wave >= 5:
-					status.modulate = Color.SEA_GREEN
-					status.text = "You survived all 5 waves!"
-					phase = Phase.IDLE
-				else:
-					_begin_intermission()
+				_spawner.wave_cleared()
 
 func _tick_enemies(delta: float) -> void:
 	for e in enemies.get_children():
@@ -89,7 +76,7 @@ func _refresh_count() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if phase != Phase.WAVE: return
+		if _spawner.phase != WaveSpawner.Phase.WAVE: return
 		for e in enemies.get_children():
 			if e.position.distance_to(event.position) < 18:
 				var hp: int = e.get_meta("hp") - 1

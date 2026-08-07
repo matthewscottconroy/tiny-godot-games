@@ -1,8 +1,12 @@
+## A reusable typewriter dialogue box. Call start(lines, speakers); it reveals
+## each line character-by-character, advances on the Next button (or reveals the
+## full line if still typing), and emits `finished` when the last line closes.
+class_name DialogueBox
 extends Control
 
 signal finished
 
-const CHARS_PER_SEC := 28.0
+@export var chars_per_sec := 28.0   ## typewriter reveal speed
 
 var _lines    : Array[String] = []
 var _speakers : Array[String] = []
@@ -41,7 +45,7 @@ func _type_out(full: String) -> void:
 			text_label.text = full
 			break
 		text_label.text = full.left(i + 1)
-		await get_tree().create_timer(1.0 / CHARS_PER_SEC).timeout
+		await get_tree().create_timer(1.0 / chars_per_sec).timeout
 	_typing = false
 	next_btn.disabled = false
 

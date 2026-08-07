@@ -46,9 +46,7 @@ func _test_zero_direction_guard() -> void:
 	expect(zero_dir.length() == 0.0, "zero vector has zero length, should not be used as direction")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[raycasting] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

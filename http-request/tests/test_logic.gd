@@ -79,9 +79,7 @@ func _test_url_non_empty() -> void:
 	expect(URL.contains("jsonplaceholder"), "URL targets jsonplaceholder")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[http-request] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

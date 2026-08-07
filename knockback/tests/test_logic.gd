@@ -18,13 +18,13 @@ func expect(cond: bool, label: String) -> void:
 		print("  PASS  ", label)
 	else:
 		_fail += 1
-		push_error("  FAIL  " + label)
+		print("  FAIL  ", label)
 
 func _report() -> void:
-	var msg := "[knockback] %d/%d passed" % [_pass, _pass + _fail]
-	print("\n", msg)
+	var summary := "[knockback] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
 	if _fail > 0:
-		push_error(msg)
+		push_error(summary)
 
 const KB_IMPULSE := 480.0
 const KB_UP      := -260.0

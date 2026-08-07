@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/bullet_pool.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/object_pool.gd" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/bullet.tscn" id="4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(28, 40)
@@ -47,6 +48,7 @@ shape = SubResource("RectangleShape2D_player")
 
 [node name="BulletPool" type="Node2D" parent="."]
 script = ExtResource("3")
+scene = ExtResource("4")
 
 [node name="Floor" type="StaticBody2D" parent="."]
 position = Vector2(320, 465)

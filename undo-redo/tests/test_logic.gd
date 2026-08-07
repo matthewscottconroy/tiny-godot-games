@@ -99,9 +99,7 @@ func _test_action_name_stored() -> void:
 	expect(m.undo_redo.get_action_name(0) == "Draw Stroke", "action name is 'Draw Stroke'")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[undo-redo] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

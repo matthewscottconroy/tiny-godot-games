@@ -27,12 +27,10 @@ func _check_los() -> void:
 	_can_see = _has_los(global_position, _player.global_position)
 
 func _has_los(from: Vector2, to: Vector2) -> bool:
-	var space  := get_world_2d().direct_space_state
-	var params := PhysicsRayQueryParameters2D.create(from, to)
-	params.exclude   = [self.get_rid(), _player.get_rid()]
-	params.collision_mask = 2  # layer 2 = walls only
-	var result := space.intersect_ray(params)
-	return result.is_empty()
+	# collision_mask = 2 → only walls (layer 2) can block the ray.
+	return LineOfSight.is_clear(
+		get_world_2d().direct_space_state, from, to, 2,
+		[self.get_rid(), _player.get_rid()])
 
 func _draw() -> void:
 	var body_col := Color.TOMATO if _can_see else Color.CORAL

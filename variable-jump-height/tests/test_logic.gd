@@ -59,9 +59,7 @@ func _test_cut_jump_velocity() -> void:
 	expect(absf(vy_cut) < absf(JUMP_VEL), "cut jump is weaker than full jump")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[variable-jump-height] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

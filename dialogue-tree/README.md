@@ -26,23 +26,31 @@ The pattern here scales directly to production: tools like Yarn Spinner and Dial
 
 `target: "_close"` is the sentinel that closes the dialogue box. An empty `choices` array marks a dead-end node — pressing Space/Enter closes automatically.
 
-### Condition Filtering
+Graph navigation (current node, choice filtering, moving to a target) lives in a
+reusable class, `DialogueTree` (`scripts/dialogue_tree.gd`). `main.gd` owns the
+graph data, `_game_state`, the effect handlers, and drawing.
+
+### Condition Filtering (`DialogueTree.available_choices`)
+
+`DialogueTree` filters choices but delegates the *game-specific* condition check
+to a Callable, so the reusable class never hardcodes rules like `gold_gte_5`:
 
 ```gdscript
-func _get_available_choices() -> Array:
-    for choice in choices:
+# dialogue_tree.gd — generic
+func available_choices(is_met: Callable) -> Array:
+    for choice in node().get("choices", []):
         var cond: String = choice.get("condition", "")
-        if cond == "":
-            result.append(choice)
-        elif cond == "gold_gte_5":
-            if _game_state.get("gold", 0) >= 5:
-                result.append(choice)
-        elif _game_state.get(cond, false):
-            result.append(choice)
-    return result
+        if cond == "" or is_met.call(cond):
+            out.append(choice)
+
+# main.gd — game-specific evaluator
+func _is_condition_met(cond: String) -> bool:
+    if cond == "gold_gte_5":
+        return _game_state.get("gold", 0) >= 5
+    return _game_state.get(cond, false)   # boolean flags
 ```
 
-Condition strings are evaluated at display time, so the available choices automatically reflect the current world state. `gold_gte_5` is a special case for the numeric comparison; all other conditions are simple boolean flag lookups in `_game_state`.
+Conditions are evaluated at display time, so available choices always reflect current world state. This split also removed the duplicate filter that the drawing code previously kept in sync by hand.
 
 ### State Mutation (Effects)
 
@@ -83,11 +91,31 @@ State is just `_current_node: String`. Advancing the dialogue is a single assign
 
 ## How to Adapt This in Your Project
 
-- **Multiple NPCs**: Give each NPC its own `_dialogue` Dictionary. The same `_current_node` / `_active` / `_get_available_choices()` logic works unchanged — just swap which Dictionary is in use when `_open_dialogue()` is called.
+- **Multiple NPCs**: Give each NPC its own `DialogueTree` (each holds its own graph + current node). Swap which one is active in `_open_dialogue()`.
 - **Shared game state**: Replace the local `_game_state` Dictionary with an Autoload singleton (`GameState.has_sword`, `GameState.gold`) so all NPCs and systems read the same flags.
 - **Voice acting / audio**: Add an `"audio_key": String` field to each node and play the corresponding `AudioStreamPlayer` when the node is entered.
 - **Localization**: Store `"text_key": "MERCHANT_SWORD_INTRO"` instead of raw text, then call `tr(node["text_key"])` when rendering to the dialogue panel.
 - **Ink / Yarn import**: The Dictionary format here maps cleanly onto Yarn Spinner's node/option model. An importer just needs to populate the same structure from a `.yarn` file.
+
+## Use as a building block
+
+**Copy:** `scripts/dialogue_tree.gd` (the `DialogueTree` class). It's a `RefCounted` — pure graph navigation, no scene or UI.
+
+**Public API**
+- `_init(nodes: Dictionary, start := "start")` — nodes keyed by id.
+- `current`, `node()` — the current position and its data.
+- `available_choices(is_met: Callable) -> Array` — choices whose condition passes (empty condition = always).
+- `goto(target)` — move to a node.
+
+**Integrate**
+1. `var tree := DialogueTree.new(npc_nodes, "start")`.
+2. Filter: `tree.available_choices(_is_condition_met)` — you supply the condition evaluator (numeric checks, quest flags…).
+3. On selection: apply the choice's `effect` to *your* game state, then `tree.goto(choice.target)`.
+
+**Notes**
+- `class_name DialogueTree` is global — rename if it collides.
+- Effects and condition rules stay in your game (kept out of the reusable class), so it works with any state model.
+- Pair with [dialogue-box](../dialogue-box)'s `DialogueBox` for the typewriter presentation, or draw the panel yourself as this demo does.
 
 ## Key Godot APIs
 
@@ -127,7 +155,8 @@ const INTERACT_RANGE := 100.0   # px from player to NPC center
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | Dialogue graph, condition filtering, effect application, rendering |
+| `scripts/dialogue_tree.gd` | **`DialogueTree`** — reusable graph navigation + choice filtering |
+| `scripts/main.gd` | Dialogue data, condition/effect handlers, rendering; owns a `DialogueTree` |
 | `tests/test_logic.gd` | Unit tests for condition evaluation and effect side effects |
 | `scenes/main.tscn` | Scene root (Node2D with script) |
 | `tests/test.tscn` | Test runner scene |

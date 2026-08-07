@@ -29,17 +29,18 @@ Main (Node2D)
 
 ### `scripts/enemy.gd`
 
-**State enum:**
+**State enum + reuse hook:**
 ```gdscript
 enum State { PATROL, CHASE, RETURN }
+signal state_changed(new_state: State)   # fires when the enemy switches state
 ```
 
-**Constants:**
+**Exported tuning** (editable per-enemy in the Inspector):
 ```gdscript
-const DETECT_RANGE  := 180.0  # distance to start chasing
-const LOSE_RANGE    := 280.0  # distance to give up chase
-const PATROL_SPEED  := 80.0
-const CHASE_SPEED   := 150.0
+@export var detect_range := 180.0  # distance to start chasing
+@export var lose_range   := 280.0  # distance to give up chase
+@export var patrol_speed := 80.0
+@export var chase_speed  := 150.0
 ```
 
 **`_ready()`** — Collects waypoint positions from `Marker2D` children of the `Waypoints` node into `waypoints: Array[Vector2]`.
@@ -55,22 +56,26 @@ func _physics_process(_delta: float) -> void:
     queue_redraw()
 ```
 
-**`_transition()`** — State machine logic:
+**`_transition()`** — State machine logic (emits `state_changed` on a flip):
 ```gdscript
 func _transition() -> void:
+    var prev := state
     var dist := global_position.distance_to(player.global_position)
     match state:
         State.PATROL:
-            if dist < DETECT_RANGE:
+            if dist < detect_range:
                 state = State.CHASE
         State.CHASE:
-            if dist > LOSE_RANGE:
+            if dist > lose_range:
                 state = State.RETURN
         State.RETURN:
-            if dist < DETECT_RANGE:
+            if dist < detect_range:
                 state = State.CHASE
             elif global_position.distance_to(waypoints[wp_index]) < 10:
                 state = State.PATROL
+    if state != prev:
+        state_label.text = State.keys()[state]
+        state_changed.emit(state)
 ```
 
 **`_patrol()`** — Moves toward `waypoints[wp_index]`. When within 10 pixels of the current waypoint, advances `wp_index` cyclically: `wp_index = (wp_index + 1) % waypoints.size()`.
@@ -94,7 +99,7 @@ The key constraint: the machine is in exactly one state at any time. This preven
 
 ### Transition Hysteresis
 
-Notice the DETECT_RANGE (180) is smaller than LOSE_RANGE (280). This is **hysteresis** — a deliberate gap between the enter and exit conditions. Without it, if the player stood exactly at 180 pixels, the enemy would rapidly flip between PATROL and CHASE every frame ("jitter"). The wider LOSE_RANGE means the player must move significantly further away before the enemy gives up.
+Notice `detect_range` (180) is smaller than `lose_range` (280). This is **hysteresis** — a deliberate gap between the enter and exit conditions. Without it, if the player stood exactly at 180 pixels, the enemy would rapidly flip between PATROL and CHASE every frame ("jitter"). The wider `lose_range` means the player must move significantly further away before the enemy gives up.
 
 This is the same principle used in thermostats: a heater turns on at 68°F and off at 72°F, not at exactly 70°F.
 
@@ -113,6 +118,22 @@ Modulo arithmetic wraps the index: after the last waypoint, it returns to 0. Thi
 ### Visual State Feedback
 
 Color and eye direction change per state, giving the player non-verbal information about the enemy's mode. In a real game this might be accompanied by sound (detection bark) and animations. Keeping it visual in this demo makes the state machine behavior immediately legible.
+
+## Use as a building block
+
+Like [state-machine](../state-machine), this is kept as **one readable file** —
+the lesson is the patrol→chase→return FSM read top to bottom, not a generic
+framework. Reuse it by lifting the pattern into your own enemy:
+
+1. Copy the `enum State`, the `@export` ranges/speeds, and the three-way `match` in `_transition()` / `_physics_process()`.
+2. Point it at your player and waypoints (this demo reads `Marker2D` children of a `Waypoints` node in `_ready`; export a `NodePath` or an `Array[Vector2]` instead for a drop-in enemy).
+3. Connect `state_changed(new_state)` to drive animation, an alert sound, or a HUD marker — the reuse hook that keeps presentation out of the FSM.
+
+**Tuning** is exposed via `@export` (`detect_range`, `lose_range`, `patrol_speed`, `chase_speed`); keep `detect_range < lose_range` for the anti-jitter hysteresis described above.
+
+> Input/globals: this enemy references the player via `$"../Player"`; in a real
+> project prefer an `@export var target: Node2D` so the enemy isn't tied to a
+> fixed scene layout.
 
 ## Key Godot APIs
 

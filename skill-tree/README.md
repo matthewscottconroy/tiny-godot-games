@@ -21,33 +21,40 @@ The same pattern extends naturally to tech trees in 4X games, talent rows in MMO
  "cost": 2}                 # costs 2 skill points
 ```
 
-All skills live in `_skills: Array`. The `id` field equals the Array index, so `_skills[prereq_id]` is always a direct lookup — O(1), no search needed.
+All skills live in an Array. The `id` field equals the Array index, so `skills[prereq_id]` is always a direct lookup — O(1), no search needed. The unlock *rules* live in a reusable class, `SkillTree` (`scripts/skill_tree.gd`); `main.gd` owns rendering, hover hit-testing, and colors.
 
-### Prerequisite Check
+### Prerequisite Check (`SkillTree.can_unlock`)
 
 ```gdscript
-func _can_unlock(skill_idx: int) -> bool:
-    var skill = _skills[skill_idx]
-    if skill.unlocked:            return false
-    if _skill_points < skill.cost: return false
-    for prereq_id in skill.prereqs:
-        if not _skills[prereq_id].unlocked:
+func can_unlock(index: int) -> bool:
+    var s = skills[index]
+    if s.unlocked or points < s.cost:
+        return false
+    for prereq_id in s.prereqs:
+        if not skills[prereq_id].unlocked:
             return false
     return true
 ```
 
 All three conditions must pass: not already owned, enough points, and every listed prerequisite unlocked. The loop short-circuits on the first unmet prerequisite.
 
-### Unlock Action
+### Unlock Action (`SkillTree.unlock`)
 
 ```gdscript
-if _hovered >= 0 and _can_unlock(_hovered):
-    _skills[_hovered].unlocked = true
-    _skill_points -= _skills[_hovered].cost
+# main.gd
+if _hovered >= 0 and _tree.unlock(_hovered):
     queue_redraw()
+
+# skill_tree.gd — atomic: re-checks, spends points, sets the flag, emits a signal
+func unlock(index: int) -> bool:
+    if not can_unlock(index): return false
+    skills[index].unlocked = true
+    points -= skills[index].cost
+    skill_unlocked.emit(index)
+    return true
 ```
 
-No undo in this demo — see the reset (R key) for rollback. Point deduction and flag-set happen atomically; there's no intermediate state to manage.
+`unlock()` re-validates before committing, so the caller can't spend points on an ineligible skill. Point deduction and flag-set happen atomically; the R key calls `reset()` for rollback.
 
 ### Hover Detection
 
@@ -100,9 +107,29 @@ Skill 7 (Combo) is the only node with two prerequisites: Strength II (id 1) AND 
 
 - **Load from data file**: Replace `_build_skills()` with a JSON or CSV loader. The Dictionary structure maps directly to JSON objects; `JSON.parse_string()` returns an Array of Dictionaries.
 - **Persist unlocked state**: Iterate `_skills` and save `{id: skill.id, unlocked: skill.unlocked}` pairs to your save file. On load, look up by ID and set `unlocked`.
-- **Apply skill effects**: In `_can_unlock` or immediately after setting `skill.unlocked = true`, call a `CharacterStats.apply_skill(skill.id)` method that buffs the appropriate stats.
-- **Refund / respec**: Iterate all skills, set `unlocked = false`, and restore the total spent points. Gate this behind a cost (gold, respec token) for balance.
+- **Apply skill effects**: Connect `SkillTree.skill_unlocked(index)` to a `CharacterStats.apply_skill(id)` method that buffs the appropriate stats.
+- **Refund / respec**: Call `SkillTree.reset(points)` to relock everything and restore points. Gate it behind a cost (gold, respec token) for balance.
 - **Variable node shapes**: Add a `"shape": "circle"|"diamond"|"square"` field and branch in `_draw()` to visually distinguish skill types (active, passive, ultimate).
+
+## Use as a building block
+
+**Copy:** `scripts/skill_tree.gd` (the `SkillTree` class). It's a `RefCounted` — the unlock rules and point pool, with no rendering.
+
+**Public API**
+- `_init(skill_defs: Array, starting_points)` — each skill: `{id, prereqs: Array[int], unlocked, cost, ...}` (extra fields like `name`/`desc`/`pos` are yours).
+- `points`, `skills`.
+- `can_unlock(i) -> bool`, `unlock(i) -> bool`, `reset(points)`.
+- signal `skill_unlocked(index)`.
+
+**Integrate**
+1. `var tree := SkillTree.new(skill_defs, 3)`.
+2. On click: `if tree.unlock(hovered): refresh()`.
+3. Render from `tree.skills`, greying out nodes where `tree.can_unlock(i)` is false; connect `skill_unlocked` to apply the bonus.
+
+**Notes**
+- `class_name SkillTree` is global — rename if it collides.
+- Prereqs use array indices (`id == index`); for sparse ids, look up by id inside your defs instead.
+- Layout (`pos`) and colors are presentation — keep them in your view, as this demo does.
 
 ## Key Godot APIs
 
@@ -130,7 +157,7 @@ const NODE_RADIUS  := 28.0   # default draw radius
 const HOVER_RADIUS := 32.0   # enlarged when hovered; also hit-test threshold
 
 # Starting skill points
-var _skill_points: int = 3
+# SkillTree starts with 3 points (SkillTree.new(_skills, 3))
 
 # Skill IDs 7 and 8 cost 2 points; all others cost 1
 # prereqs: [] = root node, [0] = requires Strength I, [1,3] = requires both
@@ -140,7 +167,8 @@ var _skill_points: int = 3
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | Skill data, prerequisite checking, unlock logic, rendering, tooltip |
-| `tests/test_logic.gd` | Unit tests for `_can_unlock`, point deduction, multi-prereq gating |
+| `scripts/skill_tree.gd` | **`SkillTree`** — reusable unlock rules + point pool (`can_unlock`/`unlock`/`reset`) |
+| `scripts/main.gd` | Skill data, rendering, tooltip, hover hit-testing; owns a `SkillTree` |
+| `tests/test_logic.gd` | Unit tests for unlock rules, point deduction, multi-prereq gating |
 | `scenes/main.tscn` | Scene root (Node2D with script) |
 | `tests/test.tscn` | Test runner scene |

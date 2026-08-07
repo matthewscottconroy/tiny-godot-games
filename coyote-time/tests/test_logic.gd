@@ -145,9 +145,7 @@ func _test_timers_tick_down() -> void:
 	expect_approx(p.jump_buffer,  0.0, "jump buffer clamped to zero (not negative)")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[coyote-time] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

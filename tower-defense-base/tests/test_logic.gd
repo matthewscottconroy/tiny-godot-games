@@ -83,9 +83,7 @@ func _test_bullet_hits_target() -> void:
 	expect(enemy["hp"] == 2, "enemy hp reduced on bullet contact")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[tower-defense-base] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

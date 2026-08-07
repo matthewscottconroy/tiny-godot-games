@@ -10,15 +10,18 @@ Genres that depend heavily on this pattern include JRPGs, action-RPGs, card-batt
 
 ## How It Works
 
-All logic lives in `scripts/main.gd`, which extends `Node2D` and renders everything with `_draw()`.
+The XP/level logic lives in a reusable class, `LevelSystem`
+(`scripts/level_system.gd`), a plain `RefCounted`. `main.gd` handles the
+enemies, input, and drawing, and calls `_leveling.gain(xp)` when an enemy dies.
 
-### XP Threshold Formula
+### XP Threshold Formula (`LevelSystem.threshold`)
 
 ```gdscript
-const BASE_XP := 50
+var base_xp := 50
+var growth := 1.4
 
-func _calc_xp_threshold(level: int) -> int:
-    return int(BASE_XP * pow(1.4, level - 1))
+func threshold(lvl: int) -> int:
+    return int(base_xp * pow(growth, lvl - 1))
 ```
 
 The threshold for leveling up **from** a given level grows by a factor of 1.4 each step:
@@ -31,28 +34,37 @@ The threshold for leveling up **from** a given level grows by a factor of 1.4 ea
 | 4     | 137        |
 | 5     | 192        |
 
-`pow(1.4, 0)` equals 1.0, so level 1 always costs exactly `BASE_XP`.
+`pow(1.4, 0)` equals 1.0, so level 1 always costs exactly `base_xp`.
 
-### Gaining XP and Level-Up Overflow
+### Gaining XP and Level-Up Overflow (`LevelSystem.gain`)
 
 ```gdscript
-func _gain_xp(amount: int) -> void:
-    _xp += amount
-    _xp_history.append("+%d XP" % amount)
-    if _xp_history.size() > 4:
-        _xp_history.pop_front()
-    while _xp >= _xp_for_next and _level < MAX_LEVEL:
-        _level_up()
-
-func _level_up() -> void:
-    _xp -= _xp_for_next          # subtract, don't reset to 0
-    _level += 1
-    _xp_for_next = _calc_xp_threshold(_level)
-    _stat_attack += 5
-    _level_up_flash = 1.5
+func gain(amount: int) -> void:
+    xp += amount
+    while xp >= xp_for_next and level < max_level:
+        xp -= xp_for_next            # subtract, don't reset to 0
+        level += 1
+        xp_for_next = threshold(level)
+        leveled_up.emit(level)
+    xp_gained.emit(xp, xp_for_next)
 ```
 
-The `while` loop handles chained level-ups. `_xp -= _xp_for_next` (not `_xp = 0`) preserves the overflow. If you gain 200 XP and only need 98, the remaining 102 carries directly into the next threshold comparison.
+The `while` loop handles chained level-ups. `xp -= xp_for_next` (not `xp = 0`) preserves the overflow — gain 200 XP when you only need 98 and the remaining 102 carries into the next threshold. **Stat rewards aren't in here**: they're game-specific, so the demo connects `leveled_up` and applies `_stat_attack += 5` there. That keeps `LevelSystem` reusable across characters with different reward tables.
+
+### Enemy Interaction
+
+Each enemy is a plain Dictionary with `pos`, `radius`, `xp_value`, `color`, `alive`, and `_respawn_timer`. A left-click checks distance to every living enemy and kills the first one within its radius:
+
+```gdscript
+var dist: float = click_pos.distance_to(enemy["pos"])
+if dist <= enemy["radius"]:
+    enemy["alive"] = false
+    enemy["_respawn_timer"] = 2.0
+    _gain_xp(enemy["xp_value"])
+    break
+```
+
+`_process` ticks respawn timers and revives enemies, ensuring the player always has targets.
 
 ### Enemy Interaction
 
@@ -79,10 +91,31 @@ if dist <= enemy["radius"]:
 
 For this demo, the 1.4 multiplier means level 10 requires `50 * 1.4^9 ≈ 965 XP`, which at ~14 XP per kill averages ~70 kills from level 1. Adjusting `BASE_XP` scales total XP needed without changing the curve shape; adjusting `1.4` changes how steeply the later levels pull away.
 
+## Use as a building block
+
+**Copy:** `scripts/level_system.gd` (the `LevelSystem` class). It's a `RefCounted` — pure progression math, no scene.
+
+**Public API**
+- tuning: `base_xp`, `growth`, `max_level`
+- state: `level`, `xp`, `xp_for_next`
+- `gain(amount)` — award XP; carries overflow across multiple level-ups.
+- `threshold(lvl) -> int` — XP to advance from a given level.
+- signals `xp_gained(current_xp, needed)`, `leveled_up(new_level)`.
+
+**Integrate**
+1. `var levels := LevelSystem.new()` (set `base_xp`/`growth`/`max_level` to taste).
+2. On a kill/quest reward: `levels.gain(reward_xp)`.
+3. `levels.leveled_up.connect(_on_level_up)` — apply *your* per-level bonuses (max HP, abilities, stat points) here; keep them out of the reusable class.
+4. Read `levels.xp` / `levels.xp_for_next` to fill an XP bar.
+
+**Notes**
+- `class_name LevelSystem` is global — rename if it collides.
+- Swap the curve by editing `threshold()` (polynomial, table-based) without touching `gain()`.
+
 ## How to Adapt This in Your Project
 
-- **Connect to a character resource**: Replace the bare variables `_level`, `_xp`, `_stat_attack` with properties on a `CharacterStats` resource so multiple systems can read them.
-- **Add more stat gains**: `_level_up()` is the single place to apply all level-based bonuses — max health increases, new ability unlocks, enemy scaling, etc.
+- **Connect to a character resource**: Store the `LevelSystem` on a `CharacterStats` resource so multiple systems can read `level`/`xp`.
+- **Add more stat gains**: the `leveled_up` handler is the single place to apply all level-based bonuses — max health increases, new ability unlocks, enemy scaling, etc.
 - **Multiple XP sources**: Any system that calls `_gain_xp(amount)` feeds the same pool. Quest rewards, exploration, and crafting can all award XP without changing the leveling logic.
 - **Prestige / reset loops**: Save `_level` and `_stat_attack` to a `prestige_bonus` before resetting `_level = 1`, `_xp = 0`, then add the bonus back on top.
 - **Per-skill XP pools**: Duplicate the `_xp`/`_level`/`_xp_for_next` triple for each skill (strength XP, magic XP, etc.) and call `_calc_xp_threshold` with that skill's level independently.
@@ -108,21 +141,21 @@ For this demo, the 1.4 multiplier means level 10 requires `50 * 1.4^9 ≈ 965 XP
 ## Key Constants / Data
 
 ```gdscript
-const MAX_LEVEL := 10
-const BASE_XP   := 50        # XP needed for level 1 → 2
-# Threshold multiplier: each level costs 40% more than the last
-# _calc_xp_threshold(level) = int(BASE_XP * pow(1.4, level - 1))
+# level_system.gd — fields (defaults)
+var max_level := 10
+var base_xp   := 50    # XP needed for level 1 → 2
+var growth    := 1.4   # each level costs 40% more than the last
 
-# Enemy data (pos, radius, xp_value, color)
-# xp_value ranges from 8 to 20
-# _stat_attack starts at 10, gains +5 per level
+# main.gd — enemy data (pos, radius, xp_value, color); xp_value 8–20.
+# _stat_attack starts at 10, gains +5 per level (applied in the leveled_up handler).
 ```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | All game logic: XP math, enemy state, rendering |
+| `scripts/level_system.gd` | **`LevelSystem`** — reusable XP curve + level-up (`gain`/`threshold`) |
+| `scripts/main.gd` | Enemy state, input, rendering; owns a `LevelSystem` |
 | `tests/test_logic.gd` | Unit tests for threshold formula, overflow, and level-up chain |
 | `scenes/main.tscn` | Scene root (Node2D with script attached) |
 | `tests/test.tscn` | Test runner scene |

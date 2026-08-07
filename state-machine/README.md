@@ -42,15 +42,17 @@ var color := {
 
 Using a dictionary keyed by state enum values is cleaner than a chain of `if/elif` statements. The expression `{...}[state]` looks up the current state's color in a single step.
 
+Movement values are `@export`ed (`speed`, `jump_velocity`, `gravity`, `walk_threshold`) so they can be tuned per-character in the Inspector without editing the script.
+
 **Physics loop:**
 ```gdscript
 func _physics_process(delta: float) -> void:
     var dir := Input.get_axis("ui_left", "ui_right")
-    velocity.x = dir * SPEED
+    velocity.x = dir * speed
     if not is_on_floor():
-        velocity.y += GRAVITY * delta
+        velocity.y += gravity * delta
     if is_on_floor() and Input.is_action_just_pressed("ui_up"):
-        velocity.y = JUMP_VEL
+        velocity.y = jump_velocity
     move_and_slide()
     _transition()
     queue_redraw()
@@ -63,16 +65,19 @@ Physics runs first, then `_transition()` derives the new state from the updated 
 func _transition() -> void:
     var prev := state
     if is_on_floor():
-        state = State.WALK if abs(velocity.x) > 10 else State.IDLE
+        state = State.WALK if abs(velocity.x) > walk_threshold else State.IDLE
     else:
         state = State.JUMP if velocity.y < 0 else State.FALL
     if state != prev:
         state_label.text = State.keys()[state]
+        state_changed.emit(state)     # reuse hook for animation/audio/UI
 ```
 
 The transition logic:
 - **On floor**: WALK if moving horizontally, IDLE if still
 - **In air**: JUMP if moving upward (velocity.y < 0 because Godot's Y axis points down), FALL if moving downward
+
+When the state actually changes, the script emits `state_changed(new_state)`. Nothing in this demo listens to it, but it's the seam a real game hooks into — swap an animation, play a landing sound, update a HUD — without that code having to poll `state` every frame.
 
 `State.keys()[state]` returns the string name of the enum value at index `state` — e.g. `State.keys()[State.JUMP]` = `"JUMP"`. This avoids maintaining a separate name dictionary.
 
@@ -137,3 +142,32 @@ In a real game, this would typically be animation clips keyed to each state.
 | `Input.is_action_just_pressed(action)` | Edge-triggered (fires once per press) |
 | `move_and_slide()` | Move with collision; updates floor state |
 | `Enum.keys()` | Array of string names for enum values |
+
+## Use as a building block
+
+This demo is intentionally **one readable file**, not a generic framework. The
+lesson is the *derived-FSM pattern* — `enum` + a single `_transition()` that
+reads physics each frame — and that pattern is clearest when you can read it
+top to bottom. Wrapping it in a pluggable `StateMachine`/`State`-node system
+would teach a different (and heavier) thing. So to reuse it:
+
+**Lift the pattern, not a class.** Copy the three pieces into your own character:
+1. `enum State { ... }` — your character's mutually-exclusive states.
+2. `var state` + `signal state_changed(new_state)` — the current state and its reuse hook.
+3. `_transition()` — derive the new state from measurable data (floor contact, velocity, health, input) and emit `state_changed` when it flips.
+
+**Connect the signal** to drive presentation without polling:
+```gdscript
+player.state_changed.connect(func(s):
+    animation.play(Player.State.keys()[s].to_lower()))
+```
+
+**Tuning** is exposed via `@export` (`speed`, `jump_velocity`, `gravity`, `walk_threshold`) — set per-character in the Inspector.
+
+**When to reach for a heavier FSM instead:** if states need per-state
+enter/exit code, timers, or transitions that don't map cleanly onto measurable
+quantities, graduate to an explicit state object per state. See the
+[state-machine-hfsm](../state-machine-hfsm) demo for that approach.
+
+> Note: input uses the built-in `ui_*` actions for zero setup; in a real project
+> define your own actions (`move_left`, `jump`, …) and swap them in.

@@ -1,4 +1,8 @@
+## A type registry that decouples entity creation from calling code: register a
+## builder `Callable` under a name, then `create(name)` without the caller
+## knowing how each type is constructed. Add new types without touching spawners.
 class_name EntityFactory
+extends RefCounted
 
 var _registry: Dictionary = {}
 

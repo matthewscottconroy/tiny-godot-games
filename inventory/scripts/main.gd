@@ -14,7 +14,9 @@ const ITEM_DEFS := [
 	{name = "Gem",     color = Color.ORCHID,         symbol = "◆"},
 ]
 
-var _slots : Array = []          # Array of {item or null}
+# The slot model (scripts/inventory.gd). This file is the view: buttons, the
+# held-item cursor, and world items. `_inv` owns place/take/swap semantics.
+var _inv := Inventory.new(ROWS * COLS)
 var _world_items : Array = []    # Items in the world
 var _held_item  : Dictionary = {}
 
@@ -23,11 +25,11 @@ var _held_item  : Dictionary = {}
 @onready var world_node : Node2D        = $WorldItems
 
 func _ready() -> void:
-	# Create inventory slots
+	# Create inventory slots; the model refreshes their labels via `changed`.
 	for i in ROWS * COLS:
-		_slots.append({item = null})
 		var slot := _make_slot_button(i)
 		grid.add_child(slot)
+	_inv.changed.connect(_refresh_slots)
 
 	# Spawn world items
 	var positions := [Vector2(60, 150), Vector2(120, 280), Vector2(180, 180),
@@ -52,27 +54,21 @@ func _spawn_world_item(item_def: Dictionary, pos: Vector2) -> void:
 
 func _on_slot_clicked(idx: int, right_click: bool) -> void:
 	if right_click:
-		if _slots[idx].item:
+		if not _inv.is_empty(idx):
 			_world_items.append({pos = Vector2(150, 250) + Vector2(randf_range(-40, 40), 0),
-				item = _slots[idx].item})
-			_slots[idx].item = null
-			_refresh_slots()
+				item = _inv.take(idx)})
 			queue_redraw()
 		return
-	if _slots[idx].item == null and not _held_item.is_empty():
-		_slots[idx].item = _held_item
+	if _inv.is_empty(idx) and not _held_item.is_empty():
+		info.text = "%s placed in slot %d" % [_held_item.name, idx]
+		_inv.place(idx, _held_item)
 		_held_item = {}
-		info.text = "%s placed in slot %d" % [_slots[idx].item.name, idx]
-	elif _slots[idx].item and _held_item.is_empty():
-		_held_item = _slots[idx].item
-		_slots[idx].item = null
+	elif not _inv.is_empty(idx) and _held_item.is_empty():
+		_held_item = _inv.take(idx)
 		info.text = "Picked up %s from inventory" % _held_item.name
-	elif _slots[idx].item and not _held_item.is_empty():
-		var tmp := _slots[idx].item
-		_slots[idx].item = _held_item
-		_held_item = tmp
+	elif not _inv.is_empty(idx) and not _held_item.is_empty():
+		_held_item = _inv.swap(idx, _held_item)
 		info.text = "Swapped items"
-	_refresh_slots()
 
 func _refresh_slots() -> void:
 	var buttons := grid.get_children()
@@ -80,7 +76,7 @@ func _refresh_slots() -> void:
 		_refresh_slot_text(buttons[i], i)
 
 func _refresh_slot_text(btn: Button, idx: int) -> void:
-	var item := _slots[idx].item
+	var item = _inv.get_item(idx)
 	if item:
 		btn.text = item.symbol + "\n" + item.name
 		btn.modulate = item.color

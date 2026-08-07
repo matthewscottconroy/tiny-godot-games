@@ -49,9 +49,7 @@ func _test_add_vertex_on_edge() -> void:
 	expect(polygon[1] == mid, "inserted vertex is at midpoint")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[polygon-clip] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

@@ -117,9 +117,7 @@ func _test_tween_target_position() -> void:
 	expect_approx_v2(cam.tween_target, target3, "tween target updated to Room3 cam_target")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[camera-rooms] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

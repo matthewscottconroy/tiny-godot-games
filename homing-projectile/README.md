@@ -17,33 +17,36 @@ This demo isolates the homing logic from everything else, making it easy to tran
 ```
 Main (Node2D)          ← main.gd
 ├── Target (Node2D)    ← draggable target square
-└── [Projectile ×N]   ← Node2D + projectile.gd, spawned at runtime
+└── [HomingProjectile ×N]   ← projectile.gd, spawned at runtime
 ```
+
+The projectile is a self-contained class, `HomingProjectile`
+(`scripts/projectile.gd`), so it's the drop-in part: `main.gd` just spawns one
+per shot and hands it a start position, direction, and target.
 
 ### Spawning (`scripts/main.gd`)
 
 ```gdscript
 func _fire() -> void:
-    var proj := Node2D.new()
-    proj.set_script(ProjectileScript)
+    var proj := HomingProjectile.new()
     add_child(proj)
     proj.init(Vector2(90, 240), Vector2.RIGHT, _target)
 ```
 
-Projectiles are created at runtime without a `.tscn` file. `ProjectileScript` is `preload`ed at parse time so there is no disk I/O per shot.
+Projectiles are created at runtime without a `.tscn` file — because `HomingProjectile` has a `class_name`, `new()` is all it takes (no `preload`/`set_script` dance).
 
 ### Steering (`scripts/projectile.gd`)
 
 ```gdscript
-const SPEED      := 280.0
-const TURN_SPEED := 3.5
+@export var speed := 280.0
+@export var turn_speed := 3.5
 
 func _process(delta: float) -> void:
     if is_instance_valid(_target):
         var to_target := (_target.global_position - global_position).angle()
         var cur_angle := _vel.angle()
-        var new_angle := lerp_angle(cur_angle, to_target, TURN_SPEED * delta)
-        _vel           = Vector2.from_angle(new_angle) * SPEED
+        var new_angle := lerp_angle(cur_angle, to_target, turn_speed * delta)
+        _vel           = Vector2.from_angle(new_angle) * speed
 
     _trail.append(position)
     if _trail.size() > 12:
@@ -99,7 +102,25 @@ The target may be destroyed mid-flight. Without this check, reading `_target.glo
 
 **Predictive homing:** Instead of targeting the current position, offset the target by `_target.velocity * time_to_intercept` for a lead-aim missile that never misses a moving target.
 
-**Spawn from a scene:** Replace `Node2D.new()` + `set_script()` with `preload("res://scenes/projectile.tscn").instantiate()` once you need a sprite, sound, or collision shape.
+**Spawn from a scene:** Once you need a sprite, sound, or collision shape, save the projectile as a `.tscn` and `instantiate()` it instead of `HomingProjectile.new()`.
+
+## Use as a building block
+
+**Copy:** `scripts/projectile.gd` (the `HomingProjectile` class). It's a self-contained `Node2D` — spawn it, `init()` it, and it flies and cleans itself up.
+
+**Public API**
+- `@export speed` / `turn_speed` / `lifetime` — tune per-weapon in the Inspector.
+- `init(pos, dir, target)` — start position, initial heading, and the `Node2D` to chase.
+
+**Integrate**
+1. `var proj := HomingProjectile.new(); add_child(proj)`.
+2. `proj.init(muzzle_pos, aim_dir, nearest_enemy)`.
+3. It steers toward the target at constant speed, flies straight if the target is freed, and self-frees after `lifetime`.
+
+**Notes**
+- `class_name HomingProjectile` is global — rename if it collides.
+- `turn_speed` is the whole feel dial: low = lazy, dodgeable missiles; high = near-unavoidable. For lead-aim, pass a predicted target position.
+- Add damage by checking `position.distance_to(target)` each frame, or promote it to a scene with an `Area2D` for real collision.
 
 ## Key Godot APIs
 
@@ -109,8 +130,8 @@ The target may be destroyed mid-flight. Without this check, reading `_target.glo
 | `Vector2.from_angle(angle)` | Build a unit vector from radians |
 | `Vector2.angle()` | Extract the angle of a vector in radians |
 | `is_instance_valid(node)` | Safe check before accessing a potentially-freed node |
-| `node.set_script(script)` | Attach a GDScript to a dynamically-created node |
-| `preload("res://...")` | Load a resource at parse time, not at runtime |
+| `class_name` + `Type.new()` | Instantiate a scripted node by type, no `preload` needed |
+| `@export var` | Expose tuning (speed, turn rate) to the Inspector |
 
 ## Controls
 
@@ -122,9 +143,10 @@ The target may be destroyed mid-flight. Without this check, reading `_target.glo
 ## Key Constants
 
 ```gdscript
-const SPEED      := 280.0   # pixels per second — projectile travel speed
-const TURN_SPEED := 3.5     # radians per second — how quickly it steers
-const LIFETIME   := 4.0     # seconds before auto-cleanup
+# projectile.gd — @export fields (defaults shown)
+@export var speed := 280.0       # pixels per second — projectile travel speed
+@export var turn_speed := 3.5    # radians per second — how quickly it steers
+@export var lifetime := 4.0      # seconds before auto-cleanup
 # trail cap: 12 positions stored, rendered with alpha fade
 ```
 
@@ -133,5 +155,5 @@ const LIFETIME   := 4.0     # seconds before auto-cleanup
 | File | Purpose |
 |------|---------|
 | `scripts/main.gd` | Spawns projectiles on Space, draws the gun and target, tracks fire count |
-| `scripts/projectile.gd` | Per-frame steering, trail buffer, lifetime cleanup |
+| `scripts/projectile.gd` | **`HomingProjectile`** — reusable steering, trail, lifetime |
 | `tests/test_logic.gd` | Unit tests: angle convergence, speed preservation, trail cap, lifetime |

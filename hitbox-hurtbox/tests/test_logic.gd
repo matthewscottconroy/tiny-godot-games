@@ -77,9 +77,7 @@ func _test_enemy_attack_timer() -> void:
 	expect(attack_timer >= ATTACK_INTERVAL, "after 2.5s, timer has reached interval")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[hitbox-hurtbox] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

@@ -2,8 +2,8 @@ extends Node
 
 # Pure GDScript tests — no scene tree dependencies.
 
-var _pass_count := 0
-var _fail_count := 0
+var _pass := 0
+var _fail := 0
 var _results: Array = []
 
 func _ready() -> void:
@@ -16,13 +16,13 @@ func _ready() -> void:
 
 # --------------- helpers ---------------
 
-func expect(condition: bool, label: String) -> void:
-	if condition:
-		_pass_count += 1
-		_results.append("[PASS] " + label)
+func expect(cond: bool, label: String) -> void:
+	if cond:
+		_pass += 1
+		print("  PASS  ", label)
 	else:
-		_fail_count += 1
-		_results.append("[FAIL] " + label)
+		_fail += 1
+		print("  FAIL  ", label)
 
 func _bezier(t: float, pts: PackedVector2Array) -> Vector2:
 	var p0 := pts[0]; var p1 := pts[1]; var p2 := pts[2]; var p3 := pts[3]
@@ -88,7 +88,7 @@ func _test_t_wraps() -> void:
 # --------------- report ---------------
 
 func _report() -> void:
-	print("=== Bezier Path Tests ===")
-	for r in _results:
-		print(r)
-	print("Results: %d passed, %d failed" % [_pass_count, _fail_count])
+	var summary := "[bezier-path] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

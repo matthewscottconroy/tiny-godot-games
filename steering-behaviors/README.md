@@ -10,70 +10,73 @@ Seek/Arrive is used for homing missiles, enemy pursuit, and pick-up magnets. Fle
 
 ## How It Works
 
+The steering math lives in a reusable class, `SteeringAgent`
+(`scripts/steering_agent.gd`), a plain `RefCounted` holding `position` /
+`velocity` plus one method per behaviour. `scripts/main.gd` is just the demo
+driver: it spawns eight agents, feeds each the selected behaviour, wraps them on
+screen, and draws them.
+
 ### Force Accumulation Loop (`scripts/main.gd`)
 
-Each frame, a steering force is computed per agent and added to its velocity:
+Each frame the driver asks the agent for a steering force and integrates it:
 
 ```gdscript
 func _process(delta: float) -> void:
     for agent in _agents:
-        var steering := _compute_steering(agent, delta)
-        agent["vel"] += steering * delta
-        agent["vel"] = (agent["vel"] as Vector2).limit_length(MAX_SPEED)
-        agent["pos"] += agent["vel"] * delta
-        agent["pos"] = Vector2(
-            fposmod(agent["pos"].x, 640.0),
-            fposmod(agent["pos"].y, 480.0)
+        var force := _steering_for(agent, delta)   # agent.seek/flee/wander
+        agent.step(force, delta)                    # integrate + move
+        # Toroidal wrap keeps everyone on screen (demo-specific, not steering).
+        agent.position = Vector2(
+            fposmod(agent.position.x, WORLD_SIZE.x),
+            fposmod(agent.position.y, WORLD_SIZE.y),
         )
 ```
 
-`limit_length` caps speed without changing direction. `fposmod` wraps coordinates toroidally so agents reappear on the opposite side.
+`SteeringAgent.step()` adds the force, caps speed with `limit_length` (magnitude
+only, direction unchanged), and advances the position. `fposmod` wraps
+coordinates toroidally so agents reappear on the opposite side — a demo concern,
+which is why it lives in the driver rather than the reusable class.
 
-### Seek / Arrive
+### Seek / Arrive (`SteeringAgent.seek`)
 
 ```gdscript
-Behavior.SEEK:
-    var to_target := _target - pos
+func seek(target: Vector2) -> Vector2:
+    var to_target := target - position
     var dist := to_target.length()
-    var speed := MAX_SPEED
-    if dist < ARRIVE_RADIUS:
-        speed = MAX_SPEED * (dist / ARRIVE_RADIUS)  # linear deceleration
-    if dist > 0.01:
-        desired = to_target.normalized() * speed
-    steering = desired - vel
-    steering = steering.limit_length(MAX_FORCE)
+    var speed := max_speed
+    if dist < arrive_radius:
+        speed = max_speed * (dist / arrive_radius)   # linear deceleration
+    var desired := to_target.normalized() * speed if dist > 0.01 else Vector2.ZERO
+    return (desired - velocity).limit_length(max_force)
 ```
 
-Arrive slows agents linearly within `ARRIVE_RADIUS` (60 px) so they stop smoothly instead of overshooting and oscillating.
+Arrive slows agents linearly within `arrive_radius` (60 px) so they stop smoothly instead of overshooting and oscillating.
 
-### Flee
+### Flee (`SteeringAgent.flee`)
 
 ```gdscript
-Behavior.FLEE:
-    var to_target := _target - pos
+func flee(target: Vector2) -> Vector2:
+    var to_target := target - position
     var dist := to_target.length()
-    if dist < FLEE_RADIUS and dist > 0.01:
-        desired = -to_target.normalized() * MAX_SPEED
-        steering = desired - vel
-        steering = steering.limit_length(MAX_FORCE)
-    else:
-        steering = -vel.limit_length(MAX_FORCE)  # decelerate to rest
+    if dist < flee_radius and dist > 0.01:
+        var desired := -to_target.normalized() * max_speed
+        return (desired - velocity).limit_length(max_force)
+    return (-velocity).limit_length(max_force)        # decelerate to rest
 ```
 
-Outside `FLEE_RADIUS` (150 px) agents gently decelerate rather than maintaining full speed, giving a natural "threat zone" feel.
+Outside `flee_radius` (150 px) agents gently decelerate rather than maintaining full speed, giving a natural "threat zone" feel.
 
-### Wander
+### Wander (`SteeringAgent.wander`)
 
 ```gdscript
-Behavior.WANDER:
-    agent["wander_angle"] += randf_range(-WANDER_JITTER, WANDER_JITTER) * delta
-    var ahead := vel.normalized() if vel.length() > 0.1 else Vector2(1, 0)
-    var wander_target := pos + ahead * WANDER_DIST
-                           + Vector2(cos(wander_angle), sin(wander_angle)) * WANDER_RADIUS
-    var to_wander := wander_target - pos
-    desired = to_wander.normalized() * MAX_SPEED
-    steering = desired - vel
-    steering = steering.limit_length(MAX_FORCE)
+func wander(delta: float) -> Vector2:
+    wander_angle += randf_range(-wander_jitter, wander_jitter) * delta
+    var ahead := velocity.normalized() if velocity.length() > 0.1 else Vector2.RIGHT
+    var target := position + ahead * wander_distance \
+        + Vector2(cos(wander_angle), sin(wander_angle)) * wander_radius
+    var to_target := target - position
+    var desired := to_target.normalized() * max_speed if to_target.length() > 0.01 else Vector2.ZERO
+    return (desired - velocity).limit_length(max_force)
 ```
 
 The wander target is a point on a circle projected ahead of the agent. Jittering the angle of that circle each frame produces smooth, curved trajectories. Because the circle is always in front of the agent, direction changes are gradual — no sharp 180° reversals.
@@ -89,17 +92,32 @@ steering_force   = clamp(steering_force, MAX_FORCE)
 velocity        += steering_force * delta
 ```
 
-This is Reynolds' **velocity matching** formulation. The steering force is the delta needed to reach the desired velocity, clamped to a maximum force that represents the agent's maximum acceleration. A higher `MAX_FORCE` gives snappier, more responsive agents; a lower value gives sluggish, heavy motion.
+This is Reynolds' **velocity matching** formulation. The steering force is the delta needed to reach the desired velocity, clamped to a maximum force that represents the agent's maximum acceleration. A higher `max_force` gives snappier, more responsive agents; a lower value gives sluggish, heavy motion.
 
-**Wander geometry**: `WANDER_DIST` (80 px) controls how far ahead the wander circle center is projected. A larger distance makes the agent commit more strongly to its current direction before turning. `WANDER_RADIUS` (50 px) controls the amplitude of wandering. `WANDER_JITTER` (90 radians/s) controls how fast the angle can change — high jitter = erratic, low jitter = sweeping curves.
+**Wander geometry**: `wander_distance` (80 px) controls how far ahead the wander circle center is projected. A larger distance makes the agent commit more strongly to its current direction before turning. `wander_radius` (50 px) controls the amplitude of wandering. `wander_jitter` (90 radians/s) controls how fast the angle can change — high jitter = erratic, low jitter = sweeping curves.
 
-## How to Adapt This in Your Project
+## Use as a building block
 
-- To combine behaviors, compute each steering force separately and sum them with weights: `steering = seek * 0.7 + separation * 1.5`. Normalize if the total exceeds `MAX_FORCE`.
-- For a chase enemy that gives up, add a maximum speed to the pursued target and trigger a flee behavior instead when the enemy cannot catch up.
-- Arrive is almost always preferable to pure Seek for any AI that stops at a destination — without it, agents orbit the target in tight jitter loops.
-- To add obstacle avoidance, cast a forward probe of length proportional to speed and apply a steering force perpendicular to any hit surface.
-- `WANDER_JITTER` is a frame-rate-dependent quantity (radians per second). The `* delta` multiplication already makes it frame-rate independent.
+**Copy:** `scripts/steering_agent.gd` (the `SteeringAgent` class). It is a plain
+`RefCounted` with no scene or node dependencies.
+
+**Public API**
+- state: `position`, `velocity`
+- tuning: `max_speed`, `max_force`, `arrive_radius`, `flee_radius`, `wander_radius`, `wander_distance`, `wander_jitter`
+- behaviours (each returns a steering force): `seek(target)`, `flee(target)`, `wander(delta)`
+- integration: `step(force, delta)`
+
+**Integrate**
+1. Create an agent per entity: `var agent := SteeringAgent.new()` and set `position`/`velocity`.
+2. Each frame: `agent.step(agent.seek(target_pos), delta)`, then copy `agent.position` onto your sprite/`CharacterBody2D`.
+3. Combine behaviours by summing forces with weights before `step()`:
+   `agent.step(agent.seek(goal) * 0.7 + separation * 1.5, delta)` (clamp the sum to `max_force` if needed).
+
+**Notes**
+- `class_name SteeringAgent` is global to the project — rename if it collides.
+- The demo drives plain positions and draws them; in a real project let the agent's `position` steer a `CharacterBody2D` (`velocity = agent.velocity; move_and_slide()`).
+- Arrive (built into `seek`) is almost always preferable to pure seek for AI that stops at a destination — without it, agents orbit the target in tight jitter loops.
+- For obstacle avoidance, cast a forward probe proportional to speed and add a force perpendicular to any hit surface before `step()`.
 
 ## Key Godot APIs
 
@@ -124,24 +142,31 @@ This is Reynolds' **velocity matching** formulation. The steering force is the d
 
 The active behavior name appears in the top-right corner. The target crosshair is hidden in Wander mode.
 
-## Key Constants
+## Key Parameters
+
+Tuning lives on `SteeringAgent` as plain fields (set per-agent in code); the
+driver exposes `agent_count` as an `@export` on the demo node.
 
 ```gdscript
-const AGENT_COUNT   := 8
-const MAX_SPEED     := 140.0   # px/s — terminal velocity
-const MAX_FORCE     := 200.0   # max steering acceleration (px/s²)
-const ARRIVE_RADIUS := 60.0    # slow-down zone for Seek
-const FLEE_RADIUS   := 150.0   # activation radius for Flee
-const WANDER_RADIUS := 50.0    # radius of the wander circle
-const WANDER_DIST   := 80.0    # how far ahead the circle is projected
-const WANDER_JITTER := 90.0    # radians/s of random angle change
+# SteeringAgent fields (defaults)
+var max_speed       := 140.0   # px/s — terminal velocity
+var max_force       := 200.0   # max steering acceleration (px/s²)
+var arrive_radius   := 60.0    # slow-down zone for Seek
+var flee_radius     := 150.0   # activation radius for Flee
+var wander_radius   := 50.0    # radius of the wander circle
+var wander_distance := 80.0    # how far ahead the circle is projected
+var wander_jitter   := 90.0    # radians/s of random angle change
+
+# main.gd
+@export var agent_count := 8
 ```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/main.gd` | All logic: agent initialization, `_compute_steering()`, `_draw()` |
+| `scripts/steering_agent.gd` | **`SteeringAgent`** — reusable steering math (`seek`/`flee`/`wander`/`step`) |
+| `scripts/main.gd` | Demo driver: spawns agents, selects behaviour, wraps + draws |
 | `scenes/main.tscn` | `Node2D` root with `main.gd` attached |
 | `tests/test_logic.gd` | Headless unit tests for each steering behavior |
 | `tests/test.tscn` | Test runner scene |

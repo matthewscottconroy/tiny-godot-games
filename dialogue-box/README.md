@@ -94,6 +94,26 @@ The `_typing` flag is shared between the typing coroutine and the advance handle
 
 `_type_out.call_deferred(line)` instead of `_type_out(line)` ensures the function runs after the current frame's signal processing is complete. This prevents issues where `await` inside a signal handler can cause unexpected ordering.
 
+## Use as a building block
+
+`DialogueBox` (`scripts/dialogue_box.gd`) is already a reusable UI component — a
+`Control` with no game content. Copy that file and its scene subtree.
+
+**Public API**
+- `@export chars_per_sec` — typewriter speed.
+- `start(lines: Array[String], speakers: Array[String] = [])` — show a conversation.
+- signal `finished` — emitted when the last line closes.
+
+**Integrate**
+1. Add the `DialogueBox` scene under a `CanvasLayer`.
+2. `dialogue_box.start(["Hello!", "Take this map."], ["Elder", "Elder"])`.
+3. `dialogue_box.finished.connect(_re_enable_player)` — it hides itself on finish.
+
+**Notes**
+- `class_name DialogueBox` is global — rename if it collides.
+- Content is pure data (string arrays), so it loads trivially from JSON or a CSV.
+- For branching conversations, pair it with the [dialogue-tree](../dialogue-tree) demo's `DialogueTree` to pick which lines to show next.
+
 ## Key Godot APIs
 
 | API | Purpose |

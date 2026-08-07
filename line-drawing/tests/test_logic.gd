@@ -68,9 +68,7 @@ func _test_undo_removes_last() -> void:
 	expect(strokes[0].color == Color.WHITE, "earlier stroke remains")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[line-drawing] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: "4.7.1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot (headless)
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          url="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -fsSL "$url" -o /tmp/godot.zip
+          unzip -o /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          chmod +x ~/godot/godot
+
+      - name: Import projects
+        # A first headless open lets Godot generate .godot/ import caches so the
+        # test scenes load cleanly on the real run.
+        run: |
+          export PATH="$HOME/godot:$PATH"
+          for d in */; do
+            [ -f "${d}project.godot" ] || continue
+            godot --headless --path "$d" --import --quit >/dev/null 2>&1 || true
+          done
+
+      - name: Run tests
+        run: |
+          export PATH="$HOME/godot:$PATH"
+          ./run-tests.sh

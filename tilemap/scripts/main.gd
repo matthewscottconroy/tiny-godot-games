@@ -2,7 +2,7 @@ extends Node2D
 
 const TILE_SIZE := 32
 
-@onready var tilemap : TileMap         = $TileMap
+@onready var tilemap : TileMapLayer    = $TileMapLayer
 @onready var player  : CharacterBody2D = $Player
 
 const MAP_DATA := [
@@ -64,7 +64,7 @@ func _load_map() -> void:
 		for col in MAP_DATA[row].size():
 			var t := MAP_DATA[row][col]
 			if t > 0:
-				tilemap.set_cell(0, Vector2i(col, row), 0, Vector2i(t - 1, 0))
+				tilemap.set_cell(Vector2i(col, row), 0, Vector2i(t - 1, 0))
 
 func _setup_player() -> void:
 	var shape    := CapsuleShape2D.new()
@@ -92,11 +92,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var cell := tilemap.local_to_map(tilemap.to_local(event.position))
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if _paint_tile > 0:
-				tilemap.set_cell(0, cell, 0, Vector2i(_paint_tile - 1, 0))
+				tilemap.set_cell(cell, 0, Vector2i(_paint_tile - 1, 0))
 			else:
-				tilemap.erase_cell(0, cell)
+				tilemap.erase_cell(cell)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			tilemap.erase_cell(0, cell)
+			tilemap.erase_cell(cell)
 
 func _draw() -> void:
 	var names := ["Erase (4)", "Grass (1)", "Stone (2)", "Water (3)"]

@@ -10,18 +10,21 @@ Input buffering solves this: press slightly early, and the action fires as soon 
 
 ## How It Works
 
-### Two Timers
+The buffer/cooldown timing lives in a reusable class, `InputBuffer`
+(`scripts/input_buffer.gd`), a plain `RefCounted`. The player owns one
+(`var _attack := InputBuffer.new()`) and drives it with three calls:
+`press()` on input, `update(delta)` each frame, and `consume()` to check whether
+a queued press may fire now. The player script keeps only movement and drawing.
+
+### Two Timers (inside `InputBuffer`)
 
 ```gdscript
-const ATTACK_COOLDOWN := 0.5    # time between attacks
-const BUFFER_WINDOW   := 0.18   # how early a press can be queued
-```
+var buffer_window := 0.18   # how early a press can be queued
+var cooldown_time := 0.5    # time between attacks
 
-Both timers count down to zero each frame:
-
-```gdscript
-_cooldown = maxf(_cooldown - delta, 0.0)
-_buffer   = maxf(_buffer   - delta, 0.0)
+func update(delta: float) -> void:
+    _cooldown = maxf(_cooldown - delta, 0.0)
+    _buffer   = maxf(_buffer   - delta, 0.0)
 ```
 
 `maxf(..., 0.0)` clamps each timer at zero so they never go negative.
@@ -29,26 +32,34 @@ _buffer   = maxf(_buffer   - delta, 0.0)
 ### Setting the Buffer
 
 ```gdscript
+# player.gd
 if Input.is_action_just_pressed("ui_accept"):
-    _buffer = BUFFER_WINDOW
+    _attack.press()          # sets _buffer = buffer_window
+
+# InputBuffer.press():
+func press() -> void:
+    _buffer = buffer_window
 ```
 
-`is_action_just_pressed` fires on the frame of the press — it does not repeat. Each new press resets the buffer to the full window. If the player presses twice during a cooldown, the second press overwrites the first, which is the correct behavior: only the most recent intent matters.
+`is_action_just_pressed` fires on the frame of the press — it does not repeat. Each new press resets the buffer to the full window. If the player presses twice during a cooldown, the second press overwrites the first: only the most recent intent matters.
 
 ### Firing the Attack
 
 ```gdscript
-if _buffer > 0.0 and _cooldown == 0.0:
+# player.gd
+if _attack.consume():
     _fire_attack()
 
-func _fire_attack() -> void:
-    _cooldown = ATTACK_COOLDOWN
-    _buffer   = 0.0
-    _flash    = 0.15
-    _hits    += 1
+# InputBuffer.consume() — true once, when a queued press may fire:
+func consume() -> bool:
+    if _buffer > 0.0 and _cooldown == 0.0:
+        _buffer = 0.0
+        _cooldown = cooldown_time     # start the next cooldown
+        return true
+    return false
 ```
 
-The attack fires when a buffer is pending AND the cooldown has expired. `_fire_attack()` immediately starts a new cooldown and clears the buffer so it can't fire twice.
+`consume()` returns true when a buffer is pending AND the cooldown has expired, then immediately starts the next cooldown and clears the buffer so it can't fire twice. The player's `_fire_attack()` now only does presentation (`_flash`, `_hits += 1`).
 
 ### Scenario Walkthrough
 
@@ -64,13 +75,13 @@ If the player presses too early (more than 180ms before cooldown clears), the bu
 
 ```gdscript
 # Cooldown bar (orange) above player
-var cd_ratio := _cooldown / ATTACK_COOLDOWN
-draw_rect(Rect2(-22, 32, bar_w * cd_ratio, 6), Color.ORANGE_RED)
+draw_rect(Rect2(-22, 32, bar_w * _attack.cooldown_ratio(), 6), Color.ORANGE_RED)
 
 # Buffer bar (green) below cooldown bar
-var buf_ratio := _buffer / BUFFER_WINDOW
-draw_rect(Rect2(-22, 40, bar_w * buf_ratio, 6), Color.LIME_GREEN)
+draw_rect(Rect2(-22, 40, bar_w * _attack.buffer_ratio(), 6), Color.LIME_GREEN)
 ```
+
+`InputBuffer` exposes `cooldown_ratio()` / `buffer_ratio()` (0..1) for bars and `cooldown_left()` / `buffer_left()` for the second-count labels.
 
 Both bars shrink from right to left as their timers drain. Pressing attack while the orange bar is active shows the green bar appear and chase the orange bar down — exactly what happens internally.
 
@@ -97,13 +108,26 @@ This implementation stores a single buffered input (the most recent press). Some
 
 An alternative to the buffer timer is to poll `Input.is_action_pressed()` (held) rather than `is_action_just_pressed()` (edge-triggered). This fires the attack on the first available frame when both the button is held and the cooldown is clear. The trade-off: it only works while the button is physically held. If the player taps and releases quickly, the window can expire before `is_action_pressed` returns true on the fire frame. The timer-based buffer is more reliable for fast-tap inputs.
 
-## How to Adapt This in Your Project
+## Use as a building block
 
-1. Add `_buffer` and `_cooldown` as float variables to any ability or attack component.
-2. Set `_buffer = BUFFER_WINDOW` on `is_action_just_pressed`.
-3. Check `_buffer > 0.0 and _cooldown == 0.0` to fire.
-4. Expose `BUFFER_WINDOW` as a tunable constant (or a designer-editable `@export` variable).
-5. For combo systems, maintain a small array of buffered inputs with timestamps instead of a single float.
+**Copy:** `scripts/input_buffer.gd` (the `InputBuffer` class). It's a `RefCounted` — pure timing, no scene or input-map dependency (it doesn't read input itself; you tell it when a press happened).
+
+**Public API**
+- tuning: `buffer_window`, `cooldown_time`
+- `press()` — queue an input.
+- `update(delta)` — age the timers (call each frame).
+- `consume() -> bool` — true once when a queued press may fire; starts the cooldown.
+- `cooldown_left()` / `buffer_left()` (seconds) and `cooldown_ratio()` / `buffer_ratio()` (0..1) for UI.
+
+**Integrate** (any ability, not just attacks)
+1. `var _dash := InputBuffer.new()`; set `cooldown_time`/`buffer_window`.
+2. `if Input.is_action_just_pressed("dash"): _dash.press()`.
+3. Each frame: `_dash.update(delta)`; `if _dash.consume(): do_dash()`.
+
+**Notes**
+- `class_name InputBuffer` is global — rename if it collides.
+- Structurally identical to jump buffering (see *Relationship to Jump Buffering* above) — the only difference is the readiness condition, here `cooldown_time`.
+- For combo systems, keep one `InputBuffer` per action, or extend it to a small queue of timestamps.
 
 ## Key Godot APIs
 
@@ -126,14 +150,20 @@ An alternative to the buffer timer is to poll `Input.is_action_pressed()` (held)
 ## Key Constants
 
 ```gdscript
-const ATTACK_COOLDOWN := 0.5    # seconds between attacks
-const BUFFER_WINDOW   := 0.18   # seconds a queued press stays valid
+# player.gd
+const SPEED   := 180.0
+const GRAVITY := 900.0
+
+# input_buffer.gd (fields; defaults match this demo)
+var cooldown_time := 0.5    # seconds between attacks
+var buffer_window := 0.18   # seconds a queued press stays valid
 ```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/player.gd` | Buffer timer, cooldown timer, attack logic, bar drawing |
+| `scripts/input_buffer.gd` | **`InputBuffer`** — reusable buffer/cooldown timing (`press`/`update`/`consume`) |
+| `scripts/player.gd` | Movement, attack presentation, bar drawing; owns an `InputBuffer` |
 | `scenes/main.tscn` | Level with player and platforms |
 | `tests/test_logic.gd` | Tests for buffer window, cooldown interaction, fire conditions |

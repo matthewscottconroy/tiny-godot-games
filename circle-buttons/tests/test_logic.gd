@@ -132,9 +132,7 @@ func _test_extra_keys_preserved() -> void:
 	expect(circles[0]["tag"] == "boss", "string extra key preserved")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[circle-buttons] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

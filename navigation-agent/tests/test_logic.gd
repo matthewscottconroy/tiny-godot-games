@@ -55,9 +55,7 @@ func _test_obstacle_bounds() -> void:
 		expect(obs.size.x > 0 and obs.size.y > 0, "obstacle has positive size")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[navigation-agent] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

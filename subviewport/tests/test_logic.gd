@@ -66,9 +66,7 @@ func _test_minimap_dot_position() -> void:
 	expect_near(dot_y, 57.0, "player at world center maps to minimap center y")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[subviewport] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

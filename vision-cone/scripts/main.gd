@@ -20,6 +20,10 @@ var _enemy_dir: float = 0.0        # angle in radians, facing right initially
 var _enemy_patrol_target: float = 260.0  # x position to walk toward
 var _detected: bool = false
 
+# The reusable detector (scripts/vision_cone.gd) — all the "can the enemy see
+# the player" geometry lives here; this file just moves things and draws.
+var _vision := VisionCone.new(CONE_ANGLE, CONE_RANGE)
+
 # Patrol x-positions the enemy toggles between
 const _PATROL_LEFT := 80.0
 const _PATROL_RIGHT := 260.0
@@ -55,7 +59,7 @@ func _process(delta: float) -> void:
 		_enemy_pos.x += signf(dx) * ENEMY_SPEED * delta
 		_enemy_dir = atan2(0.0, signf(dx))  # 0 = right, PI = left
 
-	_detected = _check_detection()
+	_detected = _vision.can_see(_enemy_pos, _enemy_dir, _player_pos, _walls)
 	queue_redraw()
 
 
@@ -66,62 +70,6 @@ func _point_in_walls(p: Vector2) -> bool:
 		if expanded.has_point(p):
 			return true
 	return false
-
-
-func _check_detection() -> bool:
-	# Distance gate
-	if _enemy_pos.distance_to(_player_pos) > CONE_RANGE:
-		return false
-
-	# Angle gate — is player within the cone half-angle?
-	var to_player := _player_pos - _enemy_pos
-	var angle_to_player := to_player.angle()
-	var angle_diff := angle_difference(angle_to_player, _enemy_dir)
-	if absf(angle_diff) > CONE_ANGLE:
-		return false
-
-	# Line-of-sight: cast rays and check for wall occlusion
-	return not _wall_blocks_segment(_enemy_pos, _player_pos)
-
-
-# Returns true if any wall rect blocks the segment from a to b.
-func _wall_blocks_segment(a: Vector2, b: Vector2) -> bool:
-	for w in _walls:
-		if _segment_intersects_rect(a, b, w):
-			return true
-	return false
-
-
-# Liang-Barsky / slab test: does segment (p1→p2) intersect rect r?
-func _segment_intersects_rect(p1: Vector2, p2: Vector2, r: Rect2) -> bool:
-	var d := p2 - p1
-	var t_min := 0.0
-	var t_max := 1.0
-
-	# Test each slab
-	var tests := [
-		[d.x, r.position.x - p1.x, r.position.x + r.size.x - p1.x],
-		[d.y, r.position.y - p1.y, r.position.y + r.size.y - p1.y],
-	]
-
-	for t in tests:
-		var dv: float = t[0]
-		var lo: float = t[1]
-		var hi: float = t[2]
-		if absf(dv) < 1e-6:
-			if lo > 0.0 or hi < 0.0:
-				return false
-		else:
-			var t1 := lo / dv
-			var t2 := hi / dv
-			if t1 > t2:
-				var tmp := t1; t1 = t2; t2 = tmp
-			t_min = maxf(t_min, t1)
-			t_max = minf(t_max, t2)
-			if t_min > t_max:
-				return false
-
-	return true
 
 
 func _draw() -> void:

@@ -38,6 +38,24 @@ var e := factory.create(&"enemy_tank")
 
 Each entity is a plain `Dictionary`. No base class, no inheritance. Fields are type-specific — callers use `.get(key, default)` for optional fields.
 
+## Use as a building block
+
+**Copy:** `scripts/factory.gd` (the `EntityFactory` class). It's a `RefCounted` with no dependencies — it doesn't care what your builders return (dictionaries here, but just as easily `Node`s or `Resource`s).
+
+**Public API**
+- `register(type_name: StringName, builder: Callable)` — associate a name with a builder.
+- `create(type_name, params := {})` — invoke the builder; warns and returns `{}` for unknown types.
+- `has_type(type_name) -> bool`, `registered_types() -> Array`.
+
+**Integrate**
+1. `var factory := EntityFactory.new()`.
+2. Register each type once: `factory.register(&"goblin", func(p): return preload("res://goblin.tscn").instantiate())`.
+3. Spawn by name: `var goblin := factory.create(&"goblin")` — the spawner never mentions `Goblin` directly, so adding a new type touches only its registration.
+
+**Notes**
+- `class_name EntityFactory` is global — rename if it collides.
+- Builders can return anything (scene instances, resources, dicts). Read the type→scene table from a config file and register in a loop to data-drive it.
+
 ## Project Structure
 
 ```

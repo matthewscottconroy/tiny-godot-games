@@ -71,9 +71,7 @@ func _test_bullet_constants() -> void:
 	expect_near(distance, 800.0, "bullet travels 800px before expiring")
 
 func _report() -> void:
-	print("---")
-	print("Results: %d passed, %d failed" % [_pass, _fail])
-	if _fail == 0:
-		print("ALL TESTS PASSED")
-	else:
-		print("SOME TESTS FAILED")
+	var summary := "[cooldown-shoot] %d/%d passed" % [_pass, _pass + _fail]
+	print(summary)
+	if _fail > 0:
+		push_error(summary)

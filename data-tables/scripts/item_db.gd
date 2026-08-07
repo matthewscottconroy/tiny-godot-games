@@ -1,9 +1,9 @@
 class_name ItemDB
-extends Node
+extends RefCounted
 
 var items: Array[ItemData] = []
 
-func _ready() -> void:
+func _init() -> void:
 	_populate()
 
 func _populate() -> void:

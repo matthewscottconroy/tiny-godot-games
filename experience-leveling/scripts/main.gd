@@ -1,11 +1,8 @@
 extends Node2D
 
-const MAX_LEVEL := 10
-const BASE_XP := 50
-
-var _level: int = 1
-var _xp: int = 0
-var _xp_for_next: int = 50
+# XP/level logic lives in the reusable LevelSystem (scripts/level_system.gd);
+# this file handles enemies, input, and drawing.
+var _leveling := LevelSystem.new()
 var _stat_attack: int = 10
 var _enemies: Array = []
 var _level_up_flash: float = 0.0
@@ -13,12 +10,11 @@ var _xp_history: Array[String] = []
 
 
 func _ready() -> void:
-	_xp_for_next = _calc_xp_threshold(1)
+	# Stat rewards are game-specific — apply them when a level is gained.
+	_leveling.leveled_up.connect(func(_lvl: int) -> void:
+		_stat_attack += 5
+		_level_up_flash = 1.5)
 	_init_enemies()
-
-
-func _calc_xp_threshold(level: int) -> int:
-	return int(BASE_XP * pow(1.4, level - 1))
 
 
 func _init_enemies() -> void:
@@ -61,20 +57,10 @@ func _input(event: InputEvent) -> void:
 
 
 func _gain_xp(amount: int) -> void:
-	_xp += amount
 	_xp_history.append("+%d XP" % amount)
 	if _xp_history.size() > 4:
 		_xp_history.pop_front()
-	while _xp >= _xp_for_next and _level < MAX_LEVEL:
-		_level_up()
-
-
-func _level_up() -> void:
-	_xp -= _xp_for_next
-	_level += 1
-	_xp_for_next = _calc_xp_threshold(_level)
-	_stat_attack += 5
-	_level_up_flash = 1.5
+	_leveling.gain(amount)   # handles thresholds, overflow, and level-up signals
 
 
 func _process(delta: float) -> void:
@@ -118,16 +104,16 @@ func _draw() -> void:
 	var bar_h := 22.0
 	draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.15, 0.15, 0.25))
 	var fill_frac := 0.0
-	if _xp_for_next > 0:
-		fill_frac = clampf(float(_xp) / float(_xp_for_next), 0.0, 1.0)
+	if _leveling.xp_for_next > 0:
+		fill_frac = clampf(float(_leveling.xp) / float(_leveling.xp_for_next), 0.0, 1.0)
 	draw_rect(Rect2(bar_x, bar_y, bar_w * fill_frac, bar_h), Color(0.2, 0.7, 1.0))
 	draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.4, 0.4, 0.6), false, 1.5)
-	var xp_label := "XP: %d / %d" % [_xp, _xp_for_next]
+	var xp_label := "XP: %d / %d" % [_leveling.xp, _leveling.xp_for_next]
 	draw_string(ThemeDB.fallback_font, Vector2(bar_x + bar_w / 2 - 40, bar_y + 16), xp_label,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1))
 
 	# Level display
-	draw_string(ThemeDB.fallback_font, Vector2(bar_x, bar_y - 30), "Level %d / %d" % [_level, MAX_LEVEL],
+	draw_string(ThemeDB.fallback_font, Vector2(bar_x, bar_y - 30), "Level %d / %d" % [_leveling.level, _leveling.max_level],
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1.0, 0.85, 0.2))
 
 	# Stat display

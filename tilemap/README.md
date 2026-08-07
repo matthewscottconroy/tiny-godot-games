@@ -1,12 +1,14 @@
 # TileMap
 
-Builds a `TileSet` and `TileMap` entirely in GDScript — generating a 3-tile atlas texture at runtime, registering physics collision on solid tiles, loading map data from a 2D array, and implementing keyboard tile-painting.
+Builds a `TileSet` and `TileMapLayer` entirely in GDScript — generating a 3-tile atlas texture at runtime, registering physics collision on solid tiles, loading map data from a 2D array, and implementing keyboard tile-painting.
+
+> **Godot 4.3+ note:** this demo uses `TileMapLayer`, the node that replaced the now-deprecated `TileMap`. Each `TileMapLayer` is a *single* layer, so `set_cell()` / `erase_cell()` no longer take a leading layer-index argument, and multiple layers are modelled as multiple `TileMapLayer` nodes rather than layers inside one `TileMap`.
 
 ## Purpose
 
 Most TileMap tutorials configure everything in the Godot editor and leave developers unclear about what the engine actually stores internally. Understanding the programmatic API is essential for procedurally generated levels, data-driven map loading from JSON or CSV, and runtime tile modification during gameplay. Games like Terraria, Stardew Valley, and Celeste all manipulate tile data at runtime — understanding the underlying model is a prerequisite.
 
-The programmatic API also reveals the exact mental model Godot uses: a `TileSet` is a database of tile definitions (textures, physics, terrain), while a `TileMap` is a layer of coordinate-to-tile-ID mappings. The two are separate objects by design — one `TileSet` can serve multiple `TileMap` instances with different layouts.
+The programmatic API also reveals the exact mental model Godot uses: a `TileSet` is a database of tile definitions (textures, physics, terrain), while a `TileMapLayer` is a layer of coordinate-to-tile-ID mappings. The two are separate objects by design — one `TileSet` can serve multiple `TileMapLayer` instances with different layouts.
 
 Physics collision on tiles requires explicitly authoring collision polygons per tile-type in the TileSet. This demo shows the complete flow from texture generation to player standing on solid tiles.
 
@@ -16,7 +18,7 @@ Physics collision on tiles requires explicitly authoring collision polygons per 
 
 ```
 Main (Node2D)           ← main.gd
-├── TileMap
+├── TileMapLayer
 └── Player (CharacterBody2D)
     └── CollisionShape2D
 ```
@@ -78,10 +80,10 @@ func _load_map() -> void:
         for col in MAP_DATA[row].size():
             var t := MAP_DATA[row][col]
             if t > 0:
-                tilemap.set_cell(0, Vector2i(col, row), 0, Vector2i(t - 1, 0))
+                tilemap.set_cell(Vector2i(col, row), 0, Vector2i(t - 1, 0))
 ```
 
-`set_cell(layer, coord, source_id, atlas_coord)` — layer `0` is the first TileMap layer, `source_id` `0` is the atlas source added via `add_source(source, 0)`, and `atlas_coord` is the tile's position in the atlas image.
+`set_cell(coord, source_id, atlas_coord)` — `source_id` `0` is the atlas source added via `add_source(source, 0)`, and `atlas_coord` is the tile's position in the atlas image. (On the old `TileMap` node this method took a leading layer-index argument; `TileMapLayer` is a single layer, so it's gone.)
 
 ### Tile Painting
 
@@ -91,12 +93,12 @@ Keyboard keys 1–4 select the active paint tile. Left-click paints, right-click
 var cell := tilemap.local_to_map(tilemap.to_local(event.position))
 if event.button_index == MOUSE_BUTTON_LEFT:
     if _paint_tile > 0:
-        tilemap.set_cell(0, cell, 0, Vector2i(_paint_tile - 1, 0))
+        tilemap.set_cell(cell, 0, Vector2i(_paint_tile - 1, 0))
     else:
-        tilemap.erase_cell(0, cell)
+        tilemap.erase_cell(cell)
 ```
 
-`local_to_map` converts a pixel position (in TileMap-local space) to a tile coordinate. `to_local` converts from global viewport position to the TileMap's local space.
+`local_to_map` converts a pixel position (in layer-local space) to a tile coordinate. `to_local` converts from global viewport position to the `TileMapLayer`'s local space.
 
 ### Player Physics
 
@@ -121,15 +123,15 @@ The player collides with grass and stone tiles (physics layer 0 with polygon) bu
 | `TileSetAtlasSource` | Tile source backed by an atlas texture — maps grid positions to tiles |
 | `TileSetScenesCollectionSource` | Alternative: tiles are full scene instances (for scripted per-tile behavior) |
 | `TileData` | Per-tile properties: collision polygons, terrain info, custom data layers |
-| `TileMap` | Grid of tile placements referencing a TileSet |
+| `TileMapLayer` | A single grid layer of tile placements referencing a TileSet (replaces the deprecated `TileMap`) |
 
 `TileSetAtlasSource` is the right choice for most tilemaps — fast, memory-efficient, and the editor's tile painter uses it natively. Use `TileSetScenesCollectionSource` only when individual tiles need scripts (e.g. animated traps, interactive switches).
 
 ## How to Adapt This in Your Project
 
 - **Load from JSON/CSV**: replace `MAP_DATA` with a parsed file. Map integer IDs to atlas coords with a `Dictionary`.
-- **Multiple layers**: call `tilemap.set_cell(1, ...)` for a second layer (e.g., decoration above solid tiles). Add layers via `tilemap.add_layer()`.
-- **Runtime destruction**: call `tilemap.erase_cell(0, coord)` to remove a tile. Since the TileSet physics layer is per-tile-type, removal automatically removes its collision.
+- **Multiple layers**: add a second `TileMapLayer` node (e.g., decoration above solid tiles) — each node is one layer and can share the same `TileSet`. Order is set by tree/`z_index`.
+- **Runtime destruction**: call `tilemap.erase_cell(coord)` to remove a tile. Since the TileSet physics layer is per-tile-type, removal automatically removes its collision.
 - **Autotiling / terrain**: use `TileSet`'s terrain system (`set_cells_terrain_connect`) to auto-select tile variants based on neighbors — eliminates manual tile variant selection.
 - **Chunk loading**: store chunks as `Dictionary[Vector2i, int]` and call `set_cell` only for visible chunks. Call `erase_cell` when chunks unload.
 
@@ -145,9 +147,9 @@ The player collides with grass and stone tiles (physics layer 0 with polygon) bu
 | `TileSet.add_physics_layer(idx)` | Create a physics layer slot on the TileSet |
 | `TileData.add_collision_polygon(layer)` | Attach a collision polygon to a tile |
 | `TileData.set_collision_polygon_points(layer, poly, verts)` | Define shape vertices |
-| `TileMap.set_cell(layer, coord, source_id, atlas_coord)` | Place a tile |
-| `TileMap.erase_cell(layer, coord)` | Remove a tile |
-| `TileMap.local_to_map(local_pos)` | Convert pixel position to tile coordinate |
+| `TileMapLayer.set_cell(coord, source_id, atlas_coord)` | Place a tile |
+| `TileMapLayer.erase_cell(coord)` | Remove a tile |
+| `TileMapLayer.local_to_map(local_pos)` | Convert pixel position to tile coordinate |
 | `ImageTexture.create_from_image(img)` | Upload a procedural image as a GPU texture |
 
 ## Controls
@@ -177,4 +179,4 @@ const TILE_SIZE := 32  # pixels per tile (width and height)
 | File | Purpose |
 |------|---------|
 | `scripts/main.gd` | TileSet construction, map loading, player physics, tile painting |
-| `scenes/main.tscn` | Root scene with TileMap and Player nodes |
+| `scenes/main.tscn` | Root scene with TileMapLayer and Player nodes |

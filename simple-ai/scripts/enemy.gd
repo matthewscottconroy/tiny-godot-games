@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-const SPEED := 70.0
+@export var speed := 70.0
 
 @onready var player: CharacterBody2D = $"../Player"
 
@@ -15,6 +15,6 @@ func _physics_process(_delta: float) -> void:
 	if not is_instance_valid(player):
 		return
 	var dir := (player.global_position - global_position).normalized()
-	velocity = dir * SPEED
+	velocity = dir * speed
 	move_and_slide()
 	queue_redraw()

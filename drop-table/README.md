@@ -67,6 +67,28 @@ Dividing each weight by the total gives the true probability. The demo uses this
 
 With few kills, observed rates jump around. With many kills, they converge on the expected rates. This is the **law of large numbers** — the demo makes it visible. After ~100 kills you'll see the observed Goblin coin rate stabilize near 35%.
 
+## Use as a building block
+
+`DropTable` (`scripts/drop_table.gd`) is already a self-contained, reusable
+component — a `RefCounted` with no dependency on the demo. Copy that one file.
+
+**Public API**
+- `add(item, weight) -> DropTable` — register a weighted outcome; chainable.
+- `roll() -> String` — pick one outcome proportional to its weight.
+- `get_chances() -> Dictionary` — `item → probability`, for UI or tuning.
+
+**Integrate**
+```gdscript
+var loot := DropTable.new()
+loot.add("Nothing", 40).add("Coin", 35).add("Rare Gem", 5)
+var dropped := loot.roll()   # weighted pick
+```
+
+**Notes**
+- `class_name DropTable` is global — rename if it collides.
+- Weights are relative, not percentages — they don't need to sum to 100 (or 1). Add `"Nothing"` as an outcome to model "no drop" chances.
+- Outcomes are `String`s here; store item ids and resolve them against your item database (see [data-tables](../data-tables)).
+
 ## Key Godot APIs
 
 | API | Purpose |
