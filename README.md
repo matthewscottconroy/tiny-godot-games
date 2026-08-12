@@ -307,6 +307,10 @@ script on every push — see [.github/workflows/tests.yml](.github/workflows/tes
 | [lock-picking](lock-picking) | Rotate a lock cylinder to find a hidden angle; tension builds when close. |
 | [rhythm-minigame](rhythm-minigame) | Timed-input rhythm mechanics with a scoring judgment window. |
 
+## 3D
+
+This collection is 2D. Its companion, **[tiny-godot-3d](../tiny-godot-3d)**, covers 3D using the same conventions and the same test harness — character controllers, camera rigs, and procedural geometry so far.
+
 ---
 
 *165 demos. Each teaches one thing, completely.*
