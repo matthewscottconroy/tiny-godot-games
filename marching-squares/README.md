@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing the marching squares algorithm: contour line extraction from a 2D scalar field.
 
+## Purpose
+
+Turning a scalar field into a smooth outline is what gives 2D terrain, metaballs, and destructible ground their curves instead of stair-steps. Marching squares does it with a 16-entry lookup: sample the field at four corners, index a table by which corners are inside, and emit the contour segments for that case. This demo shows the field, the cases, and the resulting contour.
+
 ## Controls
 
 | Key | Action |
@@ -52,7 +56,7 @@ const CELL      := 10     # pixels per cell
 const THRESHOLD := 0.5    # contour iso-value
 ```
 
-## Project Structure
+## Files
 
 ```
 marching-squares/
@@ -67,3 +71,20 @@ marching-squares/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `FastNoiseLite.get_noise_2d()` | Sample the scalar field per grid corner |
+| Lookup table indexed by corner mask | Map the 16 corner cases to contour segments |
+| `lerp()` | Place the segment endpoint where the field crosses the threshold |
+| `draw_line()` | Draw the contour |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

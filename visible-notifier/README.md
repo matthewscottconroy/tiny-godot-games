@@ -141,7 +141,7 @@ For a robust implementation, initialize all objects with `active = false` and re
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Pan camera across the 12×8 object grid |
+| Arrow keys | Pan camera across the 12×8 object grid |
 
 ## Key Constants
 
@@ -160,3 +160,11 @@ const OBJECT_COUNT := COLS * ROWS  # 96 total objects
 | File | Purpose |
 |------|---------|
 | `scripts/main.gd` | Grid creation, notifier wiring, per-frame culled update, camera pan |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

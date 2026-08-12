@@ -2,7 +2,7 @@ class_name BTNode
 
 enum Status { SUCCESS, FAILURE, RUNNING }
 
-func tick(ctx: Dictionary) -> Status:
+func tick(_ctx: Dictionary) -> Status:
 	return Status.FAILURE
 
 

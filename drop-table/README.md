@@ -67,6 +67,15 @@ Dividing each weight by the total gives the true probability. The demo uses this
 
 With few kills, observed rates jump around. With many kills, they converge on the expected rates. This is the **law of large numbers** — the demo makes it visible. After ~100 kills you'll see the observed Goblin coin rate stabilize near 35%.
 
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/drop_table.gd` | The `DropTable` component |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
 ## Use as a building block
 
 `DropTable` (`scripts/drop_table.gd`) is already a self-contained, reusable

@@ -117,3 +117,11 @@ const PORTAL_ENTRY_DIST := 18.0  # Distance at which teleportation triggers (px)
 | `scenes/main.tscn` | Root Node2D with main.gd attached; surfaces defined in-script |
 | `tests/test_logic.gd` | Unit tests for velocity transform and entry detection |
 | `tests/test.tscn` | Scene that runs the tests |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -8,7 +8,7 @@ Motion trails add visual personality to fast-moving objects — bullets, players
 
 ## Controls
 
-- **Arrow keys / WASD**: Move, Up / W to jump
+- **Arrow keys**: Move, Up to jump
 - **+ longer trail / - shorter trail**: Adjust the maximum trail length
 
 ## How It Works
@@ -51,3 +51,19 @@ This demo implements simple kinematic movement directly (no `CharacterBody2D`) t
 | `Line2D.get_point_count()` | Current number of points |
 | `Line2D.gradient` | `Gradient` resource controlling color along the line |
 | `Gradient.set_color(offset_idx, color)` | Set color at a gradient stop |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

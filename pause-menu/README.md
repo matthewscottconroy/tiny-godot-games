@@ -8,7 +8,7 @@ Every game needs a pause function. The naive approach (setting a global variable
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player (not while paused)
+- **Arrow keys**: Move the player (not while paused)
 - **Escape** (`ui_cancel`): Toggle pause
 - **Resume button**: Un-pause
 - **Quit button**: Exit the application
@@ -113,3 +113,21 @@ QuitBtn.pressed.connect(func(): get_tree().quit())
 | `_unhandled_input(event)` | Input not consumed by other nodes |
 | `event.is_action_just_pressed(action)` | Edge-triggered input test |
 | `get_tree().quit()` | Exit the application |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/pause_menu.gd` | `pause menu` behaviour |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/pause_menu.gd`, `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

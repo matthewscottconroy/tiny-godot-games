@@ -98,10 +98,10 @@ In addition to volume, `AudioStreamPlayer2D` pans the sound left or right based 
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move the listener (ear icon) |
+| Arrow keys | Move the listener (ear icon) |
 | (automatic) | Volume changes as distance to source changes |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const SAMPLE_RATE    := 22050     # samples per second
@@ -119,3 +119,11 @@ const LISTENER_SPEED := 200.0     # px/s listener movement
 |------|---------|
 | `scripts/main.gd` | PCM synthesis, listener movement, attenuation readout, rendering |
 | `scenes/main.tscn` | Scene with SoundSource, AudioStreamPlayer2D, Listener, InfoLabel |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

@@ -108,3 +108,12 @@ const WALL_JUMP_Y := -380.0  # Vertical velocity component on wall jump
 | `scenes/main.tscn` | CharacterBody2D player node, static floor, two tall walls |
 | `tests/test_logic.gd` | Unit tests for wall normal direction and velocity calculation |
 | `tests/test.tscn` | Scene that runs the tests |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

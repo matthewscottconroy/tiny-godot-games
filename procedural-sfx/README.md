@@ -2,18 +2,20 @@
 
 Demonstrates real-time procedural sound effect generation using `AudioStreamGeneratorPlayback.push_frame()`. Four distinct SFX are synthesized on demand from four mathematical formulas — no audio files required.
 
-## How to Run
+## Purpose
 
-Open the project in Godot 4 and press F5 (or run `scenes/main.tscn`).
+Generating sound effects in code removes the asset pipeline for prototypes and makes every parameter tweakable at runtime. Four waveform recipes cover most retro game feedback: a sine beep, a square buzz, a noise crash, and a frequency sweep. This demo writes raw samples into an `AudioStreamGenerator` so the relationship between the maths and the sound is direct.
+
+## Controls
 
 | Key | SFX | Formula |
 |-----|-----|---------|
 | 1 | Beep | 440 Hz sine with linear fade-out |
 | 2 | Buzz | 120 Hz square wave with linear fade-out |
 | 3 | Crash | White noise with sqrt-decay envelope |
-| 4 | Chirp | 200→800 Hz ascending sine with quadratic fade-out |
+| 4 | Chirp | 200 to 800 Hz sweep with quadratic fade-out |
 
-## Key Concepts
+## How It Works
 
 ### push_frame() and the Generator Buffer
 
@@ -79,7 +81,7 @@ Every SFX uses an envelope — a time-varying multiplier that shapes the loudnes
 
 Envelopes prevent clicks (abrupt start/stop) and give each SFX its distinctive character.
 
-## File Layout
+## Files
 
 ```
 procedural-sfx/
@@ -90,3 +92,20 @@ procedural-sfx/
   tests/test_logic.gd    — pure GDScript unit tests
   tests/test.tscn        — minimal scene to run tests
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `AudioStreamGenerator` | Generate samples at runtime, no audio assets |
+| `AudioStreamGeneratorPlayback.push_frame()` | Write one sample into the buffer |
+| `get_frames_available()` | Keep the buffer fed without overrunning it |
+| `randf()` | White noise for the crash effect |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

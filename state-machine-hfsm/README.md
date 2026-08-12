@@ -167,3 +167,19 @@ var cy := 200.0   # character center y
 | `scenes/main.tscn` | Main scene |
 | `tests/test_logic.gd` | Unit tests: initial active state, transition, exit callback, default child, active path, cascading exit |
 | `tests/test.tscn` | Test runner scene |
+
+## Use as a building block
+
+**Copy:** `scripts/hfsm.gd` — the `HFSMState` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`HFSMState` API**
+- `add_child(child: HFSMState) -> HFSMState`
+- `enter() -> void`
+- `exit() -> void`
+- `tick(delta: float) -> void`
+- `transition_to(target: HFSMState) -> void`
+- `is_active() -> bool`
+- `get_active_path() -> Array[String]`
+
+**Notes**
+- `class_name HFSMState` is global to the project — rename it if you already define that type.

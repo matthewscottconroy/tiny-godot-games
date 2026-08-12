@@ -10,6 +10,12 @@ Games like Dead Cells, Spelunky, and most action roguelikes use this exact techn
 
 This demo also demonstrates multi-hit feedback with flash and crack visuals, dynamic node creation in code (no pre-made fragment scenes), and the `Area2D.input_pickable` pattern for click detection on physics objects.
 
+## Controls
+
+| Input | Action |
+|-------|--------|
+| Left-click a crate | Deal one hit; the crate shatters once it reaches its `hp` |
+
 ## How It Works
 
 ### Click Detection
@@ -142,3 +148,18 @@ Dividing a full circle (`TAU`) evenly by `frag_count` distributes fragments radi
 |------|---------|
 | `scripts/destructible.gd` | Click detection, flash/crack visuals, fragment spawning |
 | `scenes/main.tscn` | Scene with multiple Destructible instances, each with different hp/color exports |
+
+## Use as a building block
+
+**Copy:** `scripts/destructible.gd`.
+
+**`scripts/destructible.gd`**
+- `@export box_color   :`
+- `@export box_size    :`
+- `@export frag_count  :`
+- `@export frag_speed  :`
+- `@export hp          :`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

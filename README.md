@@ -1,8 +1,8 @@
 # Tiny Godot Games
 
-A collection of **156 tiny, self-contained Godot 4 demos** — each one isolates a single game-development concept in the smallest complete project that teaches it. Every demo is its own Godot project with a focused `README.md`, runnable scene, and an automated test suite.
+A collection of **157 tiny, self-contained Godot 4 demos** — each one isolates a single game-development concept in the smallest complete project that teaches it. Every demo is its own Godot project with a focused `README.md`, runnable scene, and an automated test suite.
 
-Built for **Godot 4.7** (Forward+).
+Built for **Godot 4.7** (Forward+). Every demo is **2D** — there is no 3D content here.
 
 ## Using a demo
 
@@ -274,10 +274,11 @@ script on every push — see [.github/workflows/tests.yml](.github/workflows/tes
 ### 🌐 Networking & Misc
 | Demo | Description |
 |------|-------------|
+| [multiplayer-rpc](multiplayer-rpc) | High-level multiplayer over ENet: host/join, a server-authoritative roster, and `@rpc`. |
 | [http-request](http-request) | Fetch and parse JSON from a public API with the `HTTPRequest` node. |
 | [lock-picking](lock-picking) | Rotate a lock cylinder to find a hidden angle; tension builds when close. |
 | [rhythm-minigame](rhythm-minigame) | Timed-input rhythm mechanics with a scoring judgment window. |
 
 ---
 
-*156 demos. Each teaches one thing, completely.*
+*157 demos. Each teaches one thing, completely.*

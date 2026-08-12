@@ -117,7 +117,7 @@ if h != 0.0:
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move and face left or right |
+| Arrow keys | Move and face left or right |
 | Up | Jump |
 | Space (`ui_select`) | Fire spread shot in the facing direction |
 
@@ -138,3 +138,15 @@ const LIFETIME      := 1.4    # bullet auto-cleanup time in seconds
 | `scripts/player.gd` | Movement, cooldown timer, spread-shot spawn loop |
 | `scripts/bullet.gd` | Straight-line travel, lifetime/bounds cleanup |
 | `scripts/main.gd` | Static background geometry (floor, platforms) |
+
+## Use as a building block
+
+**Copy:** `scripts/bullet.gd`, `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/bullet.gd`**
+- `init(pos: Vector2, dir: Vector2) -> void`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

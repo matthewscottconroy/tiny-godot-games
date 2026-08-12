@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo implementing a falling-sand simulation: sand, water, and stone with simple per-cell update rules.
 
+## Purpose
+
+Falling-sand games get their character from rules applied per cell, not from physics bodies. Each grain looks only at the cells directly around it, and the emergent behaviour — piles forming angles of repose, water levelling out, sand sinking through water — falls out of a handful of cases. This demo shows the grid, the update order that keeps material from teleporting down the screen in one frame, and the per-material rules.
+
 ## Controls
 
 | Input | Action |
@@ -53,7 +57,7 @@ const GRID_H := 60    # rows    (60 × 8 = 480px)
 const CELL   := 8     # pixels per cell
 ```
 
-## Project Structure
+## Files
 
 ```
 cellular-automata/
@@ -68,3 +72,20 @@ cellular-automata/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Input.is_mouse_button_pressed()` | Paint material while the button is held |
+| `Array.resize()` / `fill()` | Allocate and clear the cell grid |
+| `draw_rect()` | One quad per cell in `_draw()` |
+| `queue_redraw()` | Request a repaint after the simulation step |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing wall-sliding and wall-jumping mechanics.
 
+## Purpose
+
+Wall jumping turns vertical surfaces into traversal. Two engine facts carry it: `is_on_wall()` combined with a floor check distinguishes clinging from standing, and `get_wall_normal()` gives the direction to launch away from. This demo shows the slide, the launch, and the brief input lock that stops the player from immediately steering back into the wall.
+
 ## Controls
 
 | Key | Action |
@@ -52,7 +56,7 @@ const WALL_SLIDE_GRAV := 0.2     # gravity multiplier while wall-sliding
 const WALL_JUMP_VX    := 300.0   # horizontal speed gained from wall-jump
 ```
 
-## Project Structure
+## Files
 
 ```
 wall-jump/
@@ -68,3 +72,21 @@ wall-jump/
 │   └── test_logic.gd   # Pure-GDScript unit tests (no scene tree needed)
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `CharacterBody2D.is_on_wall()` | Detect contact with a vertical surface |
+| `get_wall_normal()` | Direction to launch away from |
+| `is_on_floor()` | Separate clinging from standing |
+| `move_and_slide()` | Refresh both collision states |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

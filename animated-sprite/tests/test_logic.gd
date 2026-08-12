@@ -25,9 +25,12 @@ func expect_near(a: float, b: float, label: String, tol: float = 0.01) -> void:
 
 func _test_constants() -> void:
 	print("constants")
-	expect(180.0 == 180.0, "SPEED is 180")
-	expect(-420.0 == -420.0, "JUMP_VEL is -420")
-	expect(900.0 == 900.0, "GRAVITY is 900")
+	# Read the values off the demo's own script rather than restating literals —
+	# comparing 180.0 to 180.0 asserts nothing and cannot fail.
+	var player: GDScript = load("res://scripts/main.gd")
+	expect(player.SPEED == 180.0, "SPEED is 180")
+	expect(player.JUMP_VEL == -420.0, "JUMP_VEL is -420")
+	expect(player.GRAVITY == 900.0, "GRAVITY is 900")
 
 func _test_gravity_accumulation() -> void:
 	print("gravity accumulation")

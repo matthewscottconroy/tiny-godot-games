@@ -3,6 +3,10 @@
 A platformer set in a wide 2000×480 world with a real-time minimap drawn in
 the top-right corner — no SubViewport required.
 
+## Purpose
+
+A minimap is a second view of the same world at a different scale. Drawing it in code — rather than with a second viewport — keeps the whole transform visible: world position divided by world size, scaled into the minimap rect. That makes it obvious how to add markers, clamp the player dot to the edge, or crop to a region.
+
 ## Controls
 
 | Key | Action |
@@ -64,7 +68,7 @@ _cam.position = Vector2(
 The camera's x position is clamped so the view never scrolls past the world
 boundaries.  320 is half the 640-wide viewport.
 
-## File Layout
+## Files
 
 ```
 minimap/
@@ -81,3 +85,20 @@ minimap/
     test.tscn
   README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `CanvasLayer` | Keep the minimap fixed while the world scrolls |
+| `draw_rect()` / `draw_circle()` | Render the map and its markers in code |
+| `Camera2D` | The main view the minimap complements |
+| `Rect2.has_point()` | Cull markers outside the mapped region |
+
+## Use as a building block
+
+**Copy:** `scripts/minimap.gd`, `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

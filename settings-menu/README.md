@@ -4,6 +4,10 @@ A settings panel with master-volume slider, fullscreen toggle, and a player-
 speed option.  **Apply** saves to disk and takes effect immediately; **Cancel**
 reverts the UI; **Reset** restores built-in defaults.
 
+## Purpose
+
+Almost every game needs the same settings screen: volume sliders that write to audio buses, a fullscreen toggle, and values that survive a restart. Each part uses a different Godot subsystem — `AudioServer`, `DisplayServer`, and `ConfigFile` — and this demo wires all three together in the smallest form that still behaves correctly.
+
 ## Controls
 
 | Button | Action |
@@ -63,7 +67,7 @@ This takes effect immediately on Apply.
 "draft" values.  `_apply_to_ui()` copies saved → UI (used by both `_ready`
 and `_on_cancel`).  `_on_apply()` copies UI → saved → disk.
 
-## File Layout
+## Files
 
 ```
 settings-menu/
@@ -78,3 +82,20 @@ settings-menu/
     test.tscn
   README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `AudioServer.set_bus_volume_db()` | Apply a slider to an audio bus |
+| `AudioServer.get_bus_index()` | Look a bus up by name |
+| `DisplayServer.window_set_mode()` | Toggle fullscreen |
+| `ConfigFile.save()` / `load()` | Persist settings across runs |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

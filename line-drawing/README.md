@@ -141,3 +141,11 @@ Rect2(0, 62, 640, 370)      # drawable region below the button bar
 |------|---------|
 | `scripts/main.gd` | All input handling, stroke storage, and `_draw()` rendering |
 | `scenes/main.tscn` | Root Node2D with button bar |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -2,19 +2,23 @@
 
 Demonstrates procedural 1D terrain generation using `FastNoiseLite.get_noise_1d()`. The terrain is rendered as a filled polygon and redraws live as you adjust frequency and octaves.
 
-## How to Run
+## Purpose
 
-Open the project in Godot 4 and press F5 (or run `scenes/main.tscn`).
+`FastNoiseLite` is the backbone of most procedural generation in Godot, and its parameters are unintuitive until you can watch them move. Frequency sets the scale of the features; octaves add finer detail on top. This demo redraws a 1D heightmap live as you sweep both, so the relationship between the numbers and the shape becomes concrete.
+
+## Controls
+
+Keys are polled every frame, so hold one to sweep a parameter continuously.
 
 | Key | Action |
 |-----|--------|
-| R | Randomize noise seed (new terrain shape) |
-| F | Increase frequency |
-| G | Decrease frequency |
-| O | Increase octaves |
-| P | Decrease octaves |
+| R | Randomize the noise seed (new terrain shape) |
+| F | Increase frequency (up to 0.2) |
+| G | Decrease frequency (down to 0.001) |
+| O | Increase octaves (up to 8) |
+| P | Decrease octaves (down to 1) |
 
-## Key Concepts
+## How It Works
 
 ### FastNoiseLite.get_noise_1d()
 
@@ -72,7 +76,7 @@ draw_polygon(pts, PackedColorArray([Color(0.18, 0.52, 0.18)]))
 
 The two bottom corners close the shape beneath the surface line, filling the entire ground area with a single `draw_polygon()` call — efficient and avoids column-by-column rectangle drawing.
 
-## File Layout
+## Files
 
 ```
 noise-terrain/
@@ -83,3 +87,20 @@ noise-terrain/
   tests/test_logic.gd    — pure GDScript unit tests
   tests/test.tscn        — minimal scene to run tests
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `FastNoiseLite.get_noise_1d()` | One height sample per column |
+| `FastNoiseLite.frequency` | Feature scale — lower is smoother |
+| `FastNoiseLite.fractal_octaves` | Layers of detail summed on top |
+| `draw_polygon()` | Fill under the height curve |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

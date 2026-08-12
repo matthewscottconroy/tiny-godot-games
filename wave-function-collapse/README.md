@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo implementing the Wave Function Collapse algorithm: constraint-propagation tile placement that generates locally consistent maps.
 
+## Purpose
+
+Wave function collapse generates layouts that are locally consistent everywhere, which is why it suits tilesets with strict adjacency rules. The loop is: pick the least-certain cell, collapse it to one option, then propagate that choice to its neighbours until nothing changes. This demo shows entropy selection, collapse, and propagation — including what a contradiction looks like.
+
 ## Controls
 
 | Key | Action |
@@ -50,7 +54,7 @@ const NUM_TILES := 4
 const WEIGHTS   := [1.0, 2.0, 2.0, 3.0]  # Deep, Shallow, Sand, Grass
 ```
 
-## Project Structure
+## Files
 
 ```
 wave-function-collapse/
@@ -65,3 +69,20 @@ wave-function-collapse/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Array` of per-cell option masks | The superposition each cell collapses from |
+| Adjacency rule table | Which tiles may neighbour which |
+| Entropy (fewest remaining options) | Pick the next cell to collapse |
+| Queue-driven propagation | Push constraint changes outward until stable |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

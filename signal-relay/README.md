@@ -125,3 +125,27 @@ This couples Receiver to Transmitter — the Receiver can only work in scenes wi
 | `signal_name.disconnect(callable)` | Remove a handler |
 | `signal_name.is_connected(callable)` | Check if connected |
 | `Time.get_ticks_msec()` | Milliseconds since engine start |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/receiver.gd` | `receiver` behaviour |
+| `scripts/transmitter.gd` | `transmitter` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/receiver.gd`, `scripts/transmitter.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/receiver.gd`**
+- `receive(text: String) -> void`
+
+**`scripts/transmitter.gd`**
+- signal `message_sent(text: String)`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

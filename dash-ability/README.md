@@ -138,7 +138,7 @@ This color coding makes the invisible iframes window tangible during development
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move and face a direction |
+| Arrow keys | Move and face a direction |
 | Up | Jump |
 | Space (`ui_select`) | Dash in the facing direction (when cooldown is ready) |
 
@@ -160,3 +160,12 @@ const GHOST_MAX     := 8       # maximum trail ghost positions stored
 | File | Purpose |
 |------|---------|
 | `scripts/player.gd` | All dash logic: state machine, timers, ghost trail, visual feedback |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

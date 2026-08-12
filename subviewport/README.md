@@ -130,7 +130,7 @@ Key properties to set for correct minimap behavior:
 
 | Input | Action |
 |-------|--------|
-| **Arrow keys / WASD** | Move the player through the world |
+| **Arrow keys** | Move the player through the world |
 
 ## Key Constants
 
@@ -148,3 +148,11 @@ const MINIMAP_H  := 114     # SubViewport height in pixels
 |------|---------|
 | `scripts/main.gd` | World2D sharing, camera setup, player movement, world drawing |
 | `scenes/main.tscn` | Node tree with SubViewport, HUD, cameras, and player dot |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

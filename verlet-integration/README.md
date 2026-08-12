@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing position-based Verlet rope physics: a chain of particles connected by distance constraints, with mouse drag interaction.
 
+## Purpose
+
+Verlet integration stores the previous position instead of a velocity, which makes constraints trivial — move a point and its velocity follows automatically. That property is what makes it the standard choice for rope, cloth, and soft bodies. This demo builds a rope from particles and distance constraints, relaxed over several iterations per frame.
+
 ## Controls
 
 | Input | Action |
@@ -49,7 +53,7 @@ const GRAVITY       := Vector2(0.0, 500.0)  # acceleration applied each step
 const ITERATIONS    := 12     # constraint solver passes per frame
 ```
 
-## Project Structure
+## Files
 
 ```
 verlet-integration/
@@ -64,3 +68,20 @@ verlet-integration/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| Position + previous position | Velocity is implied, so constraints are trivial |
+| `Vector2.distance_to()` | Measure a distance constraint's error |
+| `PackedVector2Array` | Tight storage for particle positions |
+| `draw_line()` / `draw_circle()` | Render the rope and its particles |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

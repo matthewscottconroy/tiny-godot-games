@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing room-based camera transitions using `Area2D`, exported properties, signals, and `Tween`.
 
+## Purpose
+
+Metroidvania and Zelda-style games rarely scroll the camera continuously. They snap it between fixed room framings, so each screen is a composed picture the designer controls. The mechanism is simpler than it looks: an `Area2D` per room, a signal when the player enters, and a `Tween` on the camera's position and limits. This demo shows that whole loop, including why the limits have to move with the camera rather than after it.
+
 ## Controls
 
 | Key | Action |
@@ -85,7 +89,7 @@ The world is 1920 px wide (three 640 px rooms side by side). The single floor `S
 | `set_ease(Tween.EASE_IN_OUT)` | Smooth acceleration/deceleration curve |
 | `get_tree().get_nodes_in_group("room")` | Collect all room nodes without hard references |
 
-## Project Structure
+## Files
 
 ```
 camera-rooms/
@@ -102,3 +106,26 @@ camera-rooms/
 │   └── test_logic.gd    # Pure-GDScript unit tests
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Area2D.body_entered` | Fires when the player enters a room volume |
+| `Camera2D.limit_left/right/top/bottom` | Clamp the view to the current room |
+| `create_tween().tween_property()` | Slide the camera between rooms |
+| `Tween.set_ease()` / `set_trans()` | Shape the transition curve |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`, `scripts/room.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/room.gd`**
+- `@export room_name: String`
+- `@export cam_target: Vector2`
+- signal `player_entered(room_name: String, cam_pos: Vector2)`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

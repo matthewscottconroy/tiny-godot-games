@@ -6,6 +6,11 @@
 
 Flocking (Craig Reynolds' "boids" algorithm) demonstrates emergent behavior: complex group dynamics arise from local rules each agent applies independently. The same technique drives crowd AI, fish schools, and particle swarms in games.
 
+## Controls
+
+None — the flock simulates on its own. Tune the separation, alignment, and
+cohesion weights in `scripts/boid.gd` and re-run to see the behaviour change.
+
 ## How It Works
 
 ### The three rules (`scripts/boid.gd`)
@@ -67,3 +72,24 @@ Boids are created at runtime from a script reference — no scene file per boid 
 | `node.set_script(script)` | Attach script to a dynamically-created node |
 | `randomize()` | Seed the RNG for non-repeating initial positions |
 | `draw_polygon(points, colors)` | Triangle per boid with facing direction |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/boid.gd` | `boid` behaviour |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/boid.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/boid.gd`**
+- `init(pos: Vector2) -> void`
+- `step(boids: Array, delta: float) -> void`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

@@ -159,3 +159,13 @@ const SIGHT_RANGE  := 160.0  # px — triggers chase
 | `scripts/bt_nodes.gd` | `BTNode` base class with `Sequence`, `Selector`, and `Leaf` inner classes |
 | `scripts/main.gd` | Enemy/player state, builds the BT, ticks it each frame, draws visualization |
 | `scenes/main.tscn` | Root `Node2D` with `main.gd` attached |
+
+## Use as a building block
+
+**Copy:** `scripts/bt_nodes.gd` — the `BTNode` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`BTNode` API**
+- `tick(_ctx: Dictionary) -> Status`
+
+**Notes**
+- `class_name BTNode` is global to the project — rename it if you already define that type.

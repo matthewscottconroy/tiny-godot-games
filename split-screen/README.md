@@ -129,3 +129,15 @@ const GRAVITY  :=  800.0   # pixels per second squared
 | `scripts/player.gd` | Physics movement; use_wasd export selects key binding set |
 | `scenes/main.tscn` | Root Control with two SubViewportContainers and their worlds |
 | `tests/test.tscn` | Unit tests using local stub classes (no scene tree required) |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`, `scripts/world.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/player.gd`**
+- `@export use_wasd: bool`
+- `@export body_color: Color`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

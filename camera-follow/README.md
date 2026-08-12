@@ -8,7 +8,7 @@ Most 2D games need a camera that follows the player while staying within the wor
 
 ## Controls
 
-- **Arrow keys / WASD**: Move left and right
+- **Arrow keys**: Move left and right
 - **Up / W**: Jump
 - The world is wider than the screen; scroll right to see the camera follow
 
@@ -85,3 +85,20 @@ When the player walks near the left edge, the camera stops moving left even if t
 | `Camera2D.limit_left/right/top/bottom` | Clamp the camera to world bounds |
 | `CharacterBody2D.is_on_floor()` | True when resting on a surface |
 | `move_and_slide()` | Move with full collision response |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

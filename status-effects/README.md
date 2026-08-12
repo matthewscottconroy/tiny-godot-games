@@ -150,7 +150,7 @@ Reapplying the same effect overwrites the duration. An alternative: cap at `maxf
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move (speed reduced while frozen) |
+| Arrow keys | Move (speed reduced while frozen) |
 | Walk into green zone | Apply poison (10 DPS, 5 s) |
 | Walk into red zone | Apply burn (22 DPS, 3 s) |
 | Walk into blue zone | Apply freeze (0 DPS, 35% speed, 4 s) |

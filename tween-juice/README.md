@@ -125,3 +125,19 @@ The combination of upward drift + alpha fade is a visual shorthand for "temporar
 | `tween_property(node, "prop:sub", value, time)` | Target a sub-property |
 | `Control.pivot_offset` | Anchor for scale/rotation |
 | `add_theme_font_size_override(property, value)` | Override theme for one node |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/juice_button.gd` | `juice button` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/juice_button.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

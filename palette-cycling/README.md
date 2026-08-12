@@ -105,7 +105,7 @@ The lava formula `sin(col * 0.4) * sin(row * 0.3) * 8.0 + 8.0` produces a Moiré
 | + / = | Increase cycle speed |
 | - | Decrease cycle speed (minimum 0.1) |
 
-## Key Constants / Shader Parameters
+## Key Constants
 
 ```gdscript
 const COLS := 40          # grid columns
@@ -129,3 +129,11 @@ shifted_idx = int(raw_idx + _palette_offset) % 16
 | `scripts/main.gd` | Index map, palette construction, offset cycling, all drawing |
 | `scenes/main.tscn` | Single Node2D scene |
 | `tests/test.tscn` | Tests for index arithmetic, wrapping, and palette sizes |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -8,7 +8,7 @@ A state machine is one of the most important patterns in game programming. Witho
 
 ## Controls
 
-- **Arrow keys / WASD**: Move left and right
+- **Arrow keys**: Move left and right
 - **Up / W**: Jump
 - Watch the character change color with each state change, and the state label update
 
@@ -142,6 +142,14 @@ In a real game, this would typically be animation clips keyed to each state.
 | `Input.is_action_just_pressed(action)` | Edge-triggered (fires once per press) |
 | `move_and_slide()` | Move with collision; updates floor state |
 | `Enum.keys()` | Array of string names for enum values |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/player.gd` | Emitted whenever the derived state changes. Other systems — an |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
 
 ## Use as a building block
 

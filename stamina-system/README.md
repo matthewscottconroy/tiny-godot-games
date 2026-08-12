@@ -86,9 +86,9 @@ Drain is roughly 2× regen, so a player who sprints until depletion must wait mo
 |-------|--------|
 | Arrow keys / A, D | Move left / right |
 | Hold Shift | Sprint (consumes stamina; blocked when depleted) |
-| Arrow Up / W / Space (ui_up) | Jump (only from floor) |
+| Arrow Up (`ui_up`) | Jump (only from floor) |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const SPEED        := 200.0   # px/s normal walk
@@ -110,3 +110,12 @@ const REGEN_DELAY  := 0.8     # seconds after sprint before regen starts
 | `tests/test_logic.gd` | Unit tests for drain, regen, delay, depletion gate, and speed values |
 | `scenes/main.tscn` | Scene with CharacterBody2D, ProgressBar, InfoLabel, floor platform |
 | `tests/test.tscn` | Test runner scene |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

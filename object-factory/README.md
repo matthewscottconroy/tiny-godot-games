@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing the factory pattern: a type registry that decouples entity creation from caller code.
 
+## Purpose
+
+Spawner code that knows how to construct every entity type becomes the file everyone edits. A factory inverts that: types register a builder `Callable` under a name, and callers ask for a name. Adding an entity type stops touching the spawner, which matters most in the systems that spawn the widest variety of things.
+
 ## Controls
 
 | Key | Action |
@@ -38,6 +42,15 @@ var e := factory.create(&"enemy_tank")
 
 Each entity is a plain `Dictionary`. No base class, no inheritance. Fields are type-specific — callers use `.get(key, default)` for optional fields.
 
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Callable` | A builder function stored per registered type |
+| `Callable.call()` | Construct without the caller knowing how |
+| `Dictionary` | The name-to-builder registry |
+| `StringName` | Cheap type keys |
+
 ## Use as a building block
 
 **Copy:** `scripts/factory.gd` (the `EntityFactory` class). It's a `RefCounted` with no dependencies — it doesn't care what your builders return (dictionaries here, but just as easily `Node`s or `Resource`s).
@@ -56,7 +69,7 @@ Each entity is a plain `Dictionary`. No base class, no inheritance. Fields are t
 - `class_name EntityFactory` is global — rename if it collides.
 - Builders can return anything (scene instances, resources, dicts). Read the type→scene table from a config file and register in a loop to data-drive it.
 
-## Project Structure
+## Files
 
 ```
 object-factory/

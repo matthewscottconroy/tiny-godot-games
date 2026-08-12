@@ -8,7 +8,7 @@ Parallax scrolling is a classic technique that gives 2D games a sense of three-d
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player left and right
+- **Arrow keys**: Move the player left and right
 - Watch the three background layers scroll at different speeds as you move
 
 ## How It Works
@@ -92,3 +92,23 @@ For infinite scrolling, each `ParallaxLayer` should have `motion_mirroring` set 
 | `ParallaxLayer.motion_mirroring` | Repeat size for seamless tiling |
 | `draw_polygon(vertices, colors)` | Filled polygon in _draw() |
 | `draw_circle(center, radius, color)` | Solid circle in _draw() |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/far_layer.gd` | `far layer` behaviour |
+| `scripts/mid_layer.gd` | `mid layer` behaviour |
+| `scripts/near_layer.gd` | `near layer` behaviour |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/far_layer.gd`, `scripts/mid_layer.gd`, `scripts/near_layer.gd`, `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

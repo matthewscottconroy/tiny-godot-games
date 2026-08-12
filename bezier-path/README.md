@@ -162,3 +162,11 @@ var _speed := 0.4       # t advances this many units per second (full loop in 2.
 |------|---------|
 | `scripts/main.gd` | Bezier evaluation, tangent computation, dragging, animation, all rendering |
 | `tests/test_logic.gd` | Unit tests: endpoint interpolation, midpoint symmetry, tangent directions, `fmod` wrap |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

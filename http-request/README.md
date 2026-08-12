@@ -2,6 +2,10 @@
 
 A UI demo showing how to fetch data from a public JSON API using Godot 4's `HTTPRequest` node. Fetches a todo item from [JSONPlaceholder](https://jsonplaceholder.typicode.com) and displays the parsed result.
 
+## Purpose
+
+Leaderboards, version checks, and remote configuration all come down to one node and one signal. The parts worth knowing are the ones that bite: `HTTPRequest` is asynchronous, the response body arrives as a `PackedByteArray` you have to decode with `get_string_from_utf8()`, and `JSON.parse()` returns an error code rather than raising. This demo does a real request against a public API and handles each of those.
+
 ## Controls
 
 | Input        | Action                    |
@@ -80,3 +84,28 @@ The button is re-enabled in all code paths of `_on_response`, including early re
 ## Running Tests
 
 Open `tests/test.tscn` as the main scene and run. Tests use a hardcoded sample JSON string — no network connection is required.
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `HTTPRequest.request()` | Start an asynchronous GET |
+| `HTTPRequest.request_completed` | Signal carrying result, code, headers, and body |
+| `PackedByteArray.get_string_from_utf8()` | Decode the raw body |
+| `JSON.parse()` / `get_error_line()` | Parse with an error code rather than an exception |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

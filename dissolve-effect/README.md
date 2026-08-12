@@ -133,3 +133,11 @@ var base_color := Color(0.2, 0.6, 1.0)   # blue base
 | `scripts/main.gd` | Noise grid, threshold animation, edge glow, all drawing |
 | `scenes/main.tscn` | Single Node2D scene |
 | `tests/test.tscn` | Unit tests for threshold logic and edge color calculation |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

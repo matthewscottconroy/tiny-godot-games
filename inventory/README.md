@@ -132,7 +132,7 @@ This avoids all the complexity of dragging actual scene nodes and works correctl
 | Left-click full slot (not holding) | Pick up slot item |
 | Right-click full slot | Drop slot item back to world |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 # 6 item types; 16 inventory slots (4×4 GridContainer)

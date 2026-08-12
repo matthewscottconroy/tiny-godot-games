@@ -93,3 +93,26 @@ The main scene does not poll `ScoreManager.score` in `_process()`. Instead it co
 | `signal score_changed(new_score: int)` | Typed signal declaration |
 | `score_changed.emit(value)` | Emit signal with argument |
 | `signal.connect(callable)` | Register a handler on the signal |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/score_manager.gd` | `score manager` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/score_manager.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/score_manager.gd`**
+- `add(amount: int = 10) -> void`
+- `reset() -> void`
+- signal `score_changed(new_score: int)`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- `ScoreManager` is registered as an autoload (Project Settings → Globals). Copy the autoload script and register it there under a name that does not collide with anything in your project.
+

@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing hold-to-jump-higher mechanics via a velocity cut on early button release.
 
+## Purpose
+
+Holding jump longer to jump higher is one of the highest-value feel improvements available, and it costs three lines: when the button is released while still rising, cut the upward velocity. This demo isolates the cut so the difference between a tap and a hold is measurable rather than a matter of opinion.
+
 ## Controls
 
 | Key | Action |
@@ -40,7 +44,7 @@ const GRAVITY  := 900.0    # downward acceleration (px/s²)
 const JUMP_CUT := 0.4      # vy multiplier on early release (0 = instant stop, 1 = no effect)
 ```
 
-## Project Structure
+## Files
 
 ```
 variable-jump-height/
@@ -56,3 +60,21 @@ variable-jump-height/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Input.is_action_just_pressed()` | Start the jump |
+| `Input.is_action_just_released()` | The moment to cut the rise |
+| `CharacterBody2D.velocity` | Halve the upward component on release |
+| `move_and_slide()` | Apply the result |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

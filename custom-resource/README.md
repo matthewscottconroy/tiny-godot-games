@@ -109,3 +109,27 @@ The pattern `var x: T: set(v): x = v; queue_redraw()` creates a **reactive prope
 | `queue_redraw()` | Schedule _draw() for next frame |
 | `Resource.new()` | Create a new resource instance |
 | `clamp(value, min, max)` | Constrain to a range |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/enemy.gd` | `enemy` behaviour |
+| `scripts/enemy_stats.gd` | The `EnemyStats` component |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/enemy_stats.gd` — the `EnemyStats` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`EnemyStats` API**
+- `@export enemy_name  :`
+- `@export max_hp      :`
+- `@export speed       :`
+- `@export attack      :`
+- `@export color       :`
+
+**Notes**
+- `class_name EnemyStats` is global to the project — rename it if you already define that type.

@@ -153,7 +153,7 @@ Non-looping one-frame animations (jump, fall) hold the last frame indefinitely, 
 |-----|--------|
 | Arrow Left / A | Move left |
 | Arrow Right / D | Move right |
-| Arrow Up / W / Space | Jump |
+| Arrow Up | Jump |
 
 The label at the top shows the current animation name and frame index.
 
@@ -171,3 +171,11 @@ const GRAVITY  := 900.0    # downward acceleration px/s²
 |------|---------|
 | `scripts/main.gd` | `_build_sprite_frames()`, `_make_frame()`, manual physics, animation state machine |
 | `scenes/main.tscn` | Scene tree: Player with AnimatedSprite2D, ground StaticBody2D, AnimLabel |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

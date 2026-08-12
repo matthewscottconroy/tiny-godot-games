@@ -130,3 +130,11 @@ gt.width = 256; gt.height = 256           # light texture resolution
 | `scripts/main.gd` | Light texture creation, player movement, toggle logic, all drawing |
 | `scenes/main.tscn` | CanvasModulate, four PointLight2D nodes, world geometry |
 | `tests/test.tscn` | Tests for light setup and texture generation |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

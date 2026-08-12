@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing timed-input rhythm game mechanics: notes fall to a target zone, a judgment window scores your timing accuracy.
 
+## Purpose
+
+Rhythm scoring is a judgment window around a target time, and everything else follows from it. The subtleties are that timing must be measured against audio or a monotonic clock rather than frame counts, and that the window boundaries define the difficulty. This demo shows notes approaching a target line and the graded judgment that results.
+
 ## Controls
 
 | Key | Action |
@@ -43,7 +47,7 @@ const PERFECT_DIST  := 10.0     # pixels for PERFECT rating
 const GOOD_DIST     := 26.0     # pixels for GOOD rating
 ```
 
-## Project Structure
+## Files
 
 ```
 rhythm-minigame/
@@ -58,3 +62,20 @@ rhythm-minigame/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Time.get_ticks_msec()` | A monotonic clock, not a frame count |
+| `absf()` | Signed timing error against the target |
+| Judgment window thresholds | Grade the error into Perfect/Good/Miss |
+| `draw_line()` / `draw_circle()` | Notes and the target line |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

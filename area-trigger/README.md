@@ -8,7 +8,7 @@ Area triggers are one of the most fundamental tools in game design: spawn zones,
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player through the colored zones
+- **Arrow keys**: Move the player through the colored zones
 - Watch the status label change color and text as you enter each zone
 
 ## How It Works
@@ -75,3 +75,21 @@ The body argument `_b` is prefixed with `_` to signal it is intentionally unused
 | `signal.connect(callable)` | Attach a handler; callable can be a lambda |
 | `Input.get_vector(neg_x, pos_x, neg_y, pos_y)` | Normalized 2D input from 4 actions |
 | `move_and_slide()` | Move with collision response |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

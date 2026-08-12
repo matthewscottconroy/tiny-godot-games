@@ -139,3 +139,11 @@ const BUSES := ["Dry", "Reverb", "Echo", "Compressed"]
 |------|---------|
 | `scripts/main.gd` | Bus setup, tone synthesis, input handling, label updates |
 | `scenes/main.tscn` | Scene tree with AudioStreamPlayer, CanvasLayer, and labels |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

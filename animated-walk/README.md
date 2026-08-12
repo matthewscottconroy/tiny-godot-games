@@ -8,7 +8,7 @@ Most tutorials create animations by hand-keyframing in the editor. This demo sho
 
 ## Controls
 
-- **Arrow keys / WASD**: Move left and right
+- **Arrow keys**: Move left and right
 - **Up / W**: Jump
 
 ## How It Works
@@ -83,3 +83,21 @@ Checking `current_animation` before calling `play()` prevents restarting the ani
 | `AnimationPlayer.add_animation_library("", lib)` | Registers library under the default namespace |
 | `AnimationPlayer.play("name")` | Starts playback of a named clip |
 | `AnimationPlayer.current_animation` | Read-only name of the currently active clip |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/player.gd` | `player` behaviour |
+| `scripts/visual.gd` | `visual` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`, `scripts/visual.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

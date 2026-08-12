@@ -8,7 +8,7 @@ Action games need combo recognition — the ability to detect that the player pr
 
 ## Controls
 
-- **Arrow keys / WASD**: Move, Up to jump
+- **Arrow keys**: Move, Up to jump
 - **Space / Enter**: Light attack (L)
 - **Escape**: Heavy attack (H)
 - Watch the history string above the player as you build chains
@@ -83,3 +83,24 @@ After a combo triggers, `_history.clear()` prevents the same inputs from matchin
 | `Array.slice(start)` | Returns elements from `start` to end |
 | `Array.map(callable)` | Transform each element — extracts input strings from history dicts |
 | `Input.is_action_just_pressed(a)` | Edge-triggered: fires once per key press |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/combo_system.gd` | The `ComboSystem` component |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/combo_system.gd` — the `ComboSystem` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`ComboSystem` API**
+- `add_input(inp: String) -> String`
+- `get_history_string() -> String`
+
+**Notes**
+- `class_name ComboSystem` is global to the project — rename it if you already define that type.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.

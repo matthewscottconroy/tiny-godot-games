@@ -74,3 +74,19 @@ This optional array is filled with per-file progress. For the overall loading ba
 | `ResourceLoader.THREAD_LOAD_LOADED` | Status constant — load complete |
 | `ResourceLoader.CACHE_MODE_IGNORE` | Force fresh disk read, bypass cache |
 | `ResourceSaver.save(resource, path)` | Write a Resource to disk as .tres |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

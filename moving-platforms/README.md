@@ -104,7 +104,7 @@ position = _origin + Vector2(sin(_elapsed * TAU / period_x), sin(_elapsed * TAU 
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move |
+| Arrow keys | Move |
 | Up | Jump |
 
 ## Key Constants
@@ -129,3 +129,18 @@ const GRAVITY  := 900.0
 | `scripts/moving_platform.gd` | Sinusoidal oscillation, `constant_linear_velocity` update, visual drawing |
 | `scripts/player.gd` | Standard platformer movement using `move_and_slide()` |
 | `scripts/main.gd` | Static floor geometry |
+
+## Use as a building block
+
+**Copy:** `scripts/moving_platform.gd`, `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/moving_platform.gd`**
+- `@export amplitude:  float`
+- `@export period:     float`
+- `@export axis:       Vector2`
+- `@export draw_size:  Vector2`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

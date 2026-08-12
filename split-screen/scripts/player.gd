@@ -26,10 +26,10 @@ func _physics_process(delta: float) -> void:
 	var h := 0.0
 	if use_wasd:
 		h = (1.0 if Input.is_key_pressed(KEY_D) else 0.0) \
-		  - (1.0 if Input.is_key_pressed(KEY_A) else 0.0)
+			- (1.0 if Input.is_key_pressed(KEY_A) else 0.0)
 	else:
 		h = (1.0 if Input.is_key_pressed(KEY_RIGHT) else 0.0) \
-		  - (1.0 if Input.is_key_pressed(KEY_LEFT) else 0.0)
+			- (1.0 if Input.is_key_pressed(KEY_LEFT) else 0.0)
 
 	velocity.x = h * SPEED
 

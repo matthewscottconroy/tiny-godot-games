@@ -11,9 +11,27 @@ Status: **Phase 0 pilot complete**; **Phase 1 in progress**.
 - ✅ Category 5 — Content & flow: `wave-spawner` (→ `WaveSpawner`), `dialogue-tree` (→ `DialogueTree`), `skill-tree` (→ `SkillTree`), `dialogue-box` (package), `notification-queue` (package)
 - **Tier A: 28 of ~40 done.** Remaining: spatial/algorithms (`quadtree`, `boid-flocking`, `grid-pathfinding`, `pathfinding-astar`, `dungeon-generator`, `wave-function-collapse`), UI/feel (`tooltip`, `floating-text`, `trail-effect`, `screen-shake`), systems (`ability-system`, `combo-system`, `checkpoint-system`, `interaction-system`, `stamina-system`, `behavior-tree`, `state-machine-hfsm`).
 - ✅ Docs: the `Godot 4.2 → Godot 4` prose fix is done across all 24 affected READMEs.
-- ⏳ Then Phase 2 (Tier B) and Phase 3 (remaining docs)
+- ✅ **Phase 3 (docs) complete.** Every demo now carries the standardized `Use as a
+  building block` section — files to copy, public API and signals, required
+  autoloads/input, and integration notes — plus `Purpose`, `Controls`,
+  `How It Works`, `Key Godot APIs`, and `Files`. All six sections are at 157/157.
+  Sections that had drifted into synonyms (`Project Structure` / `File Layout`,
+  `Key Concepts`, `Key Constants / Data`) were folded onto the majority heading.
+  The generated reuse sections distinguish three cases: a `class_name` component
+  (copy the type, API listed), supporting scripts without a `class_name` (copy
+  them, `preload` or name them), and single-file showcases (lift the technique).
+  Hand-written sections were left untouched.
+- ⏳ Then Phase 2 (Tier B packaging)
 
 ## Guiding principle (overrides the tiering)
+
+**Input convention (verified):** Godot's built-in `ui_*` actions map to the arrow
+keys only — `ui_accept` is Enter/Space. They do **not** include WASD. 43 READMEs
+claimed "Arrow keys / WASD" for demos that bind only `ui_*`, and 6 promised
+Space-to-jump against `ui_up`; those claims were corrected rather than the code
+changed, since adding manual `KEY_A`/`KEY_D` checks to 43 teaching scripts would
+add noise to the thing being taught. If a demo does want WASD, bind the physical
+keys explicitly — do not add an `[input]` map.
 
 **An example must first stand on its own as a readable illustration of one feature.** If turning a demo into a reusable component would make the file harder to read for learning, stop at packaging (`class_name`/`@export`/signal/doc) or docs-only — do **not** split or genericize. Readability wins ties.
 

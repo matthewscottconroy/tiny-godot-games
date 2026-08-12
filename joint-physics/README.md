@@ -132,3 +132,11 @@ const SPRING_GAP    := 90.0   # Half-distance between the two spring anchors (px
 |------|---------|
 | `scripts/main.gd` | Body/joint factory helpers, pendulum and spring scene builders, interaction, drawing |
 | `scenes/main.tscn` | Root Node2D with main.gd attached; all physics created at runtime |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

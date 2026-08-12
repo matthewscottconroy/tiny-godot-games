@@ -150,7 +150,7 @@ Skill 7 (Combo) is the only node with two prerequisites: Strength II (id 1) AND 
 | R | Reset all unlocks, restore 3 skill points |
 | + / = / Numpad+ | Add 1 skill point (for testing) |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const NODE_RADIUS  := 28.0   # default draw radius

@@ -66,7 +66,7 @@ func _build_dialogue() -> void:
 			"text": "Five gold it is. The ruins are half a day east, past the twin oaks. The blade is in the third chamber. Watch out for the guardian — it doesn't like visitors.",
 			"choices": [
 				{"text": "Thank you! I'll head there now.", "condition": "", "target": "after_buy",
-				 "effect": "spend_gold"},
+					"effect": "spend_gold"},
 				{"text": "On second thought, maybe later.", "condition": "", "target": "goodbye_warm"},
 			]
 		},
@@ -75,7 +75,7 @@ func _build_dialogue() -> void:
 			"text": "Be careful out there. And remember: if you find the blade, come back and show me. I'd love to see it one last time before I die.",
 			"choices": [
 				{"text": "I will. Farewell.", "condition": "", "target": "end_after_buy",
-				 "effect": "set_talked"},
+					"effect": "set_talked"},
 			]
 		},
 		"no_gold": {

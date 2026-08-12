@@ -10,6 +10,12 @@ Real games use spatial partitioning constantly: Minecraft's chunk system is a sp
 
 Use a quadtree when objects are unevenly distributed — it adapts its cell sizes to clustering. Use a uniform grid when objects are evenly spread and you want constant-time queries. For very large or streaming worlds, use a spatial hash instead.
 
+## Controls
+
+None — the balls move on their own and the tree resubdivides around them each
+frame. Change the node capacity in `scripts/qt_node.gd` to see the subdivision
+threshold shift.
+
 ## How It Works
 
 ### QTNode Structure (`scripts/qt_node.gd`)
@@ -154,3 +160,17 @@ const MAX_DEPTH   := 6   # in QTNode — maximum tree depth
 | `scenes/main.tscn` | Main scene |
 | `tests/test_logic.gd` | Unit tests: insert/query, miss, subdivision trigger, max-depth, clear |
 | `tests/test.tscn` | Test runner scene |
+
+## Use as a building block
+
+**Copy:** `scripts/qt_node.gd` — the `QTNode` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`QTNode` API**
+- `clear() -> void`
+- `subdivide() -> void`
+- `insert(obj: Dictionary) -> void`
+- `query(area: Rect2) -> Array`
+- `get_all_rects() -> Array`
+
+**Notes**
+- `class_name QTNode` is global to the project — rename it if you already define that type.

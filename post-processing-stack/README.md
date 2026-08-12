@@ -2,6 +2,10 @@
 
 Demonstrates a composable post-processing pipeline in Godot 4 using a canvas_item shader that reads the screen texture. An animated game scene is rendered first, then a full-screen ColorRect applies vignette, chromatic aberration, and color grading — each independently togglable at runtime.
 
+## Purpose
+
+Screen-space effects compose. Vignette, chromatic aberration, and colour grading are each a few lines against the screen texture, and running them in one pass over a full-screen `ColorRect` keeps the cost flat regardless of how many you enable. This demo makes each stage togglable so their interaction — and their order — is visible.
+
 ## Controls
 
 | Input | Action |
@@ -18,9 +22,35 @@ Demonstrates a composable post-processing pipeline in Godot 4 using a canvas_ite
 | Chromatic aberration | R/G/B channels sampled at slightly offset UVs along the radial direction |
 | Color grading | Tint multiply followed by gamma curve `pow(col, γ)` |
 
-## Concepts
+## How It Works
 
 - **`hint_screen_texture`** — reads the composited scene into the shader; requires the ColorRect to render after all scene content
 - **`mouse_filter = 2`** (IGNORE) — prevents the overlay from blocking input to nodes behind it
 - **Additive shader stack** — each effect reads from the same source; ordering matters for correct composition
 - **Uniform toggles** — `bool` shader uniforms skip effect branches at zero cost when disabled
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `shaders/post_process.gdshader` | Shader source |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `SCREEN_TEXTURE` (shader) | Read what has already been rendered |
+| `ColorRect` | A full-screen quad to run the shader over |
+| `ShaderMaterial.set_shader_parameter()` | Toggle and tune each stage at runtime |
+| `CanvasLayer` | Composite above the world |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- The shader in `shaders/` is self-contained: assign it to a `ShaderMaterial` on any `CanvasItem` and set the uniforms.
+

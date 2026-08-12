@@ -8,7 +8,7 @@ Many game patterns require objects to follow a fixed path: patrol routes, tower 
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player (background reference)
+- **Arrow keys**: Move the player (background reference)
 - The red patrol object follows its looping curve automatically
 - Watch the white line showing the direction of travel
 
@@ -88,3 +88,24 @@ Multiple `PathFollow2D` nodes can be children of the same `Path2D`. They all fol
 | `PathFollow2D.loop` | Whether to wrap at the end |
 | `PathFollow2D.rotation_mode` | How to rotate relative to the curve |
 | `Curve2D.get_baked_length()` | Total curve length in pixels |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/patrol.gd` | `patrol` behaviour |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/patrol.gd`, `scripts/player.gd`.
+
+**`scripts/patrol.gd`**
+- `@export speed: float`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

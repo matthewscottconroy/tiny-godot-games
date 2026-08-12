@@ -161,3 +161,11 @@ const DAY_LENGTH := 30.0   # seconds for a full 24-hour cycle at 1× speed
 |------|---------|
 | `scripts/main.gd` | All time logic, keyframe interpolation, sun/moon/stars drawing |
 | `scenes/main.tscn` | Node tree with CanvasModulate, CanvasLayer HUD, speed buttons |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

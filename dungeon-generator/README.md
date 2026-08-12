@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing procedural dungeon generation via random room placement and L-shaped corridor carving.
 
+## Purpose
+
+Procedural dungeons need rooms that do not overlap and corridors that actually connect them. The classic approach is deliberately dumb: throw down random rectangles, reject any that intersect, then carve L-shaped corridors between consecutive room centres. It produces playable layouts with no graph theory, and it is the base that most roguelike generators refine rather than replace.
+
 ## Controls
 
 | Key | Action |
@@ -54,7 +58,7 @@ const MIN_H    := 4      # minimum room height
 const MAX_H    := 10     # maximum room height
 ```
 
-## Project Structure
+## Files
 
 ```
 dungeon-generator/
@@ -69,3 +73,20 @@ dungeon-generator/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Rect2.intersects()` | Reject a candidate room that overlaps an existing one |
+| `Rect2.grow()` | Keep a wall between rooms by testing an inflated rect |
+| `Rect2.get_center()` | Corridor endpoints |
+| `randi_range()` | Random room position and size |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

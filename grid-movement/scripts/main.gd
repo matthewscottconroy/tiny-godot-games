@@ -17,10 +17,10 @@ func _ready() -> void:
 		walls.append(Vector2i(COLS - 1, y))
 	# Interior walls
 	for w in [Vector2i(4,2),Vector2i(4,3),Vector2i(4,4),Vector2i(4,5),
-			  Vector2i(8,3),Vector2i(8,4),Vector2i(8,5),Vector2i(8,6),Vector2i(8,7),
-			  Vector2i(11,2),Vector2i(11,3),Vector2i(12,3),Vector2i(12,4),
-			  Vector2i(6,8),Vector2i(7,8),Vector2i(8,8),Vector2i(9,8),
-			  Vector2i(3,9),Vector2i(3,10),Vector2i(13,7),Vector2i(14,7)]:
+				Vector2i(8,3),Vector2i(8,4),Vector2i(8,5),Vector2i(8,6),Vector2i(8,7),
+				Vector2i(11,2),Vector2i(11,3),Vector2i(12,3),Vector2i(12,4),
+				Vector2i(6,8),Vector2i(7,8),Vector2i(8,8),Vector2i(9,8),
+				Vector2i(3,9),Vector2i(3,10),Vector2i(13,7),Vector2i(14,7)]:
 		walls.append(w)
 	for w in walls:
 		wall_set[w] = true

@@ -8,7 +8,7 @@ Shooting mechanics require managing rate of fire (cooldown), knowing which direc
 
 ## Controls
 
-- **Arrow keys / WASD**: Move and aim (facing direction follows movement)
+- **Arrow keys**: Move and aim (facing direction follows movement)
 - **Space / Enter** (`ui_accept`): Shoot
 - The grey bar at the player shows cooldown; "READY" appears when able to fire
 
@@ -95,3 +95,25 @@ cooldown_bar.value = 1.0 - (cooldown / FIRE_COOLDOWN)
 | `node.global_position` | World-space position |
 | `ProgressBar.value` | Normalized bar fill (0 to max_value) |
 | `draw_line(from, to, color, width)` | Line primitive in _draw() |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/bullet.gd` | `bullet` behaviour |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/bullet.tscn` | Scene |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/bullet.gd`, `scripts/player.gd`.
+
+**`scripts/player.gd`**
+- `@export bullet_scene: PackedScene`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

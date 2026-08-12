@@ -126,7 +126,7 @@ Unlike `distort.gdshader` (screen-distortion demo), this shader does not `clamp(
 | Up Arrow | Increase warp speed (+0.5) |
 | Down Arrow | Decrease warp speed (min 0.1) |
 
-## Key Constants / Shader Parameters
+## Key Constants
 
 ```glsl
 // Shader uniforms (set via set_shader_parameter):
@@ -151,3 +151,11 @@ max_speed       = 10.0
 | `scripts/main.gd` | Animated world: bouncing balls, checkerboard, grid lines |
 | `scenes/main.tscn` | SubViewportContainer → WorldViewport → World hierarchy |
 | `tests/test.tscn` | Tests for UV displacement math and warp parameter bounds |
+
+## Use as a building block
+
+**Copy:** `scripts/warp_control.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

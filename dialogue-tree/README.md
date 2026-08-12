@@ -137,7 +137,7 @@ State is just `_current_node: String`. Advancing the dialogue is a single assign
 | Space / Enter | Close dialogue at a dead-end node |
 | Escape | Close dialogue immediately |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const INTERACT_RANGE := 100.0   # px from player to NPC center

@@ -8,7 +8,7 @@ Before implementing complex behaviors (FSMs, pathfinding, steering), it is worth
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player (blue rectangle)
+- **Arrow keys**: Move the player (blue rectangle)
 - Watch the red enemy always follow; the sight line connects them
 
 ## How It Works
@@ -110,6 +110,16 @@ Quote marks around the path are required when the path contains characters like 
 ### Line2D for Visualization
 
 `Line2D` draws a line between a list of points. `set_point_position(index, position)` updates an individual point without recreating the line. The line is defined in world space (global positions), so no coordinate conversion is needed.
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/enemy.gd` | `enemy` behaviour |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
 
 ## Use as a building block
 

@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing the core tower defense loop: path enemies, tower placement, projectile targeting, gold economy, and wave scaling.
 
+## Purpose
+
+Tower defense is several systems interlocking: a path enemies follow, placement rules, towers acquiring targets in range, projectiles, and an economy that gates it all. Each is small on its own; the value is seeing the loop closed end to end so it is clear where wave scaling and new tower types plug in.
+
 ## Controls
 
 | Input | Action |
@@ -58,7 +62,7 @@ const START_GOLD  := 150     # initial gold (buy 3 towers)
 const START_LIVES := 10      # lives before game over
 ```
 
-## Project Structure
+## Files
 
 ```
 tower-defense-base/
@@ -73,3 +77,20 @@ tower-defense-base/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Vector2.distance_to()` | Target acquisition inside a tower's range |
+| `Array.pop_front()` | Walk enemies along the path |
+| `Vector2.move_toward()` | Constant-speed movement between waypoints |
+| `draw_arc()` | Visualise tower range |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

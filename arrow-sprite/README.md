@@ -8,7 +8,7 @@ This is often the very first script a Godot learner writes. It introduces `_proc
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the sprite in any direction (8-directional)
+- **Arrow keys**: Move the sprite in any direction (8-directional)
 
 ## How It Works
 
@@ -77,3 +77,24 @@ When two axes are pressed simultaneously (e.g. right + down), the raw direction 
 | `direction.length_squared()` | Squared magnitude (faster than `length()`) |
 | `@export` | Exposes a variable to the Inspector |
 | `_process(delta)` | Called every rendered frame |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `assets/player.svg` | Source art, imported as a texture |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`.
+
+**`scripts/player.gd`**
+- `@export speed: float`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

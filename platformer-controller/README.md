@@ -8,7 +8,7 @@ Raw platformer input is frustrating: walk off a ledge a pixel too far and the ju
 
 ## Controls
 
-- **Arrow keys / WASD**: Move left and right
+- **Arrow keys**: Move left and right
 - **Up / W**: Jump
 - Watch the label above the player — it shows GROUNDED, COYOTE (with remaining time), AIR, and BUFFERED states
 
@@ -90,3 +90,20 @@ The result is a controller that feels responsive rather than demanding pixel-per
 | `Input.get_axis(neg, pos)` | Returns −1 to +1 input for one axis |
 | `maxf(a, b)` | Float max — used to clamp timers to 0 without going negative |
 | `move_and_slide()` | Moves the body and updates floor/wall contact state |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

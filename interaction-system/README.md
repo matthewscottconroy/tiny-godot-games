@@ -8,7 +8,7 @@ Most games need a consistent way to interact with objects — chests, signs, doo
 
 ## Controls
 
-- **Arrow keys / WASD**: Move left and right, Up / W to jump
+- **Arrow keys**: Move left and right, Up to jump
 - **Space / Enter**: Interact with nearby object
 - Walk near the chest, sign, or door and watch the prompt appear
 
@@ -81,3 +81,26 @@ The player calls `set_nearby(self)` on the player directly. An alternative is to
 | `Node.is_in_group(name)` | Check if a node belongs to a named group |
 | `Node.add_to_group(name)` | Add a node to a group (done in player `_ready`) |
 | `Input.is_action_just_pressed(a)` | Edge-triggered action check |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/interactable.gd` | The `Interactable` component |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/interactable.gd` — the `Interactable` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`Interactable` API**
+- `@export label_text  :`
+- `@export response    :`
+- `@export icon_color  :`
+- `interact() -> void`
+
+**Notes**
+- `class_name Interactable` is global to the project — rename it if you already define that type.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.

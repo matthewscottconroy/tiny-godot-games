@@ -2,16 +2,20 @@
 
 Demonstrates real-time audio synthesis and crossfading between two music "layers" using `AudioStreamGenerator` and `Tween`.
 
-## How to Run
+## Purpose
 
-Open the project in Godot 4 and press F5 (or run `scenes/main.tscn`).
+Adaptive soundtracks work by keeping several layers playing and changing which ones you can hear, not by starting and stopping tracks. Because the layers never stop, the music stays in phase and transitions land on the beat instead of restarting a bar. This demo generates two layers procedurally and cross-fades between them so the mechanism is audible without any audio assets.
 
-- **C** — transition to calm layer (220 Hz sine)
-- **F** — transition to combat/fight layer (440 Hz + 330 Hz mix)
+## Controls
 
-The crossfade takes one second.
+| Key | Action |
+|-----|--------|
+| C | Cross-fade to the **calm** layer (220 Hz sine) |
+| F | Cross-fade to the **combat** layer (440 Hz + 330 Hz mix) |
 
-## Key Concepts
+The cross-fade takes one second.
+
+## How It Works
 
 ### AudioStreamGenerator and Buffer Filling
 
@@ -63,7 +67,7 @@ tw.parallel().tween_property(_combat_player, "volume_db", -80.0, 1.0)
 
 Decibels are a logarithmic scale: `0 dB` = full amplitude, `-6 dB` = half amplitude, `-20 dB` = one tenth amplitude. At `-80 dB` the amplitude multiplier is `10^(-80/20) = 0.0001` — one ten-thousandth of full volume, far below the noise floor of any audio output device.
 
-## File Layout
+## Files
 
 ```
 dynamic-music/
@@ -74,3 +78,20 @@ dynamic-music/
   tests/test_logic.gd    — pure GDScript unit tests (no scene tree needed)
   tests/test.tscn        — minimal scene to run tests
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `AudioStreamGenerator` | Push raw samples instead of loading audio files |
+| `AudioStreamGeneratorPlayback.push_frame()` | Write one stereo sample |
+| `get_frames_available()` | How many samples the buffer still needs this frame |
+| `create_tween()` | Cross-fade layer volumes without stopping playback |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

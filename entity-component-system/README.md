@@ -2,6 +2,15 @@
 
 A minimal Godot 4 demo showing a pure GDScript ECS: entities as integer IDs, components as data dictionaries, and systems as functions that query and mutate component data.
 
+## Purpose
+
+Inheritance hierarchies break down once entities need overlapping capabilities — the flying, exploding, poisonous enemy has no place in a tree. ECS replaces the tree with composition: entities are bare ids, components are data, and systems are functions that query for the entities carrying a particular set of components. This demo implements the whole idea in pure GDScript so the parts are visible without a framework.
+
+## Controls
+
+None — the systems run every frame over whatever entities exist. Add or remove
+components in `scripts/main.gd` to change what each system picks up.
+
 ## How It Works
 
 ### Core Types
@@ -44,6 +53,15 @@ for e in _world.query([&"Position", &"Velocity"]):
 
 Each entity has `Position`, `Velocity`, `Health`, and `Render` components. The arc drawn around each circle shows remaining HP — green when above 50%, red below.
 
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Dictionary` | Component storage keyed by type, then by entity id |
+| `StringName` (`&"Position"`) | Cheap interned keys for component types |
+| `Array.filter()` | Narrow a query to entities holding every required component |
+| `Callable` | Systems as plain functions over the query result |
+
 ## Use as a building block
 
 **Copy:** `scripts/ecs_world.gd` (the `ECSWorld` class). It's a `RefCounted` with no dependencies — components are plain dictionaries, so there's nothing else to copy.
@@ -70,7 +88,7 @@ Each entity has `Position`, `Velocity`, `Health`, and `Render` components. The a
 - This is a teaching-scale ECS (dictionary storage, linear `query`). It's ideal for hundreds of entities; for many thousands, a dedicated ECS addon with packed arrays will scale better.
 - `get_component` returns the live dictionary — mutating it mutates the component in place, which is what the systems rely on.
 
-## Project Structure
+## Files
 
 ```
 entity-component-system/

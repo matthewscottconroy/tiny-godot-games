@@ -10,6 +10,18 @@ The BBCode approach is also data-friendly: dialogue, quest text, and item descri
 
 Understanding when to use BBCode vs the programmatic `push_*()` / `pop()` API is also important. BBCode is write-once-read-never (you set `text` and the node handles everything); `push_*()` / `pop()` allows conditional construction and dynamic updates without string rebuilding.
 
+## Controls
+
+The demo is driven entirely by its buttons - no keyboard input.
+
+| Button | Shows |
+|--------|-------|
+| Basic | Plain multi-line text and wrapping |
+| Colors | Per-span colour via BBCode |
+| Table | Aligned columns |
+| Effects | Animated `wave` / `shake` / `rainbow` tags |
+| Mixed | Several techniques combined |
+
 ## How It Works
 
 ### Node Tree
@@ -188,3 +200,11 @@ if hp < 20:
 |------|---------|
 | `scripts/main.gd` | All BBCode strings and button connections |
 | `scenes/main.tscn` | Control root with RichTextLabel and button bar |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

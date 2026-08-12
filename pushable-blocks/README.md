@@ -110,7 +110,7 @@ The exponential profile is physically analogous to air resistance and matches ho
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move |
+| Arrow keys | Move |
 | Up | Jump |
 | Walk into a block | Push it |
 
@@ -132,3 +132,16 @@ const FRICTION := 5.5      # lerpf rate toward zero — higher = stops sooner
 | `scripts/player.gd` | Movement, collision loop, push impulse application |
 | `scripts/pushable.gd` | Block movement, `push()` API, exponential friction, gravity |
 | `scripts/main.gd` | Static floor geometry |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`, `scripts/pushable.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/pushable.gd`**
+- `@export block_color: Color`
+- `push(horizontal_strength: float) -> void`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

@@ -94,6 +94,15 @@ The `_typing` flag is shared between the typing coroutine and the advance handle
 
 `_type_out.call_deferred(line)` instead of `_type_out(line)` ensures the function runs after the current frame's signal processing is complete. This prevents issues where `await` inside a signal handler can cause unexpected ordering.
 
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/dialogue_box.gd` | A reusable typewriter dialogue box. Call start(lines, speakers); it reveals |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
 ## Use as a building block
 
 `DialogueBox` (`scripts/dialogue_box.gd`) is already a reusable UI component — a

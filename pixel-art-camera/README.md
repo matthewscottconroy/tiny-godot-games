@@ -126,3 +126,11 @@ const PLAYER_SPEED := 50.0    # world pixels per second
 | `scripts/world.gd` | Player movement, wrapping, all low-res world drawing |
 | `scenes/main.tscn` | SubViewportContainer → SubViewport hierarchy |
 | `tests/test.tscn` | Tests for viewport sizing and pixel mode logic |
+
+## Use as a building block
+
+**Copy:** `scripts/world.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

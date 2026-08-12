@@ -147,3 +147,11 @@ var _bpm: float = 120.0       # adjustable at runtime (60–240)
 | `scripts/main.gd` | Sequencer clock, grid state, audio buffer fill, input, drawing |
 | `scenes/main.tscn` | Node2D with one AudioStreamPlayer child |
 | `tests/test_logic.gd` | Unit tests for BPM timing, step advancement, grid toggle |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -163,7 +163,7 @@ under *How to Adapt* above.
 | Click toggle | Flip boolean setting |
 | Click Save button | Explicitly save all settings |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const CONFIG_PATH := "user://settings.cfg"

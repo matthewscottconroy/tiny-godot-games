@@ -8,7 +8,7 @@ As games grow, nodes need to communicate across scene boundaries without being a
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player
+- **Arrow keys**: Move the player
 - **Space / Enter** (`ui_accept`): Trigger `player_hurt` event (−10 HP)
 - **Shift**: Trigger `player_healed` event (+10 HP)
 - Walk over gold circles to collect them (triggers `item_collected`)
@@ -129,3 +129,29 @@ A common mitigation is to split signals into domain-specific buses (`CombatBus`,
 | `signal name(arg: Type)` | Typed signal declaration |
 | `EventBus.signal_name.emit(value)` | Fire the signal |
 | `EventBus.signal_name.connect(callable)` | Register a listener |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/event_bus.gd` | `event bus` behaviour |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/event_bus.gd`, `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/event_bus.gd`**
+- signal `item_collected(item_name: String)`
+- signal `player_hurt(damage: int)`
+- signal `player_healed(amount: int)`
+- signal `enemy_died(enemy_name: String)`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- `EventBus` is registered as an autoload (Project Settings → Globals). Copy the autoload script and register it there under a name that does not collide with anything in your project.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

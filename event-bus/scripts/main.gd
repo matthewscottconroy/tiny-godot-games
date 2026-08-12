@@ -1,6 +1,6 @@
 extends Node2D
 
-const CoinPositions := [
+const COIN_POSITIONS := [
 	Vector2(100, 200), Vector2(200, 140), Vector2(400, 180),
 	Vector2(520, 240), Vector2(300, 300), Vector2(460, 350),
 ]
@@ -16,7 +16,7 @@ func _ready() -> void:
 	EventBus.player_healed.connect(func(amt: int):   _log("[player_healed] +%d HP" % amt))
 	EventBus.enemy_died.connect(func(name: String):  _log("[enemy_died] " + name))
 
-	for pos in CoinPositions:
+	for pos in COIN_POSITIONS:
 		_spawn_coin(pos)
 
 func _spawn_coin(pos: Vector2) -> void:

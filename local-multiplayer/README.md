@@ -110,3 +110,29 @@ This enables remapping without changing code and supports gamepad assignments pe
 | `"property_name" in object` | Duck-type property check |
 | `signal collected(player_id: int)` | Typed signal with argument |
 | `Area2D.body_entered` | Physics body contact detection |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/coin.gd` | `coin` behaviour |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/coin.gd`, `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/coin.gd`**
+- signal `collected(player_id: int)`
+
+**`scripts/player.gd`**
+- `@export player_id    :`
+- `@export player_color :`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

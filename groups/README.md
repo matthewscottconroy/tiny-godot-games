@@ -114,3 +114,25 @@ When a node is freed (via `queue_free()` or `free()`), Godot automatically remov
 | `get_tree().call_group(group, method, args...)` | Broadcast method call |
 | `get_tree().get_nodes_in_group(group)` | Get all members as an Array |
 | `SceneTree.GROUP_CALL_DEFERRED` | Defer calls to end of frame |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/enemy.gd` | `enemy` behaviour |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/enemy.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/enemy.gd`**
+- `flash() -> void`
+- `freeze_toggle() -> void`
+- `take_damage(amount: int) -> void`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

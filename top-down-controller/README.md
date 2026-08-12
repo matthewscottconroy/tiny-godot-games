@@ -127,7 +127,7 @@ Prefer `get_vector` for 2D directional input.
 
 | Input | Action |
 |-------|--------|
-| **Arrow keys / WASD** | Move in 8 directions |
+| **Arrow keys** | Move in 8 directions |
 
 ## Key Constants
 
@@ -146,3 +146,12 @@ const SPEED := 200.0  # pixels per second
 | `scripts/player.gd` | Input, `MOTION_MODE_FLOATING`, facing direction, custom draw |
 | `scripts/main.gd` | Room walls and obstacles via `_draw()` |
 | `scenes/main.tscn` | Room with StaticBody2D walls and Player |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

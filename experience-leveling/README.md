@@ -138,7 +138,7 @@ For this demo, the 1.4 multiplier means level 10 requires `50 * 1.4^9 ≈ 965 XP
 | Left-click enemy | Defeat it and gain its XP value |
 | (automatic) | Enemies respawn after 2 seconds |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 # level_system.gd — fields (defaults)

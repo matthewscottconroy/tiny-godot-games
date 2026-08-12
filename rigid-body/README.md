@@ -143,3 +143,20 @@ The shape resource is attached to the `CollisionShape2D` before adding it to the
 | `Node.set_script(script)` | Attach a script after construction |
 | `Node.add_child(node)` | Add to scene tree (triggers _ready) |
 | `InputEventMouseButton.position` | Screen position of click |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/physics_body.gd` | `physics body` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/physics_body.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

@@ -136,3 +136,11 @@ const ITEM_H  := 34.0   # height of each menu row in pixels
 | `scripts/main.gd` | All menu logic: data model, input, edge clamping, drawing |
 | `scenes/main.tscn` | Single Node2D — no Control nodes |
 | `tests/test_logic.gd` | Unit tests for hit-testing, clamping, and action dispatch |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

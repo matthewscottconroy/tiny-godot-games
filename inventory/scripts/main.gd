@@ -33,7 +33,7 @@ func _ready() -> void:
 
 	# Spawn world items
 	var positions := [Vector2(60, 150), Vector2(120, 280), Vector2(180, 180),
-					  Vector2(80, 350), Vector2(200, 320), Vector2(50, 220)]
+						Vector2(80, 350), Vector2(200, 320), Vector2(50, 220)]
 	for i in ITEM_DEFS.size():
 		_spawn_world_item(ITEM_DEFS[i], positions[i])
 

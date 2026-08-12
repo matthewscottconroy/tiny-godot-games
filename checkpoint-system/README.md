@@ -126,7 +126,7 @@ In a real game, checkpoint state persists across sessions. The `checkpoint_id` e
 
 | Key | Action |
 |-----|--------|
-| Arrow keys / WASD | Move and jump |
+| Arrow keys | Move and jump |
 | R | Respawn at last checkpoint |
 
 ## Key Constants
@@ -147,3 +147,15 @@ const GRAVITY  := 900.0   # downward acceleration (px/s²)
 | `scripts/main.gd` | Connects all checkpoint signals, draws terrain |
 | `scenes/main.tscn` | Player, three checkpoints, floor, two platforms |
 | `tests/test_logic.gd` | Unit tests for spawn/respawn logic |
+
+## Use as a building block
+
+**Copy:** `scripts/checkpoint.gd` — the `Checkpoint` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`Checkpoint` API**
+- `@export checkpoint_id: int`
+- signal `activated(id: int)`
+
+**Notes**
+- `class_name Checkpoint` is global to the project — rename it if you already define that type.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.

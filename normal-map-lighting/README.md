@@ -2,6 +2,10 @@
 
 Procedural bump-map lighting demo. A canvas_item shader computes per-fragment surface normals using finite differences on a multi-frequency height field, then applies Phong diffuse shading with distance attenuation from a point light driven by the mouse cursor.
 
+## Purpose
+
+Normal-mapped lighting makes flat sprites look sculpted. This demo skips the authored normal map and derives one from a procedural height field by finite differences, then runs Phong shading against a moving light. Building the normals rather than importing them shows exactly what a normal map encodes and why the lighting responds the way it does.
+
 ## Controls
 
 | Input | Action |
@@ -9,7 +13,7 @@ Procedural bump-map lighting demo. A canvas_item shader computes per-fragment su
 | Mouse move | Move point light |
 | R | Reset light to center |
 
-## Concepts
+## How It Works
 
 - **Canvas item shader** — `shader_type canvas_item` for 2D full-screen effect
 - **Procedural height field** — sum of sin/cos terms at multiple frequencies
@@ -18,3 +22,29 @@ Procedural bump-map lighting demo. A canvas_item shader computes per-fragment su
 - **Distance attenuation** — `1 / (1 + d² * k)` falloff
 - **Shader uniforms** — `light_uv`, `light_color`, `light_radius`, `bump_strength`, `freq`
 - **GDScript → shader** — `ShaderMaterial.set_shader_parameter()` each frame
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `shaders/normal_map.gdshader` | Shader source |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| Finite differences over a height field | Derive a surface normal without an authored normal map |
+| `normalize()` (shader) | Unit normals and light vectors |
+| `dot()` (shader) | Lambertian and specular terms |
+| `ShaderMaterial.set_shader_parameter()` | Drive the light position from GDScript |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- The shader in `shaders/` is self-contained: assign it to a `ShaderMaterial` on any `CanvasItem` and set the uniforms.
+

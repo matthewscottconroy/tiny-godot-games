@@ -136,3 +136,11 @@ lifetime_range       = 3.0..8.0 seconds
 | `scripts/main.gd` | Particle spawn/update/respawn, wind physics, motion blur drawing, wind indicator |
 | `scenes/main.tscn` | Single Node2D scene |
 | `tests/test.tscn` | Unit tests for wind vector calculation and particle lifetime |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

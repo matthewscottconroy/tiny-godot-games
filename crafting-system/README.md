@@ -124,7 +124,7 @@ if made != "": inventory.add(made)
 | Left-click 3rd ingredient | Oldest selection replaced, new one added |
 | Left-click CRAFT button | Attempt craft with 2 selected ingredients |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const INGREDIENTS := ["Wood", "Stone", "Iron", "Fire", "Water", "Herbs", "Cloth", "Gold"]

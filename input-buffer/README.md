@@ -143,7 +143,7 @@ An alternative to the buffer timer is to poll `Input.is_action_pressed()` (held)
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move |
+| Arrow keys | Move |
 | Up | Jump |
 | Space / Enter | Attack (bufferable) |
 

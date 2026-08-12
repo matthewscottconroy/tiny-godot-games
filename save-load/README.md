@@ -131,6 +131,15 @@ JSON has five scalar types: `null`, `boolean`, `number`, `string`, and array/obj
 | `String.is_valid_int()` | Validate integer string before conversion |
 | `Time.get_datetime_string_from_system()` | Current timestamp as string |
 
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: a tiny form (name + score) plus Save/Load buttons. All file I/O |
+| `scripts/save_system.gd` | Persists a Dictionary to a JSON file (under user:// by default) |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
 ## Use as a building block
 
 **Copy:** `scripts/save_system.gd` (the `SaveSystem` class). It's a `RefCounted` with no scene or demo dependencies.

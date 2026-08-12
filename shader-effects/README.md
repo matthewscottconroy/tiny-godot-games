@@ -73,3 +73,23 @@ void fragment() {
 | `textureSize(TEXTURE, 0)` | Built-in GLSL — returns texture pixel dimensions |
 | `TIME` | Built-in GLSL uniform — seconds since shader start |
 | `discard` | GLSL — skips writing the current fragment entirely |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `shaders/dissolve.gdshader` | Shader source |
+| `shaders/pixelate.gdshader` | Shader source |
+| `shaders/wave_distort.gdshader` | Shader source |
+| `assets/sprite.svg` | Source art, imported as a texture |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- The shaders in `shaders/` are self-contained: assign them to a `ShaderMaterial` on any `CanvasItem` and set the uniforms.
+

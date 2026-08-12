@@ -119,12 +119,12 @@ Sliders in a `CanvasLayer` HUD connect directly to shader uniform updates via la
 
 | Key / Input | Action |
 |-------------|--------|
-| Arrow keys / WASD | Move player |
+| Arrow keys | Move player |
 | Up / W | Jump (on ground) or swim up (in water) |
 | Wave Speed slider | Adjusts `wave_speed` uniform (0.1–5.0) |
 | Wave Amplitude slider | Adjusts `wave_amplitude` uniform (0–0.05) |
 
-## Key Constants / Shader Parameters
+## Key Constants
 
 ```glsl
 // water.gdshader — tunable uniforms
@@ -152,3 +152,12 @@ const SPEED     := 180.0   # normal horizontal speed
 | `scripts/main.gd` | Player physics, water detection, slider signal connections, world drawing |
 | `shaders/water.gdshader` | Wave distortion, depth gradient, foam noise, shimmer highlights |
 | `scenes/main.tscn` | Water ColorRect with embedded ShaderMaterial, player, HUD sliders |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- The shader in `shaders/` is self-contained: assign it to a `ShaderMaterial` on any `CanvasItem` and set the uniforms.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

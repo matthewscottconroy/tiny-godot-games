@@ -12,7 +12,7 @@ Virtually every action game uses the hitbox/hurtbox distinction. A **hitbox** is
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player (blue)
+- **Arrow keys**: Move the player (blue)
 - **Space / Enter** (`ui_accept`): Player attacks (hitbox activates briefly on the right side)
 - The red enemy auto-attacks every 2.2 seconds
 - Watch both characters flash red when hit
@@ -123,6 +123,15 @@ func take_damage(amount: int) -> void:
     await get_tree().create_timer(0.5).timeout
     $Hurtbox.monitorable = true    # vulnerable again
 ```
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/enemy.gd` | `enemy` behaviour |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
 
 ## Use as a building block
 

@@ -167,8 +167,8 @@ func _draw() -> void:
 		for x in GRID_W:
 			var c: int = _grid[y][x]
 			var col := Color(0.20, 0.35, 0.14) if c == 0 else \
-					   Color(0.60, 0.55, 0.38) if c == 1 else \
-					   Color(0.22, 0.48, 0.80)
+						Color(0.60, 0.55, 0.38) if c == 1 else \
+						Color(0.22, 0.48, 0.80)
 			draw_rect(Rect2(x * TILE, y * TILE, TILE, TILE), col)
 			draw_rect(Rect2(x * TILE, y * TILE, TILE, TILE), Color(0,0,0,0.08), false, 1)
 

@@ -8,7 +8,7 @@ Enemy AI in games requires more than "always move toward the player." A credible
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player
+- **Arrow keys**: Move the player
 - Watch the enemy label change between PATROL, CHASE, and RETURN
 - The enemy's eye always looks at its current target (waypoint or player)
 
@@ -118,6 +118,15 @@ Modulo arithmetic wraps the index: after the last waypoint, it returns to 0. Thi
 ### Visual State Feedback
 
 Color and eye direction change per state, giving the player non-verbal information about the enemy's mode. In a real game this might be accompanied by sound (detection bark) and animations. Keeping it visual in this demo makes the state machine behavior immediately legible.
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/enemy.gd` | Emitted when the enemy changes state. Other systems (animation, an alert |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
 
 ## Use as a building block
 

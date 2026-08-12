@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing the double-jump mechanic.
 
+## Purpose
+
+The double jump is the simplest example of a broader pattern: an ability with a limited number of uses that a specific event refills. Tracking it with a counter reset on landing — rather than a `has_double_jumped` boolean — costs nothing and scales straight to triple jumps, dashes, and air-charges without rewriting the logic.
+
 ## Controls
 
 | Key | Action |
@@ -43,7 +47,7 @@ const GRAVITY   := 900.0   # downward acceleration (px/s²)
 const MAX_JUMPS := 2        # jumps available before landing is required
 ```
 
-## Project Structure
+## Files
 
 ```
 double-jump/
@@ -59,3 +63,21 @@ double-jump/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `CharacterBody2D.is_on_floor()` | Refill the jump counter on landing |
+| `Input.is_action_just_pressed()` | One jump per press, not per frame held |
+| `move_and_slide()` | Apply velocity with collision |
+| `Input.get_axis()` | Horizontal input as -1..+1 |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

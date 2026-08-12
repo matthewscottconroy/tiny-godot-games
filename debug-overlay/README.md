@@ -104,8 +104,8 @@ A common extension is color-coding labels by severity — green for normal, yell
 
 | Key | Action |
 |-----|--------|
-| Arrow keys / WASD | Move |
-| Space / Up | Jump |
+| Arrow keys | Move |
+| Up | Jump |
 | F3 or `` ` `` | Toggle debug overlay |
 
 ## Key Constants
@@ -126,3 +126,12 @@ const GRAVITY  := 900.0   # downward acceleration (px/s²)
 | `scripts/player.gd` | Movement, jump, derives and exposes `state` string |
 | `scenes/main.tscn` | Player, platforms, CanvasLayer with panel and five labels |
 | `tests/test_logic.gd` | Unit tests for label formatting, state transitions, toggle logic |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

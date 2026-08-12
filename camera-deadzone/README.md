@@ -108,7 +108,7 @@ Godot's `Camera2D` has `position_smoothing_enabled` built in, but it cannot impl
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move (world extends ~3000 px wide) |
+| Arrow keys | Move (world extends ~3000 px wide) |
 | Up | Jump |
 
 ## Key Constants
@@ -125,3 +125,12 @@ const FOLLOW_SPEED := 4.5    # lerp convergence rate (higher = snappier)
 |------|---------|
 | `scripts/main.gd` | Dead zone logic, camera lerp, dead zone visualization overlay |
 | `scripts/player.gd` | Standard platformer movement (walk, jump, gravity) |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

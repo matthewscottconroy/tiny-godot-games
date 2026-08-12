@@ -164,3 +164,12 @@ var armor_c := Color(1.00, 0.84, 0.00)
 | `scripts/main.gd` | Palette definitions, texture construction, shader parameter updates |
 | `shaders/palette_swap.gdshader` | Fragment shader with RGB distance color replacement |
 | `scenes/main.tscn` | Root with TextureRect (ShaderMaterial applied), CanvasLayer HUD |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- The shader in `shaders/` is self-contained: assign it to a `ShaderMaterial` on any `CanvasItem` and set the uniforms.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

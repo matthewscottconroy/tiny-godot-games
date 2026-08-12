@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo focused on wall-sliding mechanics: gravity reduction while pressing into a wall, terminal slide velocity, and slide-distance tracking.
 
+## Purpose
+
+Wall sliding is a gravity modifier with a terminal velocity, and it is what makes a wall jump readable — it gives the player time to react. Isolating it from the jump shows the two parts separately: detecting a wall press, and clamping fall speed while it holds.
+
 ## Controls
 
 | Key | Action |
@@ -46,7 +50,7 @@ const SLIDE_SPEED_CAP := 80.0     # maximum downward speed while on wall (px/s)
 const JUMP_VEL        := -380.0   # floor-jump velocity (no wall jumping in this demo)
 ```
 
-## Project Structure
+## Files
 
 ```
 wall-slide/
@@ -62,3 +66,21 @@ wall-slide/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `CharacterBody2D.is_on_wall()` | Detect the wall press |
+| `get_wall_normal()` | Which side the wall is on |
+| `Input.get_axis()` | Whether the player is holding into the wall |
+| `clampf()` | Terminal slide velocity |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

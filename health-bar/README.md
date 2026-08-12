@@ -125,6 +125,16 @@ Instant value jumps are jarring. A 200ms tween on the bar gives the player's eye
 
 Rather than switching between two fixed colors, `lerp` gives a continuous spectrum. At 60% HP the character is slightly purple — a visual warning that communicates HP without requiring the player to read the number. This is a common game UX technique.
 
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/health.gd` | A reusable hit-point model. Holds hp/max_hp and emits signals on change and |
+| `scripts/main.gd` | Demo driver: the buttons call the reusable Health model (scripts/health.gd); |
+| `scripts/player_display.gd` | `player display` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
 ## Use as a building block
 
 **Copy:** `scripts/health.gd` (the `Health` class). It's a plain `Node` with no UI or scene dependencies.

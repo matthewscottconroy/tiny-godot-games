@@ -102,7 +102,7 @@ For parallax backgrounds, `ParallaxBackground` is a more specialized alternative
 
 | Input | Action |
 |-------|--------|
-| Arrow keys / WASD | Move the player through the wide level |
+| Arrow keys | Move the player through the wide level |
 
 ## Key Constants
 
@@ -118,3 +118,12 @@ const SPEED := 200.0   # pixels per second
 | `scripts/main.gd` | Reads player position, updates HUD label, draws world decorations |
 | `scripts/player.gd` | 4-directional movement with Camera2D follow |
 | `scenes/main.tscn` | Scene tree: world, player, ground, HUD CanvasLayer |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

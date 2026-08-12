@@ -8,7 +8,7 @@ Instantiating and freeing nodes is expensive. In performance-critical scenarios 
 
 ## Controls
 
-- **Arrow keys / WASD**: Move and aim (facing follows movement)
+- **Arrow keys**: Move and aim (facing follows movement)
 - **Space / Enter** (`ui_accept`): Fire a bullet (taken from the pool)
 - Watch the stats label: pool size, active bullets, reuses, and pool misses
 
@@ -138,6 +138,18 @@ For games where pool exhaustion is common, dynamic growth is safest. For control
 | `Node.get_children()` | Array of direct children |
 | `Array.filter(callable)` | Filter array by condition |
 | `signal acquired(instance)` / `exhausted` | Report pool events without UI coupling |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/bullet.gd` | `bullet` behaviour |
+| `scripts/main.gd` | Demo driver: wires the player's `fired` signal to the ObjectPool and shows |
+| `scripts/object_pool.gd` | A fixed-size pool of reusable node instances |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/bullet.tscn` | Scene |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
 
 ## Use as a building block
 

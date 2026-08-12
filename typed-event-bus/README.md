@@ -149,3 +149,15 @@ Always call `bus.off(event_type, callback)` in the `_exit_tree()` of any node th
 | `scripts/main.gd` | System handlers, enemy data, rendering, log panels |
 | `scenes/main.tscn` | Single Node2D scene |
 | `tests/test_logic.gd` | Unit tests for subscribe, unsubscribe, emit, cascade |
+
+## Use as a building block
+
+**Copy:** `scripts/event_bus.gd` — the `EventBus` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`EventBus` API**
+- `on(event_type: String, callback: Callable) -> void`
+- `off(event_type: String, callback: Callable) -> void`
+- `emit(event_type: String, data: Dictionary = {}) -> void`
+
+**Notes**
+- `class_name EventBus` is global to the project — rename it if you already define that type.

@@ -10,6 +10,11 @@ This distinction matters architecturally. In platformers, destructible environme
 
 This demo shows the minimum viable RigidBody2D: a ball with a collision shape, a `PhysicsMaterial` with `bounce = 1.0`, and four static wall barriers. The script contains almost no code — the engine does the work.
 
+## Controls
+
+None — the simulation runs on its own. Adjust the physics material and gravity
+in the scene to change how the ball behaves.
+
 ## How It Works
 
 ### Node Tree
@@ -106,3 +111,11 @@ Set `gravity_scale = 0.0` to make a RigidBody2D float in space — useful for sp
 | `scripts/ball.gd` | Visual rendering only (draw_circle + draw_arc) |
 | `ball.gd` | Same script, placed at project root for direct reference |
 | `scenes/main.tscn` | Ball, four StaticBody2D walls, PhysicsMaterial configuration |
+
+## Use as a building block
+
+**Copy:** `scripts/ball.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

@@ -131,3 +131,11 @@ Godot uses IETF BCP 47 language tags. Common codes:
 | `tests/test_logic.gd` | Unit tests: all-keys coverage, round-trip, locale switch, missing-key fallback |
 | `scenes/main.tscn` | Control scene with VBox, Labels, and language buttons |
 | `tests/test.tscn` | Test runner scene |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -116,3 +116,11 @@ const PLAYER_R   := 12.0    # Player collision radius (px)
 | `scenes/main.tscn` | Root Node2D with main.gd attached; level defined in-script |
 | `tests/test_logic.gd` | Unit tests for hook direction, constraint enforcement, and rope length |
 | `tests/test.tscn` | Scene that runs the tests |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

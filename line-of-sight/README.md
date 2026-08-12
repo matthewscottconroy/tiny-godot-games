@@ -146,8 +146,8 @@ This combines the cone logic from the vision-cone demo with the physics raycast 
 
 | Key | Action |
 |-----|--------|
-| Arrow keys / WASD | Move left and right |
-| Up / W / Space | Jump |
+| Arrow keys | Move left and right |
+| Up | Jump |
 
 Walk behind the gray walls to break line of sight. Enemies display "ALERT!" in orange when they see the player and "patrol" at half opacity when searching.
 

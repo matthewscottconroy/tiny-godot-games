@@ -123,8 +123,8 @@ func flash(color: Color, duration: float) -> void:
 
 | Key / Action | Effect |
 |--------------|--------|
-| Arrow keys / WASD | Move player |
-| Space / Up | Jump |
+| Arrow keys | Move player |
+| Up | Jump |
 | Walk into red zone | Damage flash (red, 0.35s) |
 | 1 | Damage flash (red, 0.35s) |
 | 2 | Pickup flash (yellow, 0.25s) |
@@ -149,3 +149,12 @@ flash(Color(1.0, 1.0, 1.0, 0.90), 0.45)  # respawn
 | `scripts/player.gd` | CharacterBody2D platformer with procedural drawing |
 | `scenes/main.tscn` | Scene with player, hazard Area2D, CanvasLayer/FlashRect |
 | `tests/test_logic.gd` | Unit tests for flash color, alpha targeting, and preset values |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

@@ -67,13 +67,13 @@ func _build_tree() -> void:
 
 # --- BT Leaf Callables ---
 
-func _can_see_player(ctx: Dictionary) -> BTNode.Status:
+func _can_see_player(_ctx: Dictionary) -> BTNode.Status:
 	var dist: float = _enemy.pos.distance_to(_player_pos)
 	var result := BTNode.Status.SUCCESS if dist < SIGHT_RANGE else BTNode.Status.FAILURE
 	_last_statuses["CanSeePlayer"] = result
 	return result
 
-func _chase_player(ctx: Dictionary) -> BTNode.Status:
+func _chase_player(_ctx: Dictionary) -> BTNode.Status:
 	var dist: float = _enemy.pos.distance_to(_player_pos)
 	if dist <= ATTACK_RANGE:
 		_last_statuses["ChasePlayer"] = BTNode.Status.SUCCESS
@@ -84,7 +84,7 @@ func _chase_player(ctx: Dictionary) -> BTNode.Status:
 	_last_statuses["ChasePlayer"] = BTNode.Status.RUNNING
 	return BTNode.Status.RUNNING
 
-func _attack_player(ctx: Dictionary) -> BTNode.Status:
+func _attack_player(_ctx: Dictionary) -> BTNode.Status:
 	var dist: float = _enemy.pos.distance_to(_player_pos)
 	if dist <= ATTACK_RANGE:
 		_enemy.state = "attack"
@@ -94,12 +94,12 @@ func _attack_player(ctx: Dictionary) -> BTNode.Status:
 	_last_statuses["AttackPlayer"] = BTNode.Status.FAILURE
 	return BTNode.Status.FAILURE
 
-func _heard_noise(ctx: Dictionary) -> BTNode.Status:
+func _heard_noise(_ctx: Dictionary) -> BTNode.Status:
 	var result := BTNode.Status.SUCCESS if _enemy.alert_pos != null else BTNode.Status.FAILURE
 	_last_statuses["HeardNoise"] = result
 	return result
 
-func _investigate_noise(ctx: Dictionary) -> BTNode.Status:
+func _investigate_noise(_ctx: Dictionary) -> BTNode.Status:
 	if _enemy.alert_pos == null:
 		_last_statuses["InvestigateNoise"] = BTNode.Status.FAILURE
 		return BTNode.Status.FAILURE
@@ -115,7 +115,7 @@ func _investigate_noise(ctx: Dictionary) -> BTNode.Status:
 	_last_statuses["InvestigateNoise"] = BTNode.Status.RUNNING
 	return BTNode.Status.RUNNING
 
-func _patrol(ctx: Dictionary) -> BTNode.Status:
+func _patrol(_ctx: Dictionary) -> BTNode.Status:
 	var target_x: float = _enemy.patrol_target
 	var dist: float = abs(_enemy.pos.x - target_x)
 	if dist <= 5.0:

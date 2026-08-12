@@ -102,7 +102,7 @@ The thick `line_width` of 14 creates the filled-sector appearance without needin
 | E | Dash | 15 | 3.0 s |
 | R | Heal | 40 | 8.0 s |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const MANA_REGEN := 8.0    # mana per second
@@ -120,3 +120,11 @@ const MAX_MANA   := 100.0
 | `tests/test_logic.gd` | Unit tests for cooldown gate, mana deduction, regen cap |
 | `scenes/main.tscn` | Scene root (Node2D with script) |
 | `tests/test.tscn` | Test runner scene |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

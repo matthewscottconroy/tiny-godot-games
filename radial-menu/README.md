@@ -4,6 +4,10 @@ Hold **Tab** to open a radial menu with six action items arranged in a circle.
 Move the mouse to highlight a wedge; release **Tab** to select it (or move to
 the dead-zone in the centre to cancel).
 
+## Purpose
+
+Radial menus put every option the same distance from the cursor, which is why they suit gamepads and touch. The whole widget is angle arithmetic: convert the cursor offset to an angle, normalise it, and divide by the slice size to get an index. This demo draws the wedges with `_draw()` and does that mapping, including the dead zone in the middle.
+
 ## Controls
 
 | Input | Action |
@@ -60,7 +64,7 @@ if was_open and not _open:  _select()
 `item_selected(index: int, label: String)` is emitted on confirm.  `main.gd`
 connects it to update a result label.
 
-## File Layout
+## Files
 
 ```
 radial-menu/
@@ -76,3 +80,23 @@ radial-menu/
     test.tscn
   README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Vector2.angle()` | Cursor offset to an angle |
+| `fmod()` / `TAU` | Normalise that angle into one turn |
+| `draw_polygon()` / `draw_arc()` | Draw each wedge and its outline |
+| `Vector2.length()` | Dead zone in the middle of the menu |
+
+## Use as a building block
+
+**Copy:** `scripts/radial_menu.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/radial_menu.gd`**
+- signal `item_selected(index: int, label: String)`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

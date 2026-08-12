@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing a lock-picking mechanic: rotate a lock cylinder to find the hidden correct angle; tension builds when you're close and unlocks when full.
 
+## Purpose
+
+Minigames like this are almost entirely feel: a hidden target value, a continuous input, and feedback that gets more intense as you close in. The code is a couple of numbers, so the interesting part is the mapping from distance-to-target onto tension, sound, and visual response. This demo isolates that mapping.
+
 ## Controls
 
 | Input | Action |
@@ -46,7 +50,7 @@ const DRAIN_SPEED := 4.0    # tension drain rate (per second away from angle)
 const DRAG_SENS   := 0.35   # mouse pixels → degrees rotation
 ```
 
-## Project Structure
+## Files
 
 ```
 lock-picking/
@@ -61,3 +65,20 @@ lock-picking/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `wrapf()` | Keep the cylinder angle inside a single turn |
+| `absf()` | Distance from the hidden target angle |
+| `draw_arc()` / `draw_circle()` | Render the cylinder and tension gauge |
+| `InputEventMouseMotion.relative` | Rotate by mouse movement rather than absolute position |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

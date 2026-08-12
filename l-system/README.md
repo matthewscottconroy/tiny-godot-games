@@ -2,6 +2,10 @@
 
 A minimal Godot 4 demo showing Lindenmayer systems: string-rewriting rules that generate fractal geometry via turtle graphics.
 
+## Purpose
+
+Lindenmayer systems generate organic-looking structure from a start string and a few rewrite rules. Applying the rules repeatedly produces a long instruction string, and a turtle walking that string draws the result. It is the shortest path from a handful of characters to a plausible tree, fern, or fractal, and it is the same machinery behind a lot of procedural foliage.
+
 ## Controls
 
 | Key | Action |
@@ -60,7 +64,7 @@ The `[` / `]` push/pop mechanism is what creates branching structures.
 "length": 3.0    # pixels per F segment
 ```
 
-## Project Structure
+## Files
 
 ```
 l-system/
@@ -75,3 +79,20 @@ l-system/
 │   └── test_logic.gd
 └── README.md
 ```
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `String` concatenation | Rewrite the axiom once per generation |
+| `Array` as a stack | Push/pop turtle state for `[` and `]` |
+| `Vector2.from_angle()` | Step the turtle in its current heading |
+| `draw_line()` | Emit one segment per forward instruction |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

@@ -181,3 +181,11 @@ const EDGE_HIT_DIST := 14.0  # pixels — click distance for edge insertion
 |------|---------|
 | `scripts/main.gd` | Vertex editing, `Geometry2D` calls, `_draw()` rendering |
 | `scenes/main.tscn` | Root with Polygon2D, InfoLabel, and buttons |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

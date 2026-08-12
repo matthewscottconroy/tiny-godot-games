@@ -148,3 +148,11 @@ Calling `commit_action()` after an undo clears the redo stack. This is correct b
 | `scripts/main.gd` | Drawing input, stroke storage, `UndoRedo` wiring, canvas rendering |
 | `scenes/main.tscn` | Node2D canvas with HUD label and Clear button |
 | `tests/test_logic.gd` | Unit tests for undo stack behavior |
+
+## Use as a building block
+
+**Copy:** `scripts/main.gd`. Everything happens in one file, and it is a worked example of an engine feature rather than a drop-in component — so the useful move is to lift the technique (the specific calls, and the order they happen in) into your own node rather than to copy the file wholesale.
+
+**Notes**
+- No project settings, autoloads, or input actions are required.
+

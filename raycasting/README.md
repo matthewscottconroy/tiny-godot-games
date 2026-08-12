@@ -106,3 +106,19 @@ Similarly, the mouse position from `get_global_mouse_position()` is in global sp
 | `Node2D.to_local(global_pos)` | Convert global to local coordinates |
 | `get_global_mouse_position()` | Mouse position in world space |
 | `Line2D.set_point_position(idx, pos)` | Move a specific line vertex |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/ray_demo.gd` | `ray demo` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/ray_demo.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

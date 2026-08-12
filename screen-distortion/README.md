@@ -107,11 +107,11 @@ Nodes in a `CanvasLayer` are drawn directly to the screen compositing buffer, by
 
 | Key | Action |
 |-----|--------|
-| Arrow keys / WASD | Move player |
+| Arrow keys | Move player |
 | Up / Space | Jump |
 | Left / Right | Cycle distortion intensity |
 
-## Key Constants / Shader Parameters
+## Key Constants
 
 ```glsl
 // distort.gdshader
@@ -131,3 +131,13 @@ STRENGTHS = [0.0, 0.015, 0.04, 0.08]   // Off / Subtle / Moderate / Heavy
 | `shaders/distort.gdshader` | UV displacement fragment shader |
 | `scenes/main.tscn` | SubViewportContainer, SubViewport, Player, CanvasLayer/HUD |
 | `tests/test.tscn` | Tests for shader parameter binding and strength preset values |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- The shader in `shaders/` is self-contained: assign it to a `ShaderMaterial` on any `CanvasItem` and set the uniforms.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

@@ -40,8 +40,8 @@ func _test_light_uv_clamp() -> void:
 
 func _height_field(uv: Vector2, freq: float) -> float:
 	return sin(uv.x * freq) * cos(uv.y * freq * 0.8) * 0.5 \
-		 + sin(uv.x * freq * 0.6 + 1.0) * sin(uv.y * freq * 1.3) * 0.3 \
-		 + cos(uv.x * freq * 1.7 - 0.5) * cos(uv.y * freq * 0.9 + 0.8) * 0.2
+			+ sin(uv.x * freq * 0.6 + 1.0) * sin(uv.y * freq * 1.3) * 0.3 \
+			+ cos(uv.x * freq * 1.7 - 0.5) * cos(uv.y * freq * 0.9 + 0.8) * 0.2
 
 func _bump_normal(uv: Vector2, freq: float, strength: float) -> Vector3:
 	var eps := 0.002

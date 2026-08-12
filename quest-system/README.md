@@ -127,7 +127,7 @@ if not kill_quest.completed:
 | Walk over coin | Automatically collect it (within 15 px) |
 | Walk to beacon | Activates reach quest (within 30 px) |
 
-## Key Constants / Data
+## Key Constants
 
 ```gdscript
 const ATTACK_RANGE := 30.0   # px — left-click kill radius

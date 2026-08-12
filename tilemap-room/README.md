@@ -8,7 +8,7 @@ Most games are larger than the screen. This demo shows the minimum setup for a c
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player
+- **Arrow keys**: Move the player
 - The camera follows and scrolls to reveal the 1280×960 room
 
 ## How It Works
@@ -100,3 +100,21 @@ Real obstacles would be `StaticBody2D` nodes with `CollisionShape2D` children. I
 | `draw_rect(Rect2(x, y, w, h), color)` | Filled rectangle |
 | `Rect2(x, y, width, height)` | Rectangle primitive |
 | `Input.get_vector(neg_x, pos_x, neg_y, pos_y)` | Normalized 2D directional input |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+

@@ -136,3 +136,15 @@ All of these use the same `fade_to()` API — callers never need to know which e
 | `scripts/level.gd` | Connects Back button to `Transition.fade_to()` |
 | `scenes/title.tscn` | Title screen with Start button |
 | `scenes/level.tscn` | Level screen with Back button |
+
+## Use as a building block
+
+**Copy:** `scripts/level.gd`, `scripts/title.gd`, `scripts/transition.gd`.
+
+**`scripts/transition.gd`**
+- `fade_to(path: String) -> void`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- `Transition` is registered as an autoload (Project Settings → Globals). Copy the autoload script and register it there under a name that does not collide with anything in your project.
+

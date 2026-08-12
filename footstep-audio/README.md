@@ -8,7 +8,7 @@ Footstep audio adds life to movement — the hollow clunk of wood, the soft rust
 
 ## Controls
 
-- **Arrow keys / WASD**: Walk, Up to jump
+- **Arrow keys**: Walk, Up to jump
 - Walk from the left (stone default) into each colored zone to hear the surface change
 
 ## Surfaces
@@ -85,3 +85,24 @@ The envelope `1.0 - pow(t, 0.4)` provides a sharp attack and gradual decay — m
 | `AudioStreamWAV` | Raw PCM audio stream — generated in code |
 | `AudioStreamWAV.FORMAT_16_BITS` | 16-bit signed PCM format |
 | `AudioStreamPlayer.play()` | Start playback from the beginning |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scripts/surface_zone.gd` | The `SurfaceZone` component |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/surface_zone.gd` — the `SurfaceZone` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`SurfaceZone` API**
+- `@export surface_name :`
+
+**Notes**
+- `class_name SurfaceZone` is global to the project — rename it if you already define that type.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.

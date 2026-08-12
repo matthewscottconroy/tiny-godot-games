@@ -101,3 +101,25 @@ Export hints constrain the Inspector widget. `@export_range` shows a slider from
 | `color.darkened(amount)` | Darken a color by a fraction |
 | `ThemeDB.fallback_font` | Default font resource for draw_string |
 | `draw_string(font, pos, text, ...)` | Draw text in _draw() |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/ball.gd` | `ball` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/ball.gd`.
+
+**`scripts/ball.gd`**
+- `@export color: Color`
+- `@export radius: float`
+- `@export velocity: Vector2`
+- `@export label_text: String`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

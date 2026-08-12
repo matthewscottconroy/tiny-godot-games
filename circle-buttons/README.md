@@ -169,3 +169,14 @@ const _GAP := 20.0    # pixels between circle edges in the horizontal layout
 | `scripts/main.gd` | Demo host: three presets, keyboard cycling, result label |
 | `scenes/main.tscn` | `VBoxContainer` layout with `CircleDisplay` centered |
 | `tests/test_logic.gd` | Unit tests for hit detection, layout symmetry, and spec data passthrough |
+
+## Use as a building block
+
+**Copy:** `scripts/circle_display.gd` — the `CircleDisplay` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`CircleDisplay` API**
+- `configure(specs: Array) -> void`
+- signal `circle_clicked(index: int, data: Dictionary)`
+
+**Notes**
+- `class_name CircleDisplay` is global to the project — rename it if you already define that type.

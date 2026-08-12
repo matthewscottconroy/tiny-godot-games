@@ -81,3 +81,22 @@ The `set_ease(Tween.EASE_OUT)` on the position makes the label start fast and sl
 | `TweenStep.set_delay(t)` | Wait `t` seconds before this step starts |
 | `Tween.chain()` | Switch back to sequential after a parallel block |
 | `Area2D.input_pickable` | Must be true for `input_event` signal to fire |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/floating_text.gd` | The `FloatingText` component |
+| `scripts/target.gd` | `target` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/floating_text.gd` — the `FloatingText` type. `scripts/main.gd` is the demo driver (it builds the scene and draws the visualisation) and is not needed.
+
+**`FloatingText` API**
+- `static spawn(parent: Node, pos: Vector2, msg: String, col: Color = Color.WHITE) -> void`
+
+**Notes**
+- `class_name FloatingText` is global to the project — rename it if you already define that type.

@@ -127,3 +127,21 @@ get_tree().create_timer(4.0).timeout.connect(queue_free)
 | `get_tree().create_timer(seconds)` | Lightweight fire-and-forget timer |
 | `queue_free` (as Callable) | Method reference, not a call |
 | `randf_range(min, max)` | Random float in range |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/coin.gd` | `coin` behaviour |
+| `scripts/spawner.gd` | `spawner` behaviour |
+| `scenes/coin.tscn` | Scene |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/coin.gd`, `scripts/spawner.gd`.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

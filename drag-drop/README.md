@@ -120,3 +120,24 @@ create_tween().set_trans(Tween.TRANS_BACK)
 | `get_global_mouse_position()` | Mouse in world coordinates |
 | `Tween.TRANS_BACK` | Overshoot easing for springy feel |
 | `Tween.EASE_OUT` | Fast start, slow finish |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/draggable.gd` | `draggable` behaviour |
+| `scripts/drop_zone.gd` | `drop zone` behaviour |
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/draggable.gd`, `scripts/drop_zone.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**`scripts/drop_zone.gd`**
+- `accept_drop(item: Node2D) -> void`
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+

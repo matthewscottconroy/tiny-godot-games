@@ -8,7 +8,7 @@ Godot's 2D lighting system requires a texture on `PointLight2D` — but you do n
 
 ## Controls
 
-- **Arrow keys / WASD**: Move the player (the player carries a light)
+- **Arrow keys**: Move the player (the player carries a light)
 - **Toggle Torch button**: Enable/disable the static torch light
 - **Color button**: Randomize the player's light color
 - **Ambient slider**: Adjust the global ambient brightness (darkens/brightens the whole scene)
@@ -106,3 +106,21 @@ Each pixel is 4 bytes: R, G, B, A each 0–255. The light texture uses `R=G=B=1.
 | `Image.set_pixel(x, y, color)` | Set a pixel color |
 | `ImageTexture.create_from_image(img)` | Convert Image to a usable texture |
 | `maxf(a, b)` | Float max |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/main.gd` | Demo driver: builds the scene, wires the UI, draws the visualisation |
+| `scripts/player.gd` | `player` behaviour |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/player.gd`. `scripts/main.gd` only drives the demo — it builds the scene and draws the visualisation — so you do not need it.
+
+**Notes**
+- These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.
+- Input uses the built-in `ui_*` actions so the demo needs zero setup. Godot binds those to the arrow keys and Enter/Space only; in a real project define your own actions (`move_left`, `jump`, …) and swap them in.
+
