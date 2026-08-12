@@ -1,14 +1,20 @@
 extends Node
 
+# Drives the real player from scripts/player.gd rather than a copy of the
+# counter. See docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_max_jumps()
-	_test_resets_on_floor()
-	_test_decrement_on_jump()
-	_test_blocked_when_exhausted()
-	_test_constants()
+	_test_starts_empty_until_grounded()
+	_test_landing_refills()
+	_test_first_jump()
+	_test_second_jump_in_air()
+	_test_no_third_jump()
+	_test_press_without_charges_does_nothing()
+	_test_landing_refills_after_spending()
+	_test_holding_does_not_drain()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -19,47 +25,75 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func _test_max_jumps() -> void:
-	print("max jumps constant")
-	const MAX_JUMPS := 2
-	expect(MAX_JUMPS == 2, "MAX_JUMPS is 2")
-
-func _test_resets_on_floor() -> void:
-	print("jumps reset on landing")
-	const MAX_JUMPS := 2
-	var jumps_left := 0
-	var on_floor := true
-	if on_floor:
-		jumps_left = MAX_JUMPS
-	expect(jumps_left == MAX_JUMPS, "jumps_left resets to MAX_JUMPS on floor")
-
-func _test_decrement_on_jump() -> void:
-	print("each jump decrements counter")
-	var jumps_left := 2
-	jumps_left -= 1
-	expect(jumps_left == 1, "first jump: jumps_left is 1")
-	jumps_left -= 1
-	expect(jumps_left == 0, "second jump: jumps_left is 0")
-
-func _test_blocked_when_exhausted() -> void:
-	print("jump blocked when jumps_left is 0")
-	var jumps_left := 0
-	var jumped := false
-	if jumps_left > 0:
-		jumped = true
-		jumps_left -= 1
-	expect(not jumped, "jump blocked at 0 remaining jumps")
-	expect(jumps_left == 0, "counter unchanged when jump blocked")
-
-func _test_constants() -> void:
-	print("physics constants")
-	const JUMP_VEL := -420.0
-	const GRAVITY  := 900.0
-	expect(JUMP_VEL < 0.0, "JUMP_VEL is upward (negative)")
-	expect(GRAVITY > 0.0, "GRAVITY is downward (positive)")
-
 func _report() -> void:
 	var summary := "[double-jump] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+var _script: GDScript = load("res://scripts/player.gd")
+
+func _make() -> CharacterBody2D:
+	var player := CharacterBody2D.new()
+	player.set_script(_script)
+	add_child(player)
+	return player
+
+func _test_starts_empty_until_grounded() -> void:
+	print("before touching the ground")
+	var p := _make()
+	expect(p.jumps_left() == 0, "no charges before the first landing")
+
+func _test_landing_refills() -> void:
+	print("landing refills")
+	var p := _make()
+	p.tick_jump(true, false)
+	expect(p.jumps_left() == p.MAX_JUMPS, "touching the floor restores every charge")
+
+func _test_first_jump() -> void:
+	print("the ground jump")
+	var p := _make()
+	p.tick_jump(true, false)
+	expect(p.tick_jump(true, true), "pressing on the ground jumps")
+	expect(p.jumps_left() == p.MAX_JUMPS - 1, "and spends one charge")
+
+func _test_second_jump_in_air() -> void:
+	print("the air jump")
+	var p := _make()
+	p.tick_jump(true, false)
+	p.tick_jump(true, true)                     # ground jump
+	expect(p.tick_jump(false, true), "a second press in mid-air jumps again")
+	expect(p.jumps_left() == 0, "spending the last charge")
+
+func _test_no_third_jump() -> void:
+	print("no third jump")
+	var p := _make()
+	p.tick_jump(true, false)
+	p.tick_jump(true, true)
+	p.tick_jump(false, true)
+	expect(not p.tick_jump(false, true), "a third press in the air does nothing")
+	expect(p.jumps_left() == 0, "and cannot push the counter negative")
+
+func _test_press_without_charges_does_nothing() -> void:
+	print("pressing with no charges")
+	var p := _make()
+	expect(not p.tick_jump(false, true), "pressing before ever landing does nothing")
+	expect(p.jumps_left() == 0, "the counter stays at zero")
+
+func _test_landing_refills_after_spending() -> void:
+	print("refill after landing again")
+	var p := _make()
+	p.tick_jump(true, false)
+	p.tick_jump(true, true)
+	p.tick_jump(false, true)
+	expect(p.jumps_left() == 0, "both charges spent")
+	p.tick_jump(true, false)
+	expect(p.jumps_left() == p.MAX_JUMPS, "landing restores them")
+
+func _test_holding_does_not_drain() -> void:
+	print("only presses count")
+	var p := _make()
+	p.tick_jump(true, false)
+	for i in 30:
+		p.tick_jump(false, false)
+	expect(p.jumps_left() == p.MAX_JUMPS, "frames without a press cost nothing")

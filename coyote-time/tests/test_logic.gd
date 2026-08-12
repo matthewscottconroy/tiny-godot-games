@@ -1,13 +1,23 @@
 extends Node
 
+# Drives the real player from scripts/player.gd. The previous suite ran a
+# `class FakePlayer` copy of the timers, so flipping the `and` in the real
+# script to `or` — which inverts the entire lesson — went unnoticed.
+# See docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
 	_test_coyote_timer_starts_on_leave()
-	_test_buffer_prevents_jump_after_expiry()
-	_test_jump_fires_when_both_timers_active()
+	_test_grounded_keeps_it_full()
 	_test_timers_tick_down()
+	_test_both_windows_required()
+	_test_jump_fires_when_both_are_live()
+	_test_jump_consumes_both()
+	_test_coyote_window_expires()
+	_test_buffer_expires()
+	_test_buffered_press_fires_on_landing()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -21,138 +31,118 @@ func expect(cond: bool, label: String) -> void:
 func expect_approx(a: float, b: float, label: String, tol: float = 0.001) -> void:
 	expect(absf(a - b) < tol, label)
 
-# --- Minimal player state simulation ---
-
-const COYOTE_TIME := 0.12
-const BUFFER_TIME := 0.15
-const JUMP_VEL    := -420.0
-const GRAVITY     := 900.0
-
-class FakePlayer:
-	var velocity_y       := 0.0
-	var coyote_timer     := 0.0
-	var jump_buffer      := 0.0
-	var was_on_floor     := false
-	var jumped           := false
-
-	func tick(delta: float, on_floor: bool, jump_pressed: bool) -> void:
-		# Apply gravity
-		if not on_floor:
-			velocity_y += GRAVITY * delta
-
-		# Detect leaving the floor
-		if was_on_floor and not on_floor:
-			coyote_timer = COYOTE_TIME
-
-		# Refresh while grounded
-		if on_floor:
-			coyote_timer = COYOTE_TIME
-
-		# Count down
-		coyote_timer -= delta
-		jump_buffer  -= delta
-		if coyote_timer < 0.0:
-			coyote_timer = 0.0
-		if jump_buffer < 0.0:
-			jump_buffer = 0.0
-
-		# Record press
-		if jump_pressed:
-			jump_buffer = BUFFER_TIME
-
-		# Fire jump
-		jumped = false
-		if coyote_timer > 0.0 and jump_buffer > 0.0:
-			velocity_y   = JUMP_VEL
-			coyote_timer = 0.0
-			jump_buffer  = 0.0
-			jumped       = true
-
-		was_on_floor = on_floor
-
-# --- Tests ---
-
-func _test_coyote_timer_starts_on_leave() -> void:
-	print("coyote timer starts when leaving floor")
-	var p := FakePlayer.new()
-	p.was_on_floor = true
-
-	# Tick with on_floor=false: this is the frame we just left the floor
-	p.tick(0.016, false, false)
-
-	# Timer should have been set to COYOTE_TIME then ticked down by delta
-	var expected := COYOTE_TIME - 0.016
-	expect(p.coyote_timer > 0.0, "coyote timer is positive immediately after leaving floor")
-	expect_approx(p.coyote_timer, expected, "coyote timer = COYOTE_TIME - delta after one frame")
-
-func _test_buffer_prevents_jump_after_expiry() -> void:
-	print("jump buffer prevents jump after expiry")
-	var p := FakePlayer.new()
-	p.was_on_floor = false
-	p.coyote_timer = 0.0
-	p.jump_buffer  = 0.0
-
-	# Press jump while airborne with no coyote time — buffer fills but no jump fires
-	p.tick(0.016, false, true)
-	expect(!p.jumped, "no jump when coyote timer is zero (buffer fills)")
-	expect(p.jump_buffer > 0.0, "buffer is now active")
-
-	# Let the buffer expire (BUFFER_TIME + margin)
-	var elapsed := 0.016
-	while elapsed < BUFFER_TIME + 0.05:
-		p.tick(0.016, false, false)
-		elapsed += 0.016
-
-	expect_approx(p.jump_buffer, 0.0, "buffer has fully expired")
-
-	# Now land on floor — coyote timer refreshes but buffer is gone, so no jump
-	p.was_on_floor = false
-	p.tick(0.016, true, false)
-	expect(!p.jumped, "no buffered jump after buffer expired before landing")
-
-func _test_jump_fires_when_both_timers_active() -> void:
-	print("jump fires when both coyote and buffer timers are active")
-	var p := FakePlayer.new()
-
-	# Give the player active coyote time (simulate just left floor)
-	p.coyote_timer = COYOTE_TIME
-	p.jump_buffer  = 0.0
-	p.was_on_floor = false
-
-	# Player presses jump mid-air while coyote window is open
-	p.tick(0.016, false, true)
-	expect(p.jumped, "jump fires when coyote_timer > 0 and jump is pressed")
-	expect_approx(p.velocity_y, JUMP_VEL, "velocity.y set to JUMP_VEL on jump")
-	expect_approx(p.coyote_timer, 0.0, "coyote timer cleared after jump")
-	expect_approx(p.jump_buffer,  0.0, "jump buffer cleared after jump")
-
-func _test_timers_tick_down() -> void:
-	print("timers tick down correctly and clamp to zero")
-	# Age each timer with the other one clear: if both are armed, tick() fires a
-	# jump and zeroes them, which is a different behaviour than counting down.
-	var p := FakePlayer.new()
-	p.coyote_timer = 0.05
-	p.jump_buffer  = 0.0
-	p.was_on_floor = false
-	p.tick(0.016, false, false)
-	expect_approx(p.coyote_timer, 0.05 - 0.016, "coyote timer decremented by delta")
-
-	var q := FakePlayer.new()
-	q.coyote_timer = 0.0
-	q.jump_buffer  = 0.08
-	q.was_on_floor = false
-	q.tick(0.016, false, false)
-	expect_approx(q.jump_buffer, 0.08 - 0.016, "jump buffer decremented by delta")
-
-	# Exhaust both timers
-	p.coyote_timer = 0.001
-	p.jump_buffer  = 0.001
-	p.tick(0.016, false, false)
-	expect_approx(p.coyote_timer, 0.0, "coyote timer clamped to zero (not negative)")
-	expect_approx(p.jump_buffer,  0.0, "jump buffer clamped to zero (not negative)")
-
 func _report() -> void:
 	var summary := "[coyote-time] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const STEP := 0.016
+
+var _script: GDScript = load("res://scripts/player.gd")
+
+# The player is a CharacterBody2D, so it needs to be in the tree — but tick_jump
+# takes its inputs as parameters, so no physics or input is involved.
+func _make() -> CharacterBody2D:
+	var player := CharacterBody2D.new()
+	player.set_script(_script)
+	add_child(player)
+	return player
+
+func _ground(player: CharacterBody2D, frames: int = 3) -> void:
+	for i in frames:
+		player.tick_jump(STEP, true, false)
+
+func _test_coyote_timer_starts_on_leave() -> void:
+	print("coyote timer starts when leaving the floor")
+	var p := _make()
+	_ground(p)
+	p.tick_jump(STEP, false, false)
+	expect(p.coyote_left() > 0.0, "the window is open just after stepping off")
+	expect_approx(p.coyote_left(), p.COYOTE_TIME - STEP, "and started full, minus one tick")
+
+func _test_grounded_keeps_it_full() -> void:
+	print("the window stays fresh while grounded")
+	var p := _make()
+	for i in 50:
+		p.tick_jump(STEP, true, false)
+	expect_approx(p.coyote_left(), p.COYOTE_TIME - STEP, "standing still does not drain it")
+
+func _test_timers_tick_down() -> void:
+	print("timers age")
+	var p := _make()
+	_ground(p)
+	var first: float = p.coyote_left()
+	p.tick_jump(STEP, false, false)
+	p.tick_jump(STEP, false, false)
+	expect(p.coyote_left() < first, "the coyote window shrinks in the air")
+	expect(p.coyote_left() >= 0.0, "and never goes negative")
+
+func _test_both_windows_required() -> void:
+	print("either window alone is not a jump")
+	# This is the assertion the old suite could not make, and the one that
+	# catches `and` being changed to `or`.
+	var only_coyote := _make()
+	_ground(only_coyote)
+	expect(not only_coyote.tick_jump(STEP, false, false),
+		"coyote window open, no press queued -> no jump")
+
+	var only_buffer := _make()
+	# Airborne long enough for the coyote window to lapse, then press.
+	only_buffer.tick_jump(STEP, false, false)
+	var elapsed := 0.0
+	while elapsed < only_buffer.COYOTE_TIME + 0.05:
+		only_buffer.tick_jump(STEP, false, false)
+		elapsed += STEP
+	expect(is_zero_approx(only_buffer.coyote_left()), "the coyote window has closed")
+	expect(not only_buffer.tick_jump(STEP, false, true),
+		"press queued, coyote window closed -> no jump")
+	expect(only_buffer.buffer_left() > 0.0, "but the press is remembered")
+
+func _test_jump_fires_when_both_are_live() -> void:
+	print("both windows live")
+	var p := _make()
+	_ground(p)
+	expect(p.tick_jump(STEP, false, true), "stepping off and pressing fires the jump")
+
+func _test_jump_consumes_both() -> void:
+	print("a jump spends both windows")
+	var p := _make()
+	_ground(p)
+	p.tick_jump(STEP, false, true)
+	expect(is_zero_approx(p.coyote_left()), "the coyote window is cleared")
+	expect(is_zero_approx(p.buffer_left()), "so is the buffer — no double jump from one press")
+	expect(not p.tick_jump(STEP, false, false), "and the next frame does not fire again")
+
+func _test_coyote_window_expires() -> void:
+	print("the coyote window closes")
+	var p := _make()
+	_ground(p)
+	var elapsed := 0.0
+	while elapsed < p.COYOTE_TIME + 0.05:
+		p.tick_jump(STEP, false, false)
+		elapsed += STEP
+	expect(is_zero_approx(p.coyote_left()), "it reaches zero")
+	expect(not p.tick_jump(STEP, false, true), "a late press is too late")
+
+func _test_buffer_expires() -> void:
+	print("the buffer closes")
+	var p := _make()
+	p.tick_jump(STEP, false, true)
+	var elapsed := 0.0
+	while elapsed < p.BUFFER_TIME + 0.05:
+		p.tick_jump(STEP, false, false)
+		elapsed += STEP
+	expect(is_zero_approx(p.buffer_left()), "the remembered press expires")
+	# Landing now must not produce a jump from a press made far too early.
+	expect(not p.tick_jump(STEP, true, false), "landing later does not fire a stale press")
+
+func _test_buffered_press_fires_on_landing() -> void:
+	print("a slightly early press still lands")
+	var p := _make()
+	# Falling, press just before touching down.
+	p.tick_jump(STEP, false, false)
+	p.tick_jump(STEP, false, true)
+	expect(p.buffer_left() > 0.0, "the press is buffered while airborne")
+	expect(p.tick_jump(STEP, true, false),
+		"touching down within the buffer window fires it — the whole point")

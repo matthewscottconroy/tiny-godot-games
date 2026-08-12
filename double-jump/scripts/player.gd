@@ -9,18 +9,28 @@ var _jumps_left := 0
 
 @onready var _label: Label = $InfoLabel
 
-func _physics_process(delta: float) -> void:
-	if is_on_floor():
+## Refill on landing, spend on jumping. Kept as a method taking its inputs so
+## the counter rule — the whole lesson — can be driven from a test.
+##
+## A counter rather than a `has_double_jumped` boolean is what makes this scale:
+## triple jumps and air-charges need no other change.
+func tick_jump(on_floor: bool, jump_pressed: bool) -> bool:
+	if on_floor:
 		_jumps_left = MAX_JUMPS
-
-	velocity.y += GRAVITY * delta
-
-	var h := Input.get_axis("ui_left", "ui_right")
-	velocity.x = h * SPEED
-
-	if Input.is_action_just_pressed("ui_up") and _jumps_left > 0:
-		velocity.y = JUMP_VEL
+	if jump_pressed and _jumps_left > 0:
 		_jumps_left -= 1
+		return true
+	return false
+
+func jumps_left() -> int:
+	return _jumps_left
+
+func _physics_process(delta: float) -> void:
+	velocity.y += GRAVITY * delta
+	velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED
+
+	if tick_jump(is_on_floor(), Input.is_action_just_pressed("ui_up")):
+		velocity.y = JUMP_VEL
 
 	move_and_slide()
 	queue_redraw()
