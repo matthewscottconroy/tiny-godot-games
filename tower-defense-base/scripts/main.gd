@@ -125,7 +125,7 @@ func _process(delta: float) -> void:
 		if not _enemies.has(b["tgt"]) or b["tgt"]["hp"] <= 0:
 			spent.append(b)
 			continue
-		var d := (b["tgt"]["pos"] - b["pos"]).normalized()
+		var d: Vector2 = (b["tgt"]["pos"] - b["pos"]).normalized()
 		b["pos"] += d * BULLET_SPEED * delta
 		if b["pos"].distance_to(b["tgt"]["pos"]) < 6.0:
 			b["tgt"]["hp"] -= TOWER_DAMAGE
@@ -144,8 +144,8 @@ func _advance(e: Dictionary, delta: float) -> void:
 	if e["idx"] >= _path_w.size() - 1:
 		e["idx"] = _path_w.size()
 		return
-	var tgt := _path_w[e["idx"] + 1]
-	var d   := (tgt - e["pos"]).normalized()
+	var tgt: Vector2 = _path_w[e["idx"] + 1]
+	var d: Vector2 = (tgt - e["pos"]).normalized()
 	e["pos"] += d * ENEMY_SPEED * delta
 	if e["pos"].distance_to(tgt) < 2.0:
 		e["pos"] = tgt
@@ -165,7 +165,7 @@ func _best_target(tpos: Vector2) -> Dictionary:
 func _draw() -> void:
 	for y in GRID_H:
 		for x in GRID_W:
-			var c := _grid[y][x]
+			var c: int = _grid[y][x]
 			var col := Color(0.20, 0.35, 0.14) if c == 0 else \
 					   Color(0.60, 0.55, 0.38) if c == 1 else \
 					   Color(0.22, 0.48, 0.80)

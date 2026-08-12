@@ -47,7 +47,7 @@ func _input(event: InputEvent) -> void:
 			_generate()
 
 func _generate() -> void:
-	var p     := PRESETS[_current]
+	var p: Dictionary = PRESETS[_current]
 	_name_str  = p["name"]
 	var s     := _expand(p["axiom"], p["rules"], p["iters"])
 	_lines     = _turtle(s, p["start"], p["start_angle"], p["angle"], p["length"])

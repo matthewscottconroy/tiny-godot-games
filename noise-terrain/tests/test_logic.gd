@@ -115,8 +115,8 @@ func _test_frequency_changes_terrain() -> void:
 			h.append(noise.get_noise_1d(float(i) * freq))
 		return h
 
-	var heights_low := gen.call(0.01)
-	var heights_high := gen.call(0.1)
+	var heights_low: Array = gen.call(0.01)
+	var heights_high: Array = gen.call(0.1)
 
 	var same := true
 	for i in 32:
@@ -141,8 +141,8 @@ func _test_seed_changes_terrain() -> void:
 			h.append(noise.get_noise_1d(float(i) * 0.02))
 		return h
 
-	var heights_a := gen.call(12345)
-	var heights_b := gen.call(67890)
+	var heights_a: Array = gen.call(12345)
+	var heights_b: Array = gen.call(67890)
 
 	var same := true
 	for i in 32:

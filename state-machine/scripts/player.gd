@@ -18,7 +18,7 @@ var state := State.IDLE
 @onready var state_label: Label = $StateLabel
 
 func _draw() -> void:
-	var color := {
+	var color: Color = {
 		State.IDLE: Color.SEA_GREEN,
 		State.WALK: Color.LIME_GREEN,
 		State.JUMP: Color.SKY_BLUE,

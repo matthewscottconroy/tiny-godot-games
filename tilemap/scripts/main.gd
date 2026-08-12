@@ -38,7 +38,7 @@ func _build_tileset() -> void:
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	var source := TileSetAtlasSource.new()
-	var colors := [Color(0.2, 0.65, 0.25), Color(0.45, 0.40, 0.35), Color(0.2, 0.4, 0.85)]
+	var colors: Array[Color] = [Color(0.2, 0.65, 0.25), Color(0.45, 0.40, 0.35), Color(0.2, 0.4, 0.85)]
 	var img    := Image.create(TILE_SIZE * 3, TILE_SIZE, false, Image.FORMAT_RGB8)
 	for ti in 3:
 		var col := colors[ti]
@@ -62,7 +62,7 @@ func _build_tileset() -> void:
 func _load_map() -> void:
 	for row in MAP_DATA.size():
 		for col in MAP_DATA[row].size():
-			var t := MAP_DATA[row][col]
+			var t: int = MAP_DATA[row][col]
 			if t > 0:
 				tilemap.set_cell(Vector2i(col, row), 0, Vector2i(t - 1, 0))
 

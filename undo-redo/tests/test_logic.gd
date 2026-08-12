@@ -34,8 +34,8 @@ class DrawingModel:
 
 	func commit_stroke(stroke: PackedVector2Array) -> void:
 		undo_redo.create_action("Draw Stroke")
-		undo_redo.add_do_method(self, "add_stroke", stroke)
-		undo_redo.add_undo_method(self, "remove_last_stroke")
+		undo_redo.add_do_method(add_stroke.bind(stroke))
+		undo_redo.add_undo_method(remove_last_stroke)
 		undo_redo.commit_action()
 
 	func undo() -> void:

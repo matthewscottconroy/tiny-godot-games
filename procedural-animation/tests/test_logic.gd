@@ -47,7 +47,8 @@ func _make_chain(base: Vector2) -> PackedVector2Array:
 func _test_fabrik_forward_reach() -> void:
 	print("TEST: fabrik forward reach")
 	var base := Vector2(320, 400)
-	var target := Vector2(200, 150)
+	# 141px from the base — inside the 224px reach, and off the chain's axis.
+	var target := Vector2(220, 300)
 	var joints := _make_chain(base)
 	var result := _fabrik_solve(joints, target, base)
 	expect(result[0].distance_to(target) < 1.0, "head at target after solve")
@@ -77,8 +78,10 @@ func _test_fabrik_base_constraint() -> void:
 func _test_fabrik_converges() -> void:
 	print("TEST: fabrik converges (reachable target)")
 	var base := Vector2(320, 400)
-	# Target within reach: chain total length = N * SEG_LEN = 8 * 28 = 224
-	var target := Vector2(320, 200)  # 200px away from base, reachable
+	# Target within reach: chain total length = N * SEG_LEN = 8 * 28 = 224.
+	# Kept off the vertical so the solver has a bend direction to converge on —
+	# a target straight along the rest pose's axis is degenerate.
+	var target := Vector2(380, 280)  # 134px from base
 	var joints := _make_chain(base)
 	var result := _fabrik_solve(joints, target, base)
 	expect(result[0].distance_to(target) < 1.0, "head within 1px of reachable target")

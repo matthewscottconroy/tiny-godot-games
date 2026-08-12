@@ -1,6 +1,6 @@
 # Dungeon Generator
 
-A minimal Godot 4.2 demo showing procedural dungeon generation via random room placement and L-shaped corridor carving.
+A minimal Godot 4 demo showing procedural dungeon generation via random room placement and L-shaped corridor carving.
 
 ## Controls
 

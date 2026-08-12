@@ -48,11 +48,18 @@ func _on_circle_clicked(index: int, data: Dictionary) -> void:
 		]
 	)
 
-func _process(_delta: float) -> void:
-	if Input.is_key_just_pressed(KEY_RIGHT) or Input.is_key_just_pressed(KEY_SPACE):
-		_load_preset((_preset_idx + 1) % PRESETS.size())
-	elif Input.is_key_just_pressed(KEY_LEFT):
-		_load_preset((_preset_idx - 1 + PRESETS.size()) % PRESETS.size())
+# Key presses arrive as events. _unhandled_key_input only fires for key events the
+# UI did not already consume, and each physical press delivers exactly one
+# `pressed and not echo` event — the "just pressed" edge, without polling.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if not key.pressed or key.echo:
+		return
+	match key.keycode:
+		KEY_RIGHT, KEY_SPACE:
+			_load_preset((_preset_idx + 1) % PRESETS.size())
+		KEY_LEFT:
+			_load_preset((_preset_idx - 1 + PRESETS.size()) % PRESETS.size())
 
 func _load_preset(idx: int) -> void:
 	_preset_idx = idx

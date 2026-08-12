@@ -14,8 +14,8 @@ var _save := SaveSystem.new(SAVE_PATH)
 @onready var load_display: Label    = $LoadDisplay
 
 func _ready() -> void:
-	$Fields/SaveBtn.pressed.connect(_on_save)
-	$Fields/LoadBtn.pressed.connect(_on_load)
+	$Fields/BtnRow/SaveBtn.pressed.connect(_on_save)
+	$Fields/BtnRow/LoadBtn.pressed.connect(_on_load)
 	$Fields/ScoreRow/IncrBtn.pressed.connect(_on_incr)
 	_refresh_file_status()
 

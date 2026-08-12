@@ -44,13 +44,13 @@ func _regenerate() -> void:
 			_map.append(_noise.get_noise_2d(x, y))
 	queue_redraw()
 
-func _get(x: int, y: int) -> float:
+func _noise_at(x: int, y: int) -> float:
 	return _map[y * MAP_W + x]
 
 func _draw() -> void:
 	for y in MAP_H:
 		for x in MAP_W:
-			var n := _get(x, y)
+			var n := _noise_at(x, y)
 			var col := _sample_color(x, y, n)
 			draw_rect(Rect2(x * CELL + 1, y * CELL + 65, CELL - 1, CELL - 1), col)
 

@@ -1,6 +1,6 @@
 # Double Jump
 
-A minimal Godot 4.2 demo showing the double-jump mechanic.
+A minimal Godot 4 demo showing the double-jump mechanic.
 
 ## Controls
 

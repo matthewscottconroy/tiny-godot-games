@@ -90,7 +90,7 @@ func _heuristic(c: Vector2i) -> int:
 
 func _neighbors(c: Vector2i) -> Array:
 	var result := []
-	for d in [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]:
+	for d: Vector2i in [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]:
 		var nb := c + d
 		if _valid(nb) and _grid[nb.y][nb.x]:
 			result.append(nb)
@@ -112,8 +112,8 @@ func _draw() -> void:
 			draw_rect(Rect2(rx + 1, ry + 1, CELL - 2, CELL - 2), col)
 
 	for p in _path:
-		var rx := OFFSET_X + p.x * CELL
-		var ry := OFFSET_Y + p.y * CELL
+		var rx: float = OFFSET_X + p.x * CELL
+		var ry: float = OFFSET_Y + p.y * CELL
 		draw_rect(Rect2(rx + 3, ry + 3, CELL - 6, CELL - 6), Color(1.0, 0.85, 0.1, 0.8))
 
 	if _valid(_start):

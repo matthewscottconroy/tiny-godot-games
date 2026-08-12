@@ -2,15 +2,16 @@ extends Node2D
 
 @onready var _notif: NotificationQueue = $NotifManager
 
-func _process(_delta: float) -> void:
-	if Input.is_key_just_pressed(KEY_1):
-		_notif.push("Achievement: First Steps!")
-	elif Input.is_key_just_pressed(KEY_2):
-		_notif.push("Level Up! You are now level 5")
-	elif Input.is_key_just_pressed(KEY_3):
-		_notif.push("New item found: Iron Sword")
-	elif Input.is_key_just_pressed(KEY_4):
-		_notif.push("Quest completed: The Lost Mine")
+# One event per physical press (echo filtered), so holding a key queues one notice.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if not key.pressed or key.echo:
+		return
+	match key.keycode:
+		KEY_1: _notif.push("Achievement: First Steps!")
+		KEY_2: _notif.push("Level Up! You are now level 5")
+		KEY_3: _notif.push("New item found: Iron Sword")
+		KEY_4: _notif.push("Quest completed: The Lost Mine")
 
 func _draw() -> void:
 	# Background

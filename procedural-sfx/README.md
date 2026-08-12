@@ -4,7 +4,7 @@ Demonstrates real-time procedural sound effect generation using `AudioStreamGene
 
 ## How to Run
 
-Open the project in Godot 4.2 and press F5 (or run `scenes/main.tscn`).
+Open the project in Godot 4 and press F5 (or run `scenes/main.tscn`).
 
 | Key | SFX | Formula |
 |-----|-----|---------|

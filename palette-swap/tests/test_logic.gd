@@ -31,7 +31,7 @@ const PALETTES  := 5
 func _swap(pixel: Color, src: Color, dst: Color, threshold: float) -> Color:
 	if pixel.a < 0.01:
 		return pixel
-	if pixel.rgb.distance_to(src.rgb) < threshold:
+	if Vector3(pixel.r, pixel.g, pixel.b).distance_to(Vector3(src.r, src.g, src.b)) < threshold:
 		return Color(dst.r, dst.g, dst.b, pixel.a)
 	return pixel
 

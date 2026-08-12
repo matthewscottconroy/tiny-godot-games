@@ -29,7 +29,7 @@ func _input(event: InputEvent) -> void:
 		_apply_palette()
 
 func _apply_palette() -> void:
-	var p := PALETTES[_palette_idx]
+	var p: Dictionary = PALETTES[_palette_idx]
 	_mat.set_shader_parameter("body_dst",  p["body"])
 	_mat.set_shader_parameter("armor_dst", p["armor"])
 	_pal_label.text = "Palette: %s (%d/%d)" % [p["name"], _palette_idx + 1, PALETTES.size()]

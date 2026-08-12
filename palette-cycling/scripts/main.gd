@@ -118,7 +118,7 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var bg_rect := Rect2(0, 0, 640, 26)
 	draw_rect(bg_rect, Color(0, 0, 0, 0.55))
-	var pattern_name := ["Water", "Lava", "Rainbow"][_pattern]
+	var pattern_name: String = ["Water", "Lava", "Rainbow"][_pattern]
 	draw_string(font, Vector2(8, 18), "Palette Cycling — Pattern: %s   Speed: %.1f" % [pattern_name, _cycle_speed],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1))
 

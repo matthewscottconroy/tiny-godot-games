@@ -124,7 +124,7 @@ func _run_astar() -> void:
 				_path.push_front(node)
 				node = came_from[node]
 			_path.push_front(_start)
-			_closed_set = closed_set_dict.keys()
+			_closed_set.assign(closed_set_dict.keys())
 			_open_set = open_list.duplicate()
 			return
 
@@ -142,7 +142,7 @@ func _run_astar() -> void:
 				if not neighbor in open_list:
 					open_list.append(neighbor)
 
-	_closed_set = closed_set_dict.keys()
+	_closed_set.assign(closed_set_dict.keys())
 	_open_set = open_list.duplicate()
 	_path = []
 

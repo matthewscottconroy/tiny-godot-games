@@ -1,5 +1,8 @@
 extends Node
 
+# Drives the real QuestSystem from scripts/quest_system.gd rather than a copy of
+# its progress bookkeeping, so clamping and the signals are covered too.
+
 var _pass := 0
 var _fail := 0
 
@@ -22,112 +25,93 @@ func _ready() -> void:
 	_test_kill_progress()
 	_test_collect_progress()
 	_test_quest_completes()
+	_test_progress_clamps_to_target()
+	_test_completed_quest_ignores_further_progress()
+	_test_unknown_id_is_ignored()
 	_test_all_complete()
 	_test_no_complete_partial()
+	_test_signals()
 	_report()
 
-func _make_quests() -> Array:
-	return [
+func _make() -> QuestSystem:
+	return QuestSystem.new([
 		{"id": "kill",    "type": "kill",    "target_count": 5, "current_count": 0, "completed": false, "reward_xp": 100},
 		{"id": "collect", "type": "collect", "target_count": 3, "current_count": 0, "completed": false, "reward_xp": 75},
 		{"id": "reach",   "type": "reach",   "target_count": 1, "current_count": 0, "completed": false, "reward_xp": 50},
-	]
-
-func _make_enemies(alive_count: int, dead_count: int) -> Array:
-	var result: Array = []
-	for i in range(alive_count):
-		result.append({"pos": Vector2(i * 30, 100), "alive": true})
-	for i in range(dead_count):
-		result.append({"pos": Vector2(i * 30, 200), "alive": false})
-	return result
-
-func _make_coins(collected_count: int, uncollected_count: int) -> Array:
-	var result: Array = []
-	for i in range(collected_count):
-		result.append({"pos": Vector2(i * 40, 100), "collected": true})
-	for i in range(uncollected_count):
-		result.append({"pos": Vector2(i * 40, 200), "collected": false})
-	return result
-
-func _update_quest_progress(quests: Array, enemies: Array, coins: Array, player_pos: Vector2, beacon_pos: Vector2) -> void:
-	# Kill quest
-	var kill_quest = quests[0]
-	var dead_count := 0
-	for e in enemies:
-		if not e.alive:
-			dead_count += 1
-	kill_quest.current_count = dead_count
-	if kill_quest.current_count >= kill_quest.target_count:
-		kill_quest.completed = true
-
-	# Collect quest
-	var collect_quest = quests[1]
-	var collected := 0
-	for c in coins:
-		if c.collected:
-			collected += 1
-	collect_quest.current_count = collected
-	if collect_quest.current_count >= collect_quest.target_count:
-		collect_quest.completed = true
-
-	# Reach quest
-	var reach_quest = quests[2]
-	if player_pos.distance_to(beacon_pos) <= 30.0:
-		reach_quest.current_count = 1
-		reach_quest.completed = true
+	])
 
 func _test_kill_progress() -> void:
 	print("Test: kill_progress")
-	var quests := _make_quests()
-	var enemies := _make_enemies(2, 3)
-	var coins := _make_coins(0, 3)
-	_update_quest_progress(quests, enemies, coins, Vector2(0, 0), Vector2(9999, 9999))
-	expect(quests[0].current_count == 3, "3 of 5 enemies dead -> kill quest current_count=3")
-	expect(not quests[0].completed, "kill quest not yet completed (3 < 5)")
+	var qs := _make()
+	qs.set_progress("kill", 3)
+	expect(qs.get_quest("kill").current_count == 3, "3 of 5 enemies dead -> current_count=3")
+	expect(not qs.get_quest("kill").completed, "kill quest not yet completed (3 < 5)")
 
 func _test_collect_progress() -> void:
 	print("Test: collect_progress")
-	var quests := _make_quests()
-	var enemies := _make_enemies(5, 0)
-	var coins := _make_coins(2, 1)
-	_update_quest_progress(quests, enemies, coins, Vector2(0, 0), Vector2(9999, 9999))
-	expect(quests[1].current_count == 2, "2 of 3 coins collected -> collect quest current_count=2")
-	expect(not quests[1].completed, "collect quest not yet completed (2 < 3)")
+	var qs := _make()
+	qs.set_progress("collect", 2)
+	expect(qs.get_quest("collect").current_count == 2, "2 of 3 coins collected -> current_count=2")
+	expect(not qs.get_quest("collect").completed, "collect quest not yet completed (2 < 3)")
 
 func _test_quest_completes() -> void:
 	print("Test: quest_completes")
-	var quests := _make_quests()
-	var enemies := _make_enemies(0, 5)
-	var coins := _make_coins(3, 0)
-	_update_quest_progress(quests, enemies, coins, Vector2(0, 0), Vector2(9999, 9999))
-	expect(quests[0].completed, "5 dead -> kill quest completed")
-	expect(quests[1].completed, "3 collected -> collect quest completed")
+	var qs := _make()
+	qs.set_progress("kill", 5)
+	qs.set_progress("collect", 3)
+	expect(qs.get_quest("kill").completed, "5 dead -> kill quest completed")
+	expect(qs.get_quest("collect").completed, "3 collected -> collect quest completed")
+
+func _test_progress_clamps_to_target() -> void:
+	print("Test: progress clamps to the target")
+	var qs := _make()
+	qs.set_progress("kill", 99)
+	expect(qs.get_quest("kill").current_count == 5, "overshooting the target clamps to it")
+
+func _test_completed_quest_ignores_further_progress() -> void:
+	print("Test: a completed quest stops tracking")
+	var qs := _make()
+	qs.set_progress("collect", 3)
+	qs.set_progress("collect", 1)
+	expect(qs.get_quest("collect").current_count == 3, "progress cannot go backwards once complete")
+	expect(qs.get_quest("collect").completed, "the quest stays completed")
+
+func _test_unknown_id_is_ignored() -> void:
+	print("Test: unknown quest ids")
+	var qs := _make()
+	expect(qs.get_quest("nope").is_empty(), "get_quest on an unknown id returns an empty dictionary")
+	qs.set_progress("nope", 1)   # must not raise
+	expect(not qs.is_all_completed(), "reporting progress for an unknown id changes nothing")
 
 func _test_all_complete() -> void:
 	print("Test: all_complete")
-	var quests := _make_quests()
-	var enemies := _make_enemies(0, 5)
-	var coins := _make_coins(3, 0)
-	var beacon_pos := Vector2(100, 100)
-	var player_pos := Vector2(100, 100)
-	_update_quest_progress(quests, enemies, coins, player_pos, beacon_pos)
-	var all_done := true
-	for q in quests:
-		if not q.completed:
-			all_done = false
-			break
-	expect(all_done, "all 3 quests completed -> all_complete=true")
+	var qs := _make()
+	qs.set_progress("kill", 5)
+	qs.set_progress("collect", 3)
+	qs.set_progress("reach", 1)
+	expect(qs.is_all_completed(), "all 3 quests completed -> is_all_completed()")
 
 func _test_no_complete_partial() -> void:
 	print("Test: no_complete_partial")
-	var quests := _make_quests()
-	var enemies := _make_enemies(0, 5)
-	var coins := _make_coins(3, 0)
-	# Don't reach beacon
-	_update_quest_progress(quests, enemies, coins, Vector2(0, 0), Vector2(9999, 9999))
-	var all_done := true
-	for q in quests:
-		if not q.completed:
-			all_done = false
-			break
-	expect(not all_done, "only 2 quests done (reach incomplete) -> all_complete=false")
+	var qs := _make()
+	qs.set_progress("kill", 5)
+	qs.set_progress("collect", 3)
+	expect(not qs.is_all_completed(), "only 2 quests done (reach incomplete) -> not all complete")
+
+func _test_signals() -> void:
+	print("Test: signals")
+	var qs := _make()
+	var completed: Array[String] = []
+	var all_done := {"fired": 0}
+	qs.quest_completed.connect(func(id: String) -> void: completed.append(id))
+	qs.all_completed.connect(func() -> void: all_done["fired"] += 1)
+
+	qs.set_progress("kill", 4)
+	expect(completed.is_empty(), "quest_completed does not fire on partial progress")
+	qs.set_progress("kill", 5)
+	expect(completed == ["kill"], "quest_completed fires with the quest id")
+	expect(all_done["fired"] == 0, "all_completed waits for every quest")
+
+	qs.set_progress("collect", 3)
+	qs.set_progress("reach", 1)
+	expect(all_done["fired"] == 1, "all_completed fires once when the last quest lands")

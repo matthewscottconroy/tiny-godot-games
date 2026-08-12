@@ -61,7 +61,7 @@ func _test_take_damage() -> void:
 func _test_health_floor() -> void:
 	print("health cannot go below 0 in display")
 	var health := 0
-	var displayed := max(health, 0)
+	var displayed := maxi(health, 0)
 	expect(displayed == 0, "displayed health is max(health, 0)")
 	health = -1
 	displayed = max(health, 0)

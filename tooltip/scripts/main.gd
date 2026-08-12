@@ -114,7 +114,7 @@ func _draw() -> void:
 		draw_arc(item["pos"], item["radius"], 0.0, TAU, 32,
 				Color(1.0, 1.0, 1.0, 0.3 if not is_hovered else 0.8), 2.0)
 
-		var label_pos := item["pos"] + Vector2(-item["radius"], item["radius"] + 16)
+		var label_pos: Vector2 = item["pos"] + Vector2(-item["radius"], item["radius"] + 16)
 		draw_string(ThemeDB.fallback_font, label_pos, item["title"],
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.9, 0.9, 0.9))
 
@@ -146,7 +146,7 @@ func _draw() -> void:
 				Color(1.0, 0.95, 0.7, _tooltip_alpha))
 
 		# Description lines
-		var desc_lines := item["desc"].split("\n")
+		var desc_lines: PackedStringArray = item["desc"].split("\n")
 		for li in range(desc_lines.size()):
 			draw_string(ThemeDB.fallback_font,
 					pos + Vector2(8, 36 + li * 16),

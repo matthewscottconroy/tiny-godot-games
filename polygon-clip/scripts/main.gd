@@ -95,4 +95,14 @@ func _draw() -> void:
 		draw_circle(pts[i], VERTEX_RADIUS, col)
 		draw_circle(pts[i], VERTEX_RADIUS, Color(0.1, 0.1, 0.1), false, 2)
 	info.text = "Vertices: %d   |   Area: %.0f px²" % [
-		n, abs(Geometry2D.polygon_area(pts))]
+		n, absf(_polygon_area(pts))]
+
+# Geometry2D has no polygon_area() — the shoelace formula is two lines. The sign
+# tells you the winding order; take the absolute value for a plain area.
+func _polygon_area(pts: PackedVector2Array) -> float:
+	var total := 0.0
+	for i in pts.size():
+		var a := pts[i]
+		var b := pts[(i + 1) % pts.size()]
+		total += a.x * b.y - b.x * a.y
+	return total * 0.5

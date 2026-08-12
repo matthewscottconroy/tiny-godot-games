@@ -26,26 +26,31 @@ func _input(event: InputEvent) -> void:
 		_current_stroke.append(event.position)
 		queue_redraw()
 
-func _process(_delta: float) -> void:
-	if Input.is_key_pressed(KEY_CTRL):
-		if Input.is_key_just_pressed(KEY_Z):
-			_undo_redo.undo()
-			queue_redraw()
-			_update_history()
-		elif Input.is_key_just_pressed(KEY_Y):
-			_undo_redo.redo()
-			queue_redraw()
-			_update_history()
-		elif Input.is_key_pressed(KEY_SHIFT) and Input.is_key_just_pressed(KEY_Z):
-			_undo_redo.redo()
-			queue_redraw()
-			_update_history()
+# Shortcuts are edge-triggered, so they belong in an event handler rather than a
+# per-frame poll. `ctrl_pressed` / `shift_pressed` read the modifier state that
+# came with the event itself.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if not key.pressed or key.echo or not key.ctrl_pressed:
+		return
+	if key.keycode == KEY_Z and key.shift_pressed:
+		_undo_redo.redo()
+	elif key.keycode == KEY_Z:
+		_undo_redo.undo()
+	elif key.keycode == KEY_Y:
+		_undo_redo.redo()
+	else:
+		return
+	queue_redraw()
+	_update_history()
 
 func _commit_stroke() -> void:
 	var stroke := _current_stroke.duplicate()
 	_undo_redo.create_action("Draw Stroke")
-	_undo_redo.add_do_method(self, "_add_stroke", stroke)
-	_undo_redo.add_undo_method(self, "_remove_last_stroke")
+	# Godot 4 takes a Callable, not (object, method_name, args...). Arguments are
+	# bound onto the Callable itself with .bind().
+	_undo_redo.add_do_method(_add_stroke.bind(stroke))
+	_undo_redo.add_undo_method(_remove_last_stroke)
 	_undo_redo.commit_action()
 	_update_history()
 

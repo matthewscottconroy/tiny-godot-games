@@ -1,6 +1,6 @@
 # Rhythm Minigame
 
-A minimal Godot 4.2 demo showing timed-input rhythm game mechanics: notes fall to a target zone, a judgment window scores your timing accuracy.
+A minimal Godot 4 demo showing timed-input rhythm game mechanics: notes fall to a target zone, a judgment window scores your timing accuracy.
 
 ## Controls
 

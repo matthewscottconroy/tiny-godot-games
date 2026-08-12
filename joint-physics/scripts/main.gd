@@ -130,14 +130,14 @@ func _draw_pendulum() -> void:
 	draw_rect(Rect2(80, 60, 160, 8), Color(0.4, 0.42, 0.5))
 
 	for i in _pend_bodies.size():
-		var body := _pend_bodies[i]
+		var body: PhysicsBody2D = _pend_bodies[i]
 		if not is_instance_valid(body):
 			continue
-		var pos := body.global_position
+		var pos: Vector2 = body.global_position
 
 		# Link line to previous
 		if i > 0:
-			var prev_pos := _pend_bodies[i - 1].global_position
+			var prev_pos: Vector2 = _pend_bodies[i - 1].global_position
 			draw_line(prev_pos, pos, Color(0.65, 0.58, 0.42), 3)
 
 		# Body circle
@@ -158,15 +158,15 @@ func _draw_springs() -> void:
 	for anchor in anchors:
 		if not (is_instance_valid(anchor) and is_instance_valid(_spring_weight)):
 			continue
-		var a := anchor.global_position
-		var b := _spring_weight.global_position
+		var a: Vector2 = anchor.global_position
+		var b: Vector2 = _spring_weight.global_position
 		_draw_spring_line(a, b)
 		# Anchor circle
 		draw_circle(a, 9.0, Color(0.48, 0.50, 0.60))
 
 	# Weight
 	if is_instance_valid(_spring_weight):
-		var wp := _spring_weight.global_position
+		var wp: Vector2 = _spring_weight.global_position
 		draw_circle(wp, 18.0, Color(0.22, 0.52, 0.90))
 		draw_circle(wp, 14.0, Color(0.32, 0.62, 1.0))
 		draw_arc(wp, 18.0, 0, TAU, 24, Color(0.5, 0.75, 1.0), 2.0)

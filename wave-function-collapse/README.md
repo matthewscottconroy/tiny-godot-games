@@ -1,6 +1,6 @@
 # Wave Function Collapse
 
-A minimal Godot 4.2 demo implementing the Wave Function Collapse algorithm: constraint-propagation tile placement that generates locally consistent maps.
+A minimal Godot 4 demo implementing the Wave Function Collapse algorithm: constraint-propagation tile placement that generates locally consistent maps.
 
 ## Controls
 

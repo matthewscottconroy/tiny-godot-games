@@ -37,7 +37,7 @@ func _input(event: InputEvent) -> void:
 			_last_x   = event.position.x
 
 	if event is InputEventMouseMotion and _dragging:
-		var dx      := event.position.x - _last_x
+		var dx: float = event.position.x - _last_x
 		_last_x      = event.position.x
 		_current_angle = wrapf(_current_angle + dx * DRAG_SENS, -180.0, 180.0)
 		queue_redraw()

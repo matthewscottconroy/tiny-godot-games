@@ -43,15 +43,15 @@ func _check_ledge(player_pos: Vector2, vel_y: float) -> Vector2:
 		return Vector2.ZERO
 	var player_top := player_pos.y - PLAYER_H
 	for plat in _platforms:
-		var plat_top := plat.position.y
+		var plat_top: float = plat.position.y
 		if absf(player_top - plat_top) > LEDGE_VERT_RANGE:
 			continue
 		# Left edge check
-		var left_edge := plat.position.x
+		var left_edge: float = plat.position.x
 		if absf((player_pos.x + PLAYER_W * 0.5) - left_edge) < LEDGE_GRAB_RANGE:
 			return Vector2(left_edge, plat_top)
 		# Right edge check
-		var right_edge := plat.position.x + plat.size.x
+		var right_edge: float = plat.position.x + plat.size.x
 		if absf((player_pos.x - PLAYER_W * 0.5) - right_edge) < LEDGE_GRAB_RANGE:
 			return Vector2(right_edge, plat_top)
 	return Vector2.ZERO

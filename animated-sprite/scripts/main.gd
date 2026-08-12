@@ -84,7 +84,9 @@ func _make_frame(idx: int, anim_name: String) -> ImageTexture:
 	# Walk leg animation
 	match anim_name:
 		"walk":
-			var leg_offsets := [0, 1, 2, 1, 0, -1]
+			# The image is 20px tall (rows 0-19) and the legs sit at row 18, so
+			# offsets must stay within ±1 to keep set_pixel() in bounds.
+			var leg_offsets := [0, 1, 1, 0, -1, -1]
 			var off : int = leg_offsets[idx % leg_offsets.size()]
 			img.set_pixel(6, 18 + off, body_col.darkened(0.3))
 			img.set_pixel(9, 18 - off, body_col.darkened(0.3))

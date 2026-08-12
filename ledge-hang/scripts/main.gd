@@ -92,7 +92,7 @@ func _resolve_collisions() -> void:
 			if overlap_x < overlap_y:
 				# Push horizontally
 				var center_x := pr.position.x + pr.size.x * 0.5
-				var plat_center_x := plat.position.x + plat.size.x * 0.5
+				var plat_center_x: float = plat.position.x + plat.size.x * 0.5
 				if center_x < plat_center_x:
 					_pos.x -= overlap_x
 				else:
@@ -101,7 +101,7 @@ func _resolve_collisions() -> void:
 			else:
 				# Push vertically
 				var center_y := pr.position.y + pr.size.y * 0.5
-				var plat_center_y := plat.position.y + plat.size.y * 0.5
+				var plat_center_y: float = plat.position.y + plat.size.y * 0.5
 				if center_y < plat_center_y:
 					# Player is above: land on top
 					_pos.y -= overlap_y
@@ -121,18 +121,18 @@ func _resolve_collisions() -> void:
 func _check_ledge_grab() -> void:
 	var player_top := _pos.y - PLAYER_H
 	for plat in _platforms:
-		var plat_top := plat.position.y
+		var plat_top: float = plat.position.y
 		# Check vertical proximity: player top near platform top
 		if absf(player_top - plat_top) > LEDGE_VERT_RANGE:
 			continue
 		# Check left ledge corner
-		var left_edge := plat.position.x
+		var left_edge: float = plat.position.x
 		if absf((_pos.x + PLAYER_W * 0.5) - left_edge) < LEDGE_GRAB_RANGE:
 			_hang_edge = Vector2(left_edge, plat_top)
 			_state = PState.HANGING
 			return
 		# Check right ledge corner
-		var right_edge := plat.position.x + plat.size.x
+		var right_edge: float = plat.position.x + plat.size.x
 		if absf((_pos.x - PLAYER_W * 0.5) - right_edge) < LEDGE_GRAB_RANGE:
 			_hang_edge = Vector2(right_edge, plat_top)
 			_state = PState.HANGING

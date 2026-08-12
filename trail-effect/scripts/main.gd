@@ -15,11 +15,11 @@ var _trail_len := MAX_POINTS
 
 func _ready() -> void:
 	_setup_trail()
-	$HUD/LongerBtn.pressed.connect(func() -> void:
+	$HUD/BtnRow/LongerBtn.pressed.connect(func() -> void:
 		_trail_len = mini(_trail_len + 10, 120)
 		_update_gradient()
 	)
-	$HUD/ShorterBtn.pressed.connect(func() -> void:
+	$HUD/BtnRow/ShorterBtn.pressed.connect(func() -> void:
 		_trail_len = maxi(_trail_len - 10, 5)
 	)
 

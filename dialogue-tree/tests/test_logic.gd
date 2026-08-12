@@ -1,16 +1,16 @@
 extends Node
 
+# Drives the real DialogueTree from scripts/dialogue_tree.gd rather than a copy
+# of its node lookup and choice filtering.
+
 var _pass := 0
 var _fail := 0
 
-# Minimal duplicate of the dialogue and condition logic for isolated testing
 var _game_state: Dictionary = {
 	"has_sword": false,
 	"gold": 10,
-	"talked_before": false
+	"talked_before": false,
 }
-
-var _dialogue: Dictionary = {}
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -27,17 +27,19 @@ func _report() -> void:
 		push_error(summary)
 
 func _ready() -> void:
-	_build_dialogue()
 	print("=== Dialogue Tree Tests ===")
-	_test_node_exists()
+	_test_start_node()
+	_test_unknown_node()
 	_test_condition_pass()
 	_test_condition_fail()
 	_test_no_condition()
 	_test_traversal()
+	_test_terminal_node_has_no_choices()
+	_test_custom_start_node()
 	_report()
 
-func _build_dialogue() -> void:
-	_dialogue = {
+func _nodes() -> Dictionary:
+	return {
 		"start": {
 			"speaker": "Old Merchant",
 			"text": "Ah, a traveler!",
@@ -48,81 +50,82 @@ func _build_dialogue() -> void:
 				{"text": "Goodbye.", "condition": "", "target": "goodbye"},
 			]
 		},
-		"sword_intro": {
-			"speaker": "Old Merchant",
-			"text": "The Blade of Embers!",
-			"choices": []
-		},
-		"show_sword": {
-			"speaker": "Old Merchant",
-			"text": "Magnificent!",
-			"choices": []
-		},
-		"buy_info": {
-			"speaker": "Old Merchant",
-			"text": "Five gold for the location.",
-			"choices": []
-		},
-		"goodbye": {
-			"speaker": "Old Merchant",
-			"text": "Farewell.",
-			"choices": []
-		},
+		"sword_intro": {"speaker": "Old Merchant", "text": "The Blade of Embers!", "choices": []},
+		"show_sword": {"speaker": "Old Merchant", "text": "Magnificent!", "choices": []},
+		"buy_info":   {"speaker": "Old Merchant", "text": "Five gold for the location.", "choices": []},
+		"goodbye":    {"speaker": "Old Merchant", "text": "Farewell.", "choices": []},
 	}
 
-func _get_choices_for(node_id: String, state: Dictionary) -> Array:
-	var node = _dialogue.get(node_id, {})
-	var all_choices: Array = node.get("choices", [])
-	var result: Array = []
-	for choice in all_choices:
-		var cond: String = choice.get("condition", "")
-		if cond == "":
-			result.append(choice)
-		elif cond == "gold_gte_5":
-			if state.get("gold", 0) >= 5:
-				result.append(choice)
-		elif state.get(cond, false):
-			result.append(choice)
-	return result
+func _make(start := "start") -> DialogueTree:
+	return DialogueTree.new(_nodes(), start)
 
-func _test_node_exists() -> void:
-	print("Test: node_exists")
-	expect(_dialogue.has("start"), "'start' node exists in dialogue dict")
-	expect(_dialogue.has("sword_intro"), "'sword_intro' node exists in dialogue dict")
+# DialogueTree delegates the condition check, so the game keeps its own rules.
+func _is_met(condition: String) -> bool:
+	match condition:
+		"has_sword":  return _game_state["has_sword"]
+		"gold_gte_5": return _game_state["gold"] >= 5
+		_:            return false
+
+func _test_start_node() -> void:
+	print("Test: start node")
+	var tree := _make()
+	expect(tree.current == "start", "the tree starts on the requested node")
+	expect(tree.node()["speaker"] == "Old Merchant", "node() returns the current node's data")
+
+func _test_unknown_node() -> void:
+	print("Test: unknown node")
+	var tree := _make()
+	tree.goto("nowhere")
+	expect(tree.node().is_empty(), "an unknown id yields an empty node")
+	expect(tree.available_choices(_is_met).is_empty(), "an empty node offers no choices")
 
 func _test_condition_pass() -> void:
-	print("Test: condition_pass")
-	var state := {"has_sword": true, "gold": 10}
-	var choices := _get_choices_for("start", state)
-	var targets: Array = []
-	for c in choices:
-		targets.append(c.get("target", ""))
-	expect(targets.has("show_sword"), "has_sword=true -> show_sword choice available")
+	print("Test: condition met")
+	_game_state["gold"] = 10
+	var choices := _make().available_choices(_is_met)
+	var texts := choices.map(func(c: Dictionary) -> String: return c["text"])
+	expect(texts.any(func(t: String) -> bool: return t.begins_with("Buy info")),
+		"gold >= 5 makes the 'Buy info' choice available")
 
 func _test_condition_fail() -> void:
-	print("Test: condition_fail")
-	var state := {"has_sword": false, "gold": 10}
-	var choices := _get_choices_for("start", state)
-	var targets: Array = []
-	for c in choices:
-		targets.append(c.get("target", ""))
-	expect(not targets.has("show_sword"), "has_sword=false -> show_sword choice NOT available")
+	print("Test: condition not met")
+	_game_state["has_sword"] = false
+	_game_state["gold"] = 2
+	var choices := _make().available_choices(_is_met)
+	var texts := choices.map(func(c: Dictionary) -> String: return c["text"])
+	expect(not texts.any(func(t: String) -> bool: return t.begins_with("Show sword")),
+		"has_sword = false hides the 'Show sword' choice")
+	expect(not texts.any(func(t: String) -> bool: return t.begins_with("Buy info")),
+		"gold < 5 hides the 'Buy info' choice")
+	expect(choices.size() == 2, "only the two unconditional choices remain")
+	_game_state["gold"] = 10
 
 func _test_no_condition() -> void:
-	print("Test: no_condition")
-	var state := {"has_sword": false, "gold": 0}
-	var choices := _get_choices_for("start", state)
-	var targets: Array = []
-	for c in choices:
-		targets.append(c.get("target", ""))
-	expect(targets.has("sword_intro"), "no-condition choice always available")
-	expect(targets.has("goodbye"), "no-condition goodbye always available")
+	print("Test: unconditional choices")
+	_game_state["has_sword"] = false
+	_game_state["gold"] = 0
+	var choices := _make().available_choices(_is_met)
+	expect(choices.size() == 2, "choices with an empty condition are always shown")
 
 func _test_traversal() -> void:
 	print("Test: traversal")
-	var state := {"has_sword": false, "gold": 10}
-	var choices := _get_choices_for("start", state)
-	expect(choices.size() > 0, "start node has available choices")
-	var first_target: String = choices[0].get("target", "")
-	expect(first_target == "sword_intro", "first choice from start leads to sword_intro")
-	expect(_dialogue.has(first_target), "target node exists in dialogue")
+	_game_state["has_sword"] = true
+	_game_state["gold"] = 10
+	var tree := _make()
+	var choices := tree.available_choices(_is_met)
+	expect(choices.size() == 4, "every choice is available once both conditions hold")
+	tree.goto(choices[1]["target"])
+	expect(tree.current == "show_sword", "goto follows the chosen target")
+	expect(tree.node()["text"] == "Magnificent!", "the new node's text is current")
+
+func _test_terminal_node_has_no_choices() -> void:
+	print("Test: terminal node")
+	var tree := _make()
+	tree.goto("goodbye")
+	expect(tree.available_choices(_is_met).is_empty(), "a terminal node offers no choices")
+
+func _test_custom_start_node() -> void:
+	print("Test: custom start node")
+	var tree := _make("sword_intro")
+	expect(tree.current == "sword_intro", "the start node is configurable")
+	expect(tree.node()["text"] == "The Blade of Embers!", "and its data is loaded")

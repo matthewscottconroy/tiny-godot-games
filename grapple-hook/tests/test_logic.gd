@@ -33,8 +33,9 @@ func _test_hook_direction() -> void:
 	var from := Vector2(0.0, 0.0)
 	var target := Vector2(640.0, 480.0)
 	var direction := from.direction_to(target)
-	var expected := Vector2(1.0, 1.0).normalized()
-	expect(direction.is_equal_approx(expected), "shooting toward (640,480) from (0,0) gives normalized (1,1) direction")
+	# (640, 480) is a 4:3 vector, so the unit direction is (0.8, 0.6).
+	var expected := Vector2(0.8, 0.6)
+	expect(direction.is_equal_approx(expected), "shooting toward (640,480) from (0,0) gives direction (0.8,0.6)")
 
 func _test_pendulum_constraint() -> void:
 	print("_test_pendulum_constraint")

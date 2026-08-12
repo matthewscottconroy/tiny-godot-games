@@ -4,7 +4,7 @@ Demonstrates real-time audio synthesis and crossfading between two music "layers
 
 ## How to Run
 
-Open the project in Godot 4.2 and press F5 (or run `scenes/main.tscn`).
+Open the project in Godot 4 and press F5 (or run `scenes/main.tscn`).
 
 - **C** — transition to calm layer (220 Hz sine)
 - **F** — transition to combat/fight layer (440 Hz + 330 Hz mix)

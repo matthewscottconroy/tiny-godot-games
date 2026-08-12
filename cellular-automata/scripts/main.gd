@@ -4,7 +4,7 @@ const GRID_W := 80
 const GRID_H := 60
 const CELL   := 8
 
-enum Material { EMPTY = 0, SAND = 1, WATER = 2, STONE = 3 }
+enum Cell { EMPTY = 0, SAND = 1, WATER = 2, STONE = 3 }
 
 const COLORS := [
 	Color(0.08, 0.08, 0.10),   # EMPTY
@@ -14,7 +14,7 @@ const COLORS := [
 ]
 
 var _grid: Array = []
-var _selected: int = Material.SAND
+var _selected: int = Cell.SAND
 var _scan_right := true
 var _brush := 3
 
@@ -26,22 +26,22 @@ func _reset() -> void:
 	for _y in GRID_H:
 		var row: Array = []
 		row.resize(GRID_W)
-		row.fill(Material.EMPTY)
+		row.fill(Cell.EMPTY)
 		_grid.append(row)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
-			KEY_1: _selected = Material.SAND
-			KEY_2: _selected = Material.WATER
-			KEY_3: _selected = Material.STONE
+			KEY_1: _selected = Cell.SAND
+			KEY_2: _selected = Cell.WATER
+			KEY_3: _selected = Cell.STONE
 			KEY_C: _reset()
 
 func _process(_delta: float) -> void:
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_paint(get_viewport().get_mouse_position(), _selected)
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		_paint(get_viewport().get_mouse_position(), Material.EMPTY)
+		_paint(get_viewport().get_mouse_position(), Cell.EMPTY)
 	_step()
 	queue_redraw()
 
@@ -66,16 +66,16 @@ func _step() -> void:
 				_update(x, y)
 
 func _update(x: int, y: int) -> void:
-	var cell := _grid[y][x]
-	if cell == Material.EMPTY or cell == Material.STONE:
+	var cell: int = _grid[y][x]
+	if cell == Cell.EMPTY or cell == Cell.STONE:
 		return
 	match cell:
-		Material.SAND:
-			if _grid[y + 1][x] == Material.EMPTY:
+		Cell.SAND:
+			if _grid[y + 1][x] == Cell.EMPTY:
 				_move(x, y, x, y + 1)
 			else:
-				var dl := x > 0 and _grid[y + 1][x - 1] == Material.EMPTY
-				var dr := x < GRID_W - 1 and _grid[y + 1][x + 1] == Material.EMPTY
+				var dl: bool = x > 0 and _grid[y + 1][x - 1] == Cell.EMPTY
+				var dr: bool = x < GRID_W - 1 and _grid[y + 1][x + 1] == Cell.EMPTY
 				if dl and dr:
 					var dx := -1 if randf() < 0.5 else 1
 					_move(x, y, x + dx, y + 1)
@@ -83,12 +83,12 @@ func _update(x: int, y: int) -> void:
 					_move(x, y, x - 1, y + 1)
 				elif dr:
 					_move(x, y, x + 1, y + 1)
-		Material.WATER:
-			if _grid[y + 1][x] == Material.EMPTY:
+		Cell.WATER:
+			if _grid[y + 1][x] == Cell.EMPTY:
 				_move(x, y, x, y + 1)
 			else:
-				var dl := x > 0 and _grid[y][x - 1] == Material.EMPTY
-				var dr := x < GRID_W - 1 and _grid[y][x + 1] == Material.EMPTY
+				var dl: bool = x > 0 and _grid[y][x - 1] == Cell.EMPTY
+				var dr: bool = x < GRID_W - 1 and _grid[y][x + 1] == Cell.EMPTY
 				if dl and dr:
 					var dx := -1 if randf() < 0.5 else 1
 					_move(x, y, x + dx, y)
@@ -99,11 +99,11 @@ func _update(x: int, y: int) -> void:
 
 func _move(fx: int, fy: int, tx: int, ty: int) -> void:
 	_grid[ty][tx] = _grid[fy][fx]
-	_grid[fy][fx] = Material.EMPTY
+	_grid[fy][fx] = Cell.EMPTY
 
 func _draw() -> void:
 	for y in GRID_H:
 		for x in GRID_W:
 			var mat: int = _grid[y][x]
-			if mat != Material.EMPTY:
+			if mat != Cell.EMPTY:
 				draw_rect(Rect2(x * CELL, y * CELL, CELL, CELL), COLORS[mat])

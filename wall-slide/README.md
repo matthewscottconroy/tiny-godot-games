@@ -1,6 +1,6 @@
 # Wall Slide
 
-A minimal Godot 4.2 demo focused on wall-sliding mechanics: gravity reduction while pressing into a wall, terminal slide velocity, and slide-distance tracking.
+A minimal Godot 4 demo focused on wall-sliding mechanics: gravity reduction while pressing into a wall, terminal slide velocity, and slide-distance tracking.
 
 ## Controls
 

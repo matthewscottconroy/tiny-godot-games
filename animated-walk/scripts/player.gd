@@ -22,7 +22,7 @@ func _physics_process(delta: float) -> void:
 	elif velocity.x > 5:
 		visual.scale.x = 1
 
-	var walking := abs(velocity.x) > 10
+	var walking := absf(velocity.x) > 10.0
 	if walking and anim.current_animation != "walk":
 		anim.play("walk")
 	elif not walking and anim.current_animation != "idle":

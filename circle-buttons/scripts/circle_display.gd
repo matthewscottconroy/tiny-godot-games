@@ -52,7 +52,7 @@ func _draw() -> void:
 		return
 	var font := ThemeDB.fallback_font
 	for i in _circles.size():
-		var c    := _circles[i]
+		var c: Dictionary = _circles[i]
 		var pos  := _center_of(c)
 		var r    := c.get("radius", 30.0) as float
 		var col  := c.get("color", Color.WHITE) as Color
@@ -89,7 +89,7 @@ func _gui_input(event: InputEvent) -> void:
 func _hit_test(local_pos: Vector2) -> int:
 	# Reverse order: last-drawn (highest index) gets priority on overlap
 	for i in range(_circles.size() - 1, -1, -1):
-		var c := _circles[i]
+		var c: Dictionary = _circles[i]
 		if local_pos.distance_to(_center_of(c)) <= c.get("radius", 30.0):
 			return i
 	return -1

@@ -51,7 +51,7 @@ func _test_floor_clamp() -> void:
 func _test_screen_wrap() -> void:
 	print("screen wrap wrapf(-20, 660)")
 	expect_near(wrapf(-25.0, -20.0, 660.0), 655.0, "wrap below min")
-	expect_near(wrapf(661.0, -20.0, 660.0), 1.0, "wrap above max")
+	expect_near(wrapf(661.0, -20.0, 660.0), -19.0, "wrap above max")
 	expect_near(wrapf(320.0, -20.0, 660.0), 320.0, "mid value unchanged")
 
 func _test_animation_state_ground() -> void:

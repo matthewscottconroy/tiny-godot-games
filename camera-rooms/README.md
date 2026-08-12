@@ -1,6 +1,6 @@
 # Camera Rooms
 
-A minimal Godot 4.2 demo showing room-based camera transitions using `Area2D`, exported properties, signals, and `Tween`.
+A minimal Godot 4 demo showing room-based camera transitions using `Area2D`, exported properties, signals, and `Tween`.
 
 ## Controls
 

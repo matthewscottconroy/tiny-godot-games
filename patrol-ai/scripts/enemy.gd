@@ -23,13 +23,13 @@ func _ready() -> void:
 		waypoints.append(wp.global_position)
 
 func _draw() -> void:
-	var color := {
+	var color: Color = {
 		State.PATROL: Color.CORAL,
 		State.CHASE:  Color.TOMATO,
 		State.RETURN: Color.ORANGE_RED,
 	}[state]
 	draw_circle(Vector2.ZERO, 18, color)
-	var look_at := player.global_position if state == State.CHASE else waypoints[wp_index]
+	var look_at: Vector2 = player.global_position if state == State.CHASE else waypoints[wp_index]
 	var dir := (look_at - global_position).normalized()
 	draw_circle(dir * 8, 5, Color.WHITE)
 	draw_circle(dir * 11, 3, Color.BLACK)
@@ -62,7 +62,7 @@ func _transition() -> void:
 		state_changed.emit(state)
 
 func _patrol() -> void:
-	var target := waypoints[wp_index]
+	var target: Vector2 = waypoints[wp_index]
 	velocity = (target - global_position).normalized() * patrol_speed
 	move_and_slide()
 	if global_position.distance_to(target) < 10:

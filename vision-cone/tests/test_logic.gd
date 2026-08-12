@@ -1,12 +1,20 @@
 extends Node
 
-# ── Mirrored constants ──────────────────────────────────────────────────────
-const CONE_ANGLE := PI / 3.0
-const CONE_RANGE := 180.0
+# Drives the real VisionCone from scripts/vision_cone.gd rather than a copy of
+# its cone and occlusion maths.
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
 var _pass := 0
 var _fail := 0
+
+func _ready() -> void:
+	_test_target_in_front_is_seen()
+	_test_target_behind_is_not_seen()
+	_test_cone_edges()
+	_test_range_limit()
+	_test_wall_blocks_line_of_sight()
+	_test_wall_outside_the_line_does_not_block()
+	_test_configurable_fov_and_range()
+	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -16,120 +24,65 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
+const ORIGIN := Vector2(100.0, 100.0)
+const FACING_RIGHT := 0.0
+
+func _make() -> VisionCone:
+	return VisionCone.new(PI / 3.0, 180.0)   # 120° total FOV, 180px range
+
+func _test_target_in_front_is_seen() -> void:
+	print("target straight ahead")
+	expect(_make().can_see(ORIGIN, FACING_RIGHT, ORIGIN + Vector2(100, 0)),
+		"a target directly ahead and in range is visible")
+
+func _test_target_behind_is_not_seen() -> void:
+	print("target behind the observer")
+	expect(not _make().can_see(ORIGIN, FACING_RIGHT, ORIGIN + Vector2(-100, 0)),
+		"a target directly behind is outside the cone")
+
+func _test_cone_edges() -> void:
+	print("cone edges")
+	var cone := _make()   # half_angle = 60°
+	var inside := ORIGIN + Vector2.from_angle(deg_to_rad(55.0)) * 100.0
+	var outside := ORIGIN + Vector2.from_angle(deg_to_rad(65.0)) * 100.0
+	expect(cone.can_see(ORIGIN, FACING_RIGHT, inside), "55° off-axis is inside a 60° half-angle")
+	expect(not cone.can_see(ORIGIN, FACING_RIGHT, outside), "65° off-axis is outside it")
+	# The cone is symmetric, so the mirrored angles behave the same way.
+	var mirrored := ORIGIN + Vector2.from_angle(deg_to_rad(-55.0)) * 100.0
+	expect(cone.can_see(ORIGIN, FACING_RIGHT, mirrored), "the cone is symmetric about the facing")
+
+func _test_range_limit() -> void:
+	print("range limit")
+	var cone := _make()   # 180px
+	expect(cone.can_see(ORIGIN, FACING_RIGHT, ORIGIN + Vector2(179, 0)), "just inside range is visible")
+	expect(not cone.can_see(ORIGIN, FACING_RIGHT, ORIGIN + Vector2(181, 0)), "just past range is not")
+
+func _test_wall_blocks_line_of_sight() -> void:
+	print("walls occlude")
+	var cone := _make()
+	var target := ORIGIN + Vector2(150, 0)
+	var wall := Rect2(ORIGIN + Vector2(60, -40), Vector2(20, 80))
+	expect(cone.can_see(ORIGIN, FACING_RIGHT, target), "clear line of sight without walls")
+	expect(not cone.can_see(ORIGIN, FACING_RIGHT, target, [wall]), "a wall across the ray blocks sight")
+
+func _test_wall_outside_the_line_does_not_block() -> void:
+	print("walls off the ray")
+	var cone := _make()
+	var target := ORIGIN + Vector2(150, 0)
+	var wall := Rect2(ORIGIN + Vector2(60, 60), Vector2(20, 80))   # well below the ray
+	expect(cone.can_see(ORIGIN, FACING_RIGHT, target, [wall]),
+		"a wall that does not cross the ray leaves sight clear")
+
+func _test_configurable_fov_and_range() -> void:
+	print("configurable fov and range")
+	var narrow := VisionCone.new(deg_to_rad(10.0), 500.0)
+	var target := ORIGIN + Vector2.from_angle(deg_to_rad(30.0)) * 200.0
+	expect(not narrow.can_see(ORIGIN, FACING_RIGHT, target), "a narrow cone rejects a 30° target")
+	var wide := VisionCone.new(deg_to_rad(80.0), 500.0)
+	expect(wide.can_see(ORIGIN, FACING_RIGHT, target), "a wide cone accepts the same target")
+
 func _report() -> void:
 	var summary := "[vision-cone] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
-
-# ── Mirrored detection logic ─────────────────────────────────────────────────
-
-func _in_cone(enemy_pos: Vector2, enemy_dir: float, player_pos: Vector2) -> bool:
-	if enemy_pos.distance_to(player_pos) > CONE_RANGE:
-		return false
-	var angle_to_player := (player_pos - enemy_pos).angle()
-	var diff := angle_difference(angle_to_player, enemy_dir)
-	if absf(diff) > CONE_ANGLE:
-		return false
-	return true
-
-
-func _segment_intersects_rect(p1: Vector2, p2: Vector2, r: Rect2) -> bool:
-	var d := p2 - p1
-	var t_min := 0.0
-	var t_max := 1.0
-
-	var tests := [
-		[d.x, r.position.x - p1.x, r.position.x + r.size.x - p1.x],
-		[d.y, r.position.y - p1.y, r.position.y + r.size.y - p1.y],
-	]
-
-	for t in tests:
-		var dv: float = t[0]
-		var lo: float = t[1]
-		var hi: float = t[2]
-		if absf(dv) < 1e-6:
-			if lo > 0.0 or hi < 0.0:
-				return false
-		else:
-			var t1 := lo / dv
-			var t2 := hi / dv
-			if t1 > t2:
-				var tmp := t1; t1 = t2; t2 = tmp
-			t_min = maxf(t_min, t1)
-			t_max = minf(t_max, t2)
-			if t_min > t_max:
-				return false
-
-	return true
-
-
-func _wall_blocks(a: Vector2, b: Vector2, walls: Array) -> bool:
-	for w in walls:
-		if _segment_intersects_rect(a, b, w):
-			return true
-	return false
-
-
-# ── Tests ────────────────────────────────────────────────────────────────────
-
-func _test_angle_in_cone() -> void:
-	# Player directly in front of enemy (angle_diff = 0) → should be in cone
-	var enemy_pos := Vector2(100, 100)
-	var enemy_dir := 0.0  # facing right
-	var player_pos := Vector2(200, 100)  # directly to the right, well within range
-	expect(_in_cone(enemy_pos, enemy_dir, player_pos), "angle_in_cone: player directly ahead → detected")
-
-
-func _test_angle_outside_cone() -> void:
-	# Player directly behind enemy (angle_diff = PI) → outside cone
-	var enemy_pos := Vector2(100, 100)
-	var enemy_dir := 0.0  # facing right
-	var player_pos := Vector2(50, 100)  # to the left (behind)
-	expect(not _in_cone(enemy_pos, enemy_dir, player_pos), "angle_outside_cone: player behind → not detected")
-
-
-func _test_range_too_far() -> void:
-	# Player within cone angle but beyond CONE_RANGE
-	var enemy_pos := Vector2(100, 100)
-	var enemy_dir := 0.0
-	var player_pos := Vector2(100 + CONE_RANGE + 10, 100)
-	expect(not _in_cone(enemy_pos, enemy_dir, player_pos), "range_too_far: beyond CONE_RANGE → not detected")
-
-
-func _test_range_within() -> void:
-	# Player within range and directly in front → detected (no walls)
-	var enemy_pos := Vector2(100, 100)
-	var enemy_dir := 0.0
-	var player_pos := Vector2(100 + CONE_RANGE - 10, 100)
-	expect(_in_cone(enemy_pos, enemy_dir, player_pos), "range_within: close and frontal → detected")
-
-
-func _test_wall_blocks() -> void:
-	# Wall fully covers the enemy→player path
-	var enemy_pos := Vector2(100, 100)
-	var player_pos := Vector2(300, 100)
-	# Wall stretches from x=150 to x=260, covering y=80..120 — blocks the horizontal segment
-	var walls: Array = [Rect2(150, 80, 110, 40)]
-	expect(_wall_blocks(enemy_pos, player_pos, walls), "wall_blocks: wall on path → line of sight blocked")
-
-
-func _test_wall_does_not_block() -> void:
-	# Wall placed below the enemy→player line — should not block
-	var enemy_pos := Vector2(100, 100)
-	var player_pos := Vector2(300, 100)
-	var walls: Array = [Rect2(150, 200, 110, 40)]
-	expect(not _wall_blocks(enemy_pos, player_pos, walls), "wall_does_not_block: wall off path → not blocked")
-
-
-# ── Entry point ──────────────────────────────────────────────────────────────
-
-func _ready() -> void:
-	print("=== Vision Cone Tests ===")
-	_test_angle_in_cone()
-	_test_angle_outside_cone()
-	_test_range_too_far()
-	_test_range_within()
-	_test_wall_blocks()
-	_test_wall_does_not_block()
-	_report()

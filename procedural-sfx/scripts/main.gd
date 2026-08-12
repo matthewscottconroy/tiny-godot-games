@@ -99,7 +99,7 @@ func _draw() -> void:
 		"crash": Color(0.9, 0.3, 0.2),
 		"chirp": Color(0.4, 0.7, 1.0),
 	}
-	var active_color := sfx_colors.get(_gen_type, Color(0.4, 0.4, 0.4)) if _gen_frames < _gen_total else Color(0.3, 0.3, 0.3)
+	var active_color: Color = sfx_colors.get(_gen_type, Color(0.4, 0.4, 0.4)) if _gen_frames < _gen_total else Color(0.3, 0.3, 0.3)
 
 	draw_rect(Rect2(20, 55, 600, 36), active_color * Color(1, 1, 1, 0.15))
 	draw_rect(Rect2(20, 55, 600, 36), active_color * Color(1, 1, 1, 0.6), false, 2.0)
@@ -111,7 +111,6 @@ func _draw() -> void:
 	# Progress bar for current SFX
 	if _gen_type != "" and _gen_total > 0:
 		var prog := clampf(float(_gen_frames) / float(_gen_total), 0.0, 1.0)
-		draw_rect(Rect2(20, 96), Color(0.2, 0.2, 0.25))  # noop placeholder
 		draw_rect(Rect2(20, 98, 600, 8), Color(0.15, 0.15, 0.2))
 		draw_rect(Rect2(20, 98, prog * 600.0, 8), active_color * Color(1, 1, 1, 0.7))
 
@@ -145,7 +144,7 @@ func _draw() -> void:
 		var d: Dictionary = sfx_defs[i]
 		var bx := 20.0 + i * 152.0
 		var by := 285.0
-		var is_active := (_gen_type == ["beep", "buzz", "crash", "chirp"][i] and _gen_frames < _gen_total)
+		var is_active: bool = (_gen_type == ["beep", "buzz", "crash", "chirp"][i] and _gen_frames < _gen_total)
 		var bg_alpha := 0.35 if is_active else 0.12
 		draw_rect(Rect2(bx, by, 140, 80), d["color"] * Color(1, 1, 1, bg_alpha))
 		draw_rect(Rect2(bx, by, 140, 80), d["color"] * Color(1, 1, 1, 0.7 if is_active else 0.4), false, 2.0)

@@ -36,7 +36,7 @@ func _ready() -> void:
 	_surf_label.text = "Surface: Stone (default)"
 
 func _on_step(surface: String) -> void:
-	var cfg := SURFACE_CONFIG.get(surface, SURFACE_CONFIG["stone"])
+	var cfg: Dictionary = SURFACE_CONFIG.get(surface, SURFACE_CONFIG["stone"])
 	_audio.stream = _make_tone(cfg["freq"], cfg["dur"], cfg["wave"])
 	_audio.play()
 	_step_label.text = "Last step: %s [%s %.0fHz]" % [cfg["label"], cfg["wave"], cfg["freq"]]
@@ -74,7 +74,7 @@ func _draw() -> void:
 		var area := zone as Area2D
 		if not area:
 			continue
-		var cfg := SURFACE_CONFIG.get(zone.surface_name, {})
+		var cfg: Dictionary = SURFACE_CONFIG.get(zone.surface_name, {})
 		if cfg.is_empty():
 			continue
 		var col: Color = cfg["color"]

@@ -47,7 +47,7 @@ func _draw() -> void:
 	# Draw segments from tail to head so head is on top
 	for i in range(N - 1, -1, -1):
 		var t := float(i) / float(N)
-		var width := lerp(18.0, 4.0, float(i) / float(N))
+		var width := lerpf(18.0, 4.0, float(i) / float(N))
 
 		# Color gradient: bright cyan-green at head → dark teal at tail
 		var seg_color := Color(
@@ -65,11 +65,11 @@ func _draw() -> void:
 			continue
 
 		var perp := seg_dir.normalized().rotated(PI * 0.5)
-		var half_w := width * 0.5
+		var half_w: float = width * 0.5
 
 		# Width tapers along the segment: wide at p0 end, narrower at p1 end
-		var w0 := lerp(18.0, 4.0, float(i) / float(N)) * 0.5
-		var w1 := lerp(18.0, 4.0, float(i + 1) / float(N)) * 0.5
+		var w0: float = lerp(18.0, 4.0, float(i) / float(N)) * 0.5
+		var w1: float = lerp(18.0, 4.0, float(i + 1) / float(N)) * 0.5
 
 		var poly := PackedVector2Array([
 			p0 + perp * w0,

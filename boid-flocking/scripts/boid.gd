@@ -24,7 +24,7 @@ func step(boids: Array, delta: float) -> void:
 	for other in boids:
 		if other == self:
 			continue
-		var d := other.position - position
+		var d: Vector2 = other.position - position
 		var dist := d.length()
 		if dist > NEIGHBOR_RADIUS or dist < 0.001:
 			continue

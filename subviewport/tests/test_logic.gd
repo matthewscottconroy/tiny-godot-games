@@ -48,7 +48,7 @@ func _test_minimap_zoom() -> void:
 	const MINIMAP_W := 160.0
 	const MINIMAP_H := 114.0
 	var zoom := minf(MINIMAP_W / WORLD_W, MINIMAP_H / WORLD_H)
-	expect_near(zoom, MINIMAP_W / WORLD_W, "zoom uses width ratio (smaller axis)")
+	expect_near(zoom, MINIMAP_H / WORLD_H, "zoom uses height ratio (the smaller of the two)")
 	expect(zoom < 1.0, "minimap zoom is less than 1 (scaled down)")
 
 func _test_minimap_dot_position() -> void:

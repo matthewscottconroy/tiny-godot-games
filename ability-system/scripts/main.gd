@@ -105,7 +105,7 @@ func _draw() -> void:
 		var by := panel_y
 
 		# Box background
-		var ready := ability["timer"] <= 0.0
+		var ready: bool = ability["timer"] <= 0.0
 		var bg_color := Color(0.12, 0.12, 0.2) if not ready else Color(0.15, 0.18, 0.28)
 		draw_rect(Rect2(bx, by, box_w, box_h), bg_color)
 		draw_rect(Rect2(bx, by, box_w, box_h), ability["color"] if ready else Color(0.3, 0.3, 0.4), false, 2.0)
@@ -132,7 +132,7 @@ func _draw() -> void:
 		var center := Vector2(bx + box_w / 2, by + 92)
 		draw_arc(center, 18, -PI / 2, -PI / 2 + TAU, 32, Color(0.2, 0.2, 0.3), 14.0)
 		if ability["timer"] > 0.0:
-			var sweep := TAU * (ability["timer"] / ability["cooldown"])
+			var sweep: float = TAU * (ability["timer"] / ability["cooldown"])
 			draw_arc(center, 18, -PI / 2, -PI / 2 + sweep, 32, Color(0.8, 0.2, 0.2), 14.0)
 			draw_string(ThemeDB.fallback_font, center + Vector2(-10, 5),
 				"%.1f" % ability["timer"], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.5, 0.5))

@@ -26,19 +26,35 @@ Every demo follows the same layout:
 
 ## Running the tests
 
-Each demo ships a headless test suite that validates its core logic. Run them all:
+Every demo gets two checks. Run them all:
 
 ```bash
 ./run-tests.sh
 ```
 
-...or run one demo's tests directly:
+1. **Smoke** — boots the demo's real `scenes/main.tscn` headless for a few frames
+   and fails on any script or scene error. This is what catches a demo that does
+   not actually run.
+2. **Logic** — `tests/test.tscn` runs `tests/test_logic.gd`, which exercises the
+   demo's own scripts and prints a `[demo] N/M passed` summary.
+
+Both checks run against a specific demo too, and either can be run on its own:
 
 ```bash
-godot --headless --path state-machine res://tests/test.tscn --quit
+./run-tests.sh state-machine        # one demo (or several)
+./run-tests.sh --smoke-only         # just boot every demo
+./run-tests.sh --tests-only         # just the logic suites
 ```
 
-Tests are also run automatically in CI on every push (see [.github/workflows/tests.yml](.github/workflows/tests.yml)).
+...or invoke one demo's suite directly:
+
+```bash
+godot --headless --path state-machine res://tests/test.tscn --quit-after 5
+```
+
+The script imports each project first (generating `.godot/`) so `class_name`
+globals and assets resolve the same way they do in CI, which runs the identical
+script on every push — see [.github/workflows/tests.yml](.github/workflows/tests.yml).
 
 ## The demos
 

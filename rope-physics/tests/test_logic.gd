@@ -51,7 +51,7 @@ func _test_constraint_shortens() -> void:
 	var p0 := Vector2(0.0, 0.0)
 	var p1 := Vector2(30.0, 0.0)
 	var result := _apply_constraint(p0, p1, -1, -1, 5)
-	var new_dist := result[0].distance_to(result[1])
+	var new_dist: float = result[0].distance_to(result[1])
 	expect(new_dist < 30.0, "constraint shortens distance when too far (30 → closer to 12)")
 	expect(is_equal_approx(new_dist, SEG_LEN), "constraint reaches exact segment length")
 
@@ -61,7 +61,7 @@ func _test_constraint_lengthens() -> void:
 	var p0 := Vector2(0.0, 0.0)
 	var p1 := Vector2(2.0, 0.0)
 	var result := _apply_constraint(p0, p1, -1, -1, 5)
-	var new_dist := result[0].distance_to(result[1])
+	var new_dist: float = result[0].distance_to(result[1])
 	expect(new_dist > 2.0, "constraint lengthens distance when too close (2 → closer to 12)")
 
 func _test_constraint_anchor_fixed() -> void:

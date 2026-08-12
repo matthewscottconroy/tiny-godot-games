@@ -1,6 +1,6 @@
 # Entity Component System
 
-A minimal Godot 4.2 demo showing a pure GDScript ECS: entities as integer IDs, components as data dictionaries, and systems as functions that query and mutate component data.
+A minimal Godot 4 demo showing a pure GDScript ECS: entities as integer IDs, components as data dictionaries, and systems as functions that query and mutate component data.
 
 ## How It Works
 

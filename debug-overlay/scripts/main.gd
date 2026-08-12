@@ -10,11 +10,16 @@ extends Node2D
 
 var _overlay_visible := true
 
-func _process(_delta: float) -> void:
-	if Input.is_key_just_pressed(KEY_F3) or Input.is_key_just_pressed(KEY_QUOTELEFT):
+# Toggling belongs in an event handler, not a poll: one event per physical press.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if not key.pressed or key.echo:
+		return
+	if key.keycode == KEY_F3 or key.keycode == KEY_QUOTELEFT:
 		_overlay_visible = !_overlay_visible
 		_panel.visible = _overlay_visible
 
+func _process(_delta: float) -> void:
 	if _overlay_visible:
 		_fps_label.text   = "FPS:     %d"             % Engine.get_frames_per_second()
 		_pos_label.text   = "Pos:     (%.0f, %.0f)"   % [_player.global_position.x, _player.global_position.y]

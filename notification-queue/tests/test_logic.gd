@@ -1,14 +1,17 @@
 extends Node
 
+# Drives the real NotificationQueue from scripts/notification_manager.gd via the
+# demo scene (the component needs its NotifPanel/Label children).
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_queue_push_fifo()
-	_test_busy_flag_prevents_double_show()
+	_test_first_push_shows_immediately()
+	_test_further_pushes_queue()
 	_test_queue_drains_in_order()
 	_test_empty_queue_clears_busy()
-	_test_push_while_busy_queues()
+	_test_tween_timings_come_from_exports()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -19,87 +22,64 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-# --- Simulated notification manager (no scene tree) ---
+func _make() -> NotificationQueue:
+	var scene: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	return scene.get_node("NotifManager")
 
-class FakeNotifManager:
-	var _queue: Array[String] = []
-	var _busy := false
-	var _showing := ""
-	var _show_call_count := 0
+# The slide-in/hold/slide-out chain ends by calling _show_next again. Driving
+# that directly keeps the test synchronous instead of waiting on real tweens.
+func _finish_current(notif: NotificationQueue) -> void:
+	notif._show_next()
 
-	func push(msg: String) -> void:
-		_queue.append(msg)
-		if not _busy:
-			_show_next()
+func _test_first_push_shows_immediately() -> void:
+	print("first push shows immediately")
+	var notif := _make()
+	notif.push("A")
+	expect(notif._busy, "the manager is busy after the first push")
+	expect(notif._queue.is_empty(), "the first message is shown rather than queued")
+	expect(notif._label.text == "A", "the panel label shows the message")
 
-	func _show_next() -> void:
-		if _queue.is_empty():
-			_busy = false
-			return
-		_busy = true
-		_showing = _queue.pop_front()
-		_show_call_count += 1
-		# In real code a tween callback would call _show_next again.
-		# For test purposes we just record state.
-
-	func finish_current() -> void:
-		# Simulate tween completing
-		_show_next()
-
-func _test_queue_push_fifo() -> void:
-	print("push: messages stored in FIFO order")
-	var mgr := FakeNotifManager.new()
-	mgr.push("first")
-	mgr.push("second")
-	mgr.push("third")
-	# first was immediately shown (popped), remaining two are queued
-	expect(mgr._showing == "first", "first message shown immediately")
-	expect(mgr._queue.size() == 2, "two remaining in queue")
-	expect(mgr._queue[0] == "second", "second is next in queue")
-	expect(mgr._queue[1] == "third", "third is last in queue")
-
-func _test_busy_flag_prevents_double_show() -> void:
-	print("busy flag: prevents concurrent shows")
-	var mgr := FakeNotifManager.new()
-	mgr.push("first")
-	expect(mgr._busy == true, "busy after first push")
-	var count_before := mgr._show_call_count
-	mgr.push("second")
-	# _show_next should NOT be called again because _busy is true
-	expect(mgr._show_call_count == count_before, "_show_next not called again while busy")
+func _test_further_pushes_queue() -> void:
+	print("further pushes queue up")
+	var notif := _make()
+	notif.push("A")
+	notif.push("B")
+	notif.push("C")
+	expect(notif._queue.size() == 2, "two messages are waiting behind the visible one")
+	expect(notif._queue[0] == "B", "B is next in the queue")
+	expect(notif._queue[1] == "C", "C is last in the queue")
+	expect(notif._label.text == "A", "the visible message is unchanged while busy")
 
 func _test_queue_drains_in_order() -> void:
-	print("queue drains in FIFO order")
-	var mgr := FakeNotifManager.new()
-	mgr.push("A")
-	mgr.push("B")
-	mgr.push("C")
-	# A shown immediately
-	expect(mgr._showing == "A", "showing A first")
-	mgr.finish_current()
-	expect(mgr._showing == "B", "showing B after A finishes")
-	mgr.finish_current()
-	expect(mgr._showing == "C", "showing C after B finishes")
-	mgr.finish_current()
-	expect(mgr._busy == false, "busy cleared after queue empty")
+	print("queue drains FIFO")
+	var notif := _make()
+	notif.push("A")
+	notif.push("B")
+	notif.push("C")
+	expect(notif._label.text == "A", "showing A first")
+	_finish_current(notif)
+	expect(notif._label.text == "B", "showing B after A finishes")
+	_finish_current(notif)
+	expect(notif._label.text == "C", "showing C after B finishes")
 
 func _test_empty_queue_clears_busy() -> void:
-	print("_show_next on empty queue clears busy flag")
-	var mgr := FakeNotifManager.new()
-	mgr.push("only one")
-	mgr.finish_current()
-	expect(mgr._busy == false, "busy is false after queue empties")
-	expect(mgr._queue.is_empty(), "queue is empty")
+	print("busy clears when the queue empties")
+	var notif := _make()
+	notif.push("only")
+	_finish_current(notif)
+	expect(not notif._busy, "busy is false after the queue empties")
+	expect(notif._queue.is_empty(), "the queue is empty")
+	# A later push must start the cycle again rather than sit forever.
+	notif.push("later")
+	expect(notif._busy and notif._label.text == "later", "a push after draining shows immediately")
 
-func _test_push_while_busy_queues() -> void:
-	print("push while busy does not trigger immediate show")
-	var mgr := FakeNotifManager.new()
-	mgr.push("msg1")
-	var count := mgr._show_call_count
-	mgr.push("msg2")
-	mgr.push("msg3")
-	expect(mgr._show_call_count == count, "no additional _show_next calls while busy")
-	expect(mgr._queue.size() == 2, "both new messages queued")
+func _test_tween_timings_come_from_exports() -> void:
+	print("timings are configurable")
+	var notif := _make()
+	expect(notif.slide_in_time > 0.0, "slide_in_time has a usable default")
+	expect(notif.show_time > notif.slide_in_time, "messages hold longer than they take to arrive")
+	expect(notif.slide_out_time > 0.0, "slide_out_time has a usable default")
 
 func _report() -> void:
 	var summary := "[notification-queue] %d/%d passed" % [_pass, _pass + _fail]

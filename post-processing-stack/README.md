@@ -1,6 +1,6 @@
 # Post Processing Stack
 
-Demonstrates a composable post-processing pipeline in Godot 4.2 using a canvas_item shader that reads the screen texture. An animated game scene is rendered first, then a full-screen ColorRect applies vignette, chromatic aberration, and color grading — each independently togglable at runtime.
+Demonstrates a composable post-processing pipeline in Godot 4 using a canvas_item shader that reads the screen texture. An animated game scene is rendered first, then a full-screen ColorRect applies vignette, chromatic aberration, and color grading — each independently togglable at runtime.
 
 ## Controls
 

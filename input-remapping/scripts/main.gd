@@ -24,7 +24,9 @@ func _ready() -> void:
 
 func _build_row(action: String) -> void:
 	var row := HBoxContainer.new()
-	row.theme_override_constants = {"separation": 12}
+	# theme_override_constants is a property-path namespace, not an assignable
+	# Dictionary — overrides go through add_theme_constant_override().
+	row.add_theme_constant_override("separation", 12)
 
 	var name_lbl := Label.new()
 	name_lbl.custom_minimum_size = Vector2(120, 0)
@@ -86,6 +88,8 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	draw_rect(Rect2(_player_pos - Vector2(16, 16), Vector2(32, 32)), Color.CORNFLOWER_BLUE)
 	draw_string(ThemeDB.fallback_font, Vector2(8, 478),
-		"ui_accept = %s" % (InputMap.action_get_events("ui_accept").map(
-			func(e): return e.as_text())),
+		# The right operand of % is the argument *list*, so an Array of one name
+		# would be read as one argument per element — wrap it in its own array.
+		"ui_accept = %s" % [", ".join(InputMap.action_get_events("ui_accept").map(
+			func(e: InputEvent) -> String: return e.as_text()))],
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1,1,1,0.5))

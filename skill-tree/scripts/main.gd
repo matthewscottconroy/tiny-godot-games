@@ -67,7 +67,7 @@ func _draw() -> void:
 	for skill in _skills:
 		for prereq_id in skill.prereqs:
 			var prereq = _skills[prereq_id]
-			var both_unlocked := skill.unlocked and prereq.unlocked
+			var both_unlocked: bool = skill.unlocked and prereq.unlocked
 			var line_color := Color(0.75, 0.6, 0.1, 0.9) if both_unlocked else Color(0.3, 0.3, 0.4, 0.7)
 			var line_width := 2.5 if both_unlocked else 1.5
 			draw_line(prereq.pos, skill.pos, line_color, line_width)
@@ -106,7 +106,7 @@ func _draw() -> void:
 		draw_arc(skill.pos, radius, 0, TAU, 32, outline_color, outline_w)
 
 		# Skill name (small, centered)
-		var short_name := skill.name
+		var short_name: String = skill.name
 		if short_name.length() > 10:
 			short_name = short_name.substr(0, 10)
 		var name_offset := Vector2(-short_name.length() * 3.3, 4)
@@ -116,7 +116,7 @@ func _draw() -> void:
 
 		# Cost badge (top-right of node)
 		if not skill.unlocked:
-			var badge_pos := skill.pos + Vector2(radius - 8, -radius + 8)
+			var badge_pos: Vector2 = skill.pos + Vector2(radius - 8, -radius + 8)
 			var badge_color := Color(0.9, 0.6, 0.1) if can_buy else Color(0.4, 0.4, 0.5)
 			draw_circle(badge_pos, 9, badge_color)
 			draw_string(ThemeDB.fallback_font, badge_pos + Vector2(-3, 4),
@@ -139,11 +139,11 @@ func _draw() -> void:
 
 func _draw_tooltip(skill_idx: int) -> void:
 	var skill = _skills[skill_idx]
-	var pos := skill.pos
+	var pos: Vector2 = skill.pos
 
 	# Tooltip placement: shift left if near right edge, up if near bottom
-	var tip_x := pos.x + 36
-	var tip_y := pos.y - 20
+	var tip_x: float = pos.x + 36
+	var tip_y: float = pos.y - 20
 	var tip_w := 190
 	var tip_h := 95
 	if tip_x + tip_w > 635:
@@ -176,8 +176,8 @@ func _draw_tooltip(skill_idx: int) -> void:
 	else:
 		var prereq_names: Array = []
 		for pid in skill.prereqs:
-			var pname := _skills[pid].name
-			var met := _skills[pid].unlocked
+			var pname: String = _skills[pid].name
+			var met: bool = _skills[pid].unlocked
 			prereq_names.append(pname + (" [OK]" if met else " [X]"))
 		prereq_text += ", ".join(prereq_names)
 	if prereq_text.length() > 30:

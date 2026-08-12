@@ -30,17 +30,12 @@ jobs:
           mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
           chmod +x ~/godot/godot
 
-      - name: Import projects
-        # A first headless open lets Godot generate .godot/ import caches so the
-        # test scenes load cleanly on the real run.
-        run: |
-          export PATH="$HOME/godot:$PATH"
-          for d in */; do
-            [ -f "${d}project.godot" ] || continue
-            godot --headless --path "$d" --import --quit >/dev/null 2>&1 || true
-          done
-
-      - name: Run tests
+      - name: Run checks
+        # run-tests.sh imports each project first (generating .godot/ so
+        # class_name globals and assets resolve), then boots every demo's main
+        # scene headless before running its logic suite. The smoke step is what
+        # catches a demo whose scripts do not parse — the logic suites build
+        # their own objects and would stay green regardless.
         run: |
           export PATH="$HOME/godot:$PATH"
           ./run-tests.sh

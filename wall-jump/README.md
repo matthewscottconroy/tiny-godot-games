@@ -1,6 +1,6 @@
 # Wall Jump
 
-A minimal Godot 4.2 demo showing wall-sliding and wall-jumping mechanics.
+A minimal Godot 4 demo showing wall-sliding and wall-jumping mechanics.
 
 ## Controls
 

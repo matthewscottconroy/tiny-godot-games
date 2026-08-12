@@ -41,7 +41,7 @@ func _draw() -> void:
 		# Draw vision cone toward player
 		var dir := (_player.global_position - global_position).normalized()
 		for i in 18:
-			var a := lerp(-0.55, 0.55, float(i) / 17.0)
+			var a := lerpf(-0.55, 0.55, float(i) / 17.0)
 			var ray_end := dir.rotated(a) * VISION_RANGE
 			draw_line(Vector2.ZERO, ray_end, Color(1.0, 0.9, 0.0, 0.04))
 		# Draw range circle

@@ -30,7 +30,7 @@ func _input(event: InputEvent) -> void:
 func _explode(epicenter: Vector2) -> void:
 	_shockwaves.append({pos = epicenter, radius = 0.0, alpha = 1.0})
 	for ball in _balls:
-		var diff := ball.pos - epicenter
+		var diff: Vector2 = ball.pos - epicenter
 		var dist := diff.length()
 		if dist < EXPLOSION_RADIUS and dist > 0.1:
 			ball.vel += diff.normalized() * EXPLOSION_STRENGTH * (1.0 - dist / EXPLOSION_RADIUS)

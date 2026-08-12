@@ -199,8 +199,8 @@ func _draw() -> void:
 		else:
 			# Dead enemy — faded X
 			draw_circle(enemy["pos"], enemy["radius"], Color(0.3, 0.3, 0.3, 0.4))
-			var d := enemy["radius"] * 0.6
-			var p := enemy["pos"]
+			var d: float = enemy["radius"] * 0.6
+			var p: Vector2 = enemy["pos"]
 			draw_line(p + Vector2(-d, -d), p + Vector2(d, d), Color(0.7, 0.2, 0.2, 0.6), 2.0)
 			draw_line(p + Vector2(d, -d), p + Vector2(-d, d), Color(0.7, 0.2, 0.2, 0.6), 2.0)
 

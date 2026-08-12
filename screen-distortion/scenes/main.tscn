@@ -33,14 +33,14 @@ color = Color(0.08, 0.10, 0.15, 1.0)
 size = Vector2(640, 480)
 
 [node name="Platform1" type="ColorRect" parent="SubViewportContainer/SubViewport"]
-color = Color(0.35, 0.35, 0.42)
+color = Color(0.35, 0.35, 0.42, 1)
 offset_left = 100.0
 offset_top = 300.0
 offset_right = 300.0
 offset_bottom = 316.0
 
 [node name="Platform2" type="ColorRect" parent="SubViewportContainer/SubViewport"]
-color = Color(0.35, 0.35, 0.42)
+color = Color(0.35, 0.35, 0.42, 1)
 offset_left = 380.0
 offset_top = 220.0
 offset_right = 560.0
@@ -53,7 +53,7 @@ position = Vector2(320, 465)
 shape = SubResource("RectangleShape2D_floor")
 
 [node name="FloorVis" type="ColorRect" parent="SubViewportContainer/SubViewport"]
-color = Color(0.30, 0.30, 0.35)
+color = Color(0.30, 0.30, 0.35, 1)
 offset_top = 455.0
 offset_right = 640.0
 offset_bottom = 480.0

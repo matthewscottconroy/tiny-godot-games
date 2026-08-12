@@ -90,7 +90,7 @@ func _propagate(queue: Array) -> bool:
 		var pos: Vector2i = queue.pop_front()
 		visited.erase(pos)
 		var cell: Array = _cells[pos.y][pos.x]
-		for dir in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
+		for dir: Vector2i in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
 			var nx := pos.x + dir.x
 			var ny := pos.y + dir.y
 			if nx < 0 or nx >= GRID_W or ny < 0 or ny >= GRID_H:
@@ -140,6 +140,6 @@ func _weighted_choice(possible: Array) -> int:
 func _draw() -> void:
 	for y in GRID_H:
 		for x in GRID_W:
-			var tile := _collapsed[y][x]
-			var col := TILE_COLORS[tile] if tile >= 0 else Color(0.3, 0.3, 0.3)
+			var tile: int = _collapsed[y][x]
+			var col: Color = TILE_COLORS[tile] if tile >= 0 else Color(0.3, 0.3, 0.3)
 			draw_rect(Rect2(x * CELL, y * CELL, CELL, CELL), col)

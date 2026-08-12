@@ -64,7 +64,7 @@ func _test_all_collected_message() -> void:
 	print("all collected detection")
 	var scores := [5, 5]
 	var total_coins := 10
-	var all_collected := scores[0] + scores[1] == total_coins
+	var all_collected: bool = scores[0] + scores[1] == total_coins
 	expect(all_collected, "all coins collected when scores sum to total")
 
 func _report() -> void:

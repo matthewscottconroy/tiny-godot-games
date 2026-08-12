@@ -105,10 +105,10 @@ func _resolve_collisions() -> void:
 			continue
 
 		# Find overlap and push out on the smallest axis
-		var overlap_left   := (rect.position.x + rect.size.x + PLAYER_R) - _pos.x
-		var overlap_right  := _pos.x - (rect.position.x - PLAYER_R)
-		var overlap_top    := (rect.position.y + rect.size.y + PLAYER_R) - _pos.y
-		var overlap_bottom := _pos.y - (rect.position.y - PLAYER_R)
+		var overlap_left: float = (rect.position.x + rect.size.x + PLAYER_R) - _pos.x
+		var overlap_right: float = _pos.x - (rect.position.x - PLAYER_R)
+		var overlap_top: float = (rect.position.y + rect.size.y + PLAYER_R) - _pos.y
+		var overlap_bottom: float = _pos.y - (rect.position.y - PLAYER_R)
 
 		# Determine minimum penetration axis
 		var min_x := minf(overlap_left, overlap_right)

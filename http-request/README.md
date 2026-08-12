@@ -1,6 +1,6 @@
 # HTTP Request
 
-A UI demo showing how to fetch data from a public JSON API using Godot 4.2's `HTTPRequest` node. Fetches a todo item from [JSONPlaceholder](https://jsonplaceholder.typicode.com) and displays the parsed result.
+A UI demo showing how to fetch data from a public JSON API using Godot 4's `HTTPRequest` node. Fetches a todo item from [JSONPlaceholder](https://jsonplaceholder.typicode.com) and displays the parsed result.
 
 ## Controls
 

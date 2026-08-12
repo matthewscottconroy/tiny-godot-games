@@ -64,8 +64,8 @@ func _test_lifetime_alpha() -> void:
 	expect(abs(zero_alpha) < 0.001, "lifetime_alpha: lifetime=0 → alpha=0.0")
 
 func _test_offscreen_respawn() -> void:
-	var off1 := Vector2(-50.0, -50.0)
-	expect(_particle_offscreen(off1) == true, "offscreen: pos (-50,-50) → offscreen → respawn")
+	var off1 := Vector2(-70.0, -70.0)   # past the -60 margin on both axes
+	expect(_particle_offscreen(off1) == true, "offscreen: pos (-70,-70) → offscreen → respawn")
 	var off2 := Vector2(710.0, 240.0)
 	expect(_particle_offscreen(off2) == true, "offscreen: pos (710,240) → offscreen → respawn")
 	var on_screen := Vector2(320.0, 240.0)

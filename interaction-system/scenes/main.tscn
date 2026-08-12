@@ -64,7 +64,7 @@ position = Vector2(180, 430)
 script = ExtResource("2")
 label_text = "Open Chest"
 response = "You found 50 gold coins!"
-icon_color = Color(0.9, 0.75, 0.1)
+icon_color = Color(0.9, 0.75, 0.1, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Chest"]
 shape = SubResource("CircleShape2D_chest")
@@ -85,7 +85,7 @@ position = Vector2(350, 430)
 script = ExtResource("2")
 label_text = "Read Sign"
 response = "Beware of the dragon ahead!"
-icon_color = Color(0.5, 0.7, 1.0)
+icon_color = Color(0.5, 0.7, 1.0, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Sign"]
 shape = SubResource("CircleShape2D_sign")
@@ -106,7 +106,7 @@ position = Vector2(400, 296)
 script = ExtResource("2")
 label_text = "Enter Door"
 response = "The door leads to the next area."
-icon_color = Color(0.7, 0.4, 0.2)
+icon_color = Color(0.7, 0.4, 0.2, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Door"]
 shape = SubResource("CircleShape2D_door")

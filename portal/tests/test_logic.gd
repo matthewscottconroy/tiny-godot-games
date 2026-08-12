@@ -66,17 +66,18 @@ func _place_portal_normal(click_pos: Vector2) -> Vector2:
 
 func _test_velocity_transform_same_normal() -> void:
 	# Both portals face the same direction (both floor, normal up)
-	var vel := Vector2(100.0, -200.0)
+	var vel := Vector2(100.0, 200.0)   # falling into a floor portal
 	var from_n := Vector2(0, -1)
 	var to_n := Vector2(0, -1)
 	var result := _transform_velocity(vel, from_n, to_n)
-	# Velocity should be unchanged
-	expect(result.distance_to(vel) < 0.01, "Same normal: velocity unchanged")
+	# Two portals facing the same way turn the ball around: it goes into the
+	# floor and comes back out of the floor, so the velocity is reversed.
+	expect(result.distance_to(-vel) < 0.01, "Same normal: velocity is reversed")
 
 func _test_velocity_transform_opposite() -> void:
 	# Portal A on floor (normal = up = Vector2(0,-1))
 	# Portal B on ceiling (normal = down = Vector2(0,1))
-	var vel := Vector2(50.0, -300.0)  # moving upward into floor portal
+	var vel := Vector2(50.0, 300.0)  # falling downward into the floor portal
 	var from_n := Vector2(0, -1)
 	var to_n := Vector2(0, 1)
 	var result := _transform_velocity(vel, from_n, to_n)

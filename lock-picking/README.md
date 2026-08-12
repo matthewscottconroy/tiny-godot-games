@@ -1,6 +1,6 @@
 # Lock Picking
 
-A minimal Godot 4.2 demo showing a lock-picking mechanic: rotate a lock cylinder to find the hidden correct angle; tension builds when you're close and unlocks when full.
+A minimal Godot 4 demo showing a lock-picking mechanic: rotate a lock cylinder to find the hidden correct angle; tension builds when you're close and unlocks when full.
 
 ## Controls
 

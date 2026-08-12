@@ -164,7 +164,7 @@ func _input(event: InputEvent) -> void:
 					queue_redraw()
 				return
 
-		var num_key := event.keycode - KEY_1
+		var num_key: int = event.keycode - KEY_1
 		if num_key >= 0 and num_key <= 3:
 			var choices := _get_available_choices()
 			if num_key < choices.size():

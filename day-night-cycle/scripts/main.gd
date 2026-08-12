@@ -24,9 +24,9 @@ var _speed    := 1.0
 @onready var _hint_label: Label          = $HUD/HintLabel
 
 func _ready() -> void:
-	$HUD/SlowBtn.pressed.connect(func() -> void: _speed = 0.5)
-	$HUD/NormalBtn.pressed.connect(func() -> void: _speed = 1.0)
-	$HUD/FastBtn.pressed.connect(func() -> void: _speed = 4.0)
+	$HUD/SpeedRow/SlowBtn.pressed.connect(func() -> void: _speed = 0.5)
+	$HUD/SpeedRow/NormalBtn.pressed.connect(func() -> void: _speed = 1.0)
+	$HUD/SpeedRow/FastBtn.pressed.connect(func() -> void: _speed = 4.0)
 
 func _process(delta: float) -> void:
 	_time = fmod(_time + delta * _speed / DAY_LENGTH, 1.0)
@@ -71,7 +71,7 @@ func _draw() -> void:
 	var sun_x     := 320 + cos(sun_angle) * 260
 	var sun_y     := 340 - sin(sun_angle) * 280
 	if sin(sun_angle) > 0:
-		var sun_brightness := sinf(sun_angle * 0.5 + 0.1)
+		var sun_brightness := sin(sun_angle * 0.5 + 0.1)
 		draw_circle(Vector2(sun_x, sun_y), 24, Color(1.0, 0.95, 0.3, sun_brightness))
 
 	# Moon arc (opposite)

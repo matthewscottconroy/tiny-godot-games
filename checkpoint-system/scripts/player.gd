@@ -19,14 +19,19 @@ func respawn() -> void:
 	global_position = _spawn_point
 	velocity = Vector2.ZERO
 
+# R is a one-shot action, so it is handled as an event rather than polled every
+# physics frame — one `pressed and not echo` event per physical press.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key.pressed and not key.echo and key.keycode == KEY_R:
+		respawn()
+
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED
 	if Input.is_action_just_pressed("ui_up") and is_on_floor():
 		velocity.y = JUMP_VEL
-	if Input.is_key_just_pressed(KEY_R):
-		respawn()
 	move_and_slide()
 	queue_redraw()
 	_label.text = "Spawn: (%.0f, %.0f)\nPress R to respawn" % [_spawn_point.x, _spawn_point.y]

@@ -1,6 +1,6 @@
 # Object Factory
 
-A minimal Godot 4.2 demo showing the factory pattern: a type registry that decouples entity creation from caller code.
+A minimal Godot 4 demo showing the factory pattern: a type registry that decouples entity creation from caller code.
 
 ## Controls
 

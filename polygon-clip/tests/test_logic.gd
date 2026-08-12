@@ -43,7 +43,7 @@ func _test_add_vertex_on_edge() -> void:
 	print("vertex insertion on edge")
 	var polygon := [Vector2(0,0), Vector2(200,0), Vector2(100,100)]
 	var insert_idx := 1
-	var mid := (polygon[0] + polygon[1]) * 0.5
+	var mid: Vector2 = (polygon[0] + polygon[1]) * 0.5
 	polygon.insert(insert_idx, mid)
 	expect(polygon.size() == 4, "vertex inserted grows polygon")
 	expect(polygon[1] == mid, "inserted vertex is at midpoint")

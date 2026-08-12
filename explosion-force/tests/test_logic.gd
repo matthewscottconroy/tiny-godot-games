@@ -37,11 +37,11 @@ func _compute_impulse(ball_pos: Vector2, epicenter: Vector2) -> Vector2:
 
 func _test_push_direction() -> void:
 	print("_test_push_direction")
-	var ball_pos := Vector2(200.0, 0.0)
+	var ball_pos := Vector2(100.0, 0.0)   # inside EXPLOSION_RADIUS (180)
 	var epicenter := Vector2(0.0, 0.0)
 	var impulse := _compute_impulse(ball_pos, epicenter)
 	# Direction should be (1, 0) — purely to the right
-	expect(impulse.x > 0.0 and is_equal_approx(impulse.y, 0.0), "push direction is (1,0) for ball at (200,0) from (0,0)")
+	expect(impulse.x > 0.0 and is_equal_approx(impulse.y, 0.0), "push direction is (1,0) for ball at (100,0) from (0,0)")
 
 func _test_push_falloff() -> void:
 	print("_test_push_falloff")
@@ -73,7 +73,7 @@ func _test_multiple_balls() -> void:
 	# Each ball should be pushed away from epicenter
 	var all_pushed_away := true
 	for ball in balls:
-		var away_dir := (ball.pos - epicenter).normalized()
+		var away_dir: Vector2 = (ball.pos - epicenter).normalized()
 		if ball.vel.dot(away_dir) <= 0.0:
 			all_pushed_away = false
 	expect(all_pushed_away, "all 3 balls pushed away from epicenter")

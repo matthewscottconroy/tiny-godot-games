@@ -40,15 +40,15 @@ func _build_tree() -> void:
 
 	# Chase sequence
 	var chase_seq = BTNode.Sequence.new()
-	chase_seq.children = [can_see, chase, attack]
+	chase_seq.children.assign([can_see, chase, attack])
 
 	# Investigate sequence
 	var investigate_seq = BTNode.Sequence.new()
-	investigate_seq.children = [heard_noise, investigate]
+	investigate_seq.children.assign([heard_noise, investigate])
 
 	# Root selector
 	var root = BTNode.Selector.new()
-	root.children = [chase_seq, investigate_seq, patrol]
+	root.children.assign([chase_seq, investigate_seq, patrol])
 
 	_bt_root = root
 
@@ -68,24 +68,24 @@ func _build_tree() -> void:
 # --- BT Leaf Callables ---
 
 func _can_see_player(ctx: Dictionary) -> BTNode.Status:
-	var dist := _enemy.pos.distance_to(_player_pos)
+	var dist: float = _enemy.pos.distance_to(_player_pos)
 	var result := BTNode.Status.SUCCESS if dist < SIGHT_RANGE else BTNode.Status.FAILURE
 	_last_statuses["CanSeePlayer"] = result
 	return result
 
 func _chase_player(ctx: Dictionary) -> BTNode.Status:
-	var dist := _enemy.pos.distance_to(_player_pos)
+	var dist: float = _enemy.pos.distance_to(_player_pos)
 	if dist <= ATTACK_RANGE:
 		_last_statuses["ChasePlayer"] = BTNode.Status.SUCCESS
 		return BTNode.Status.SUCCESS
-	var dir := (_player_pos - _enemy.pos).normalized()
+	var dir: Vector2 = (_player_pos - _enemy.pos).normalized()
 	_enemy.vel = dir * CHASE_SPEED
 	_enemy.state = "chase"
 	_last_statuses["ChasePlayer"] = BTNode.Status.RUNNING
 	return BTNode.Status.RUNNING
 
 func _attack_player(ctx: Dictionary) -> BTNode.Status:
-	var dist := _enemy.pos.distance_to(_player_pos)
+	var dist: float = _enemy.pos.distance_to(_player_pos)
 	if dist <= ATTACK_RANGE:
 		_enemy.state = "attack"
 		_attack_flash = 0.25
@@ -103,13 +103,13 @@ func _investigate_noise(ctx: Dictionary) -> BTNode.Status:
 	if _enemy.alert_pos == null:
 		_last_statuses["InvestigateNoise"] = BTNode.Status.FAILURE
 		return BTNode.Status.FAILURE
-	var dist := _enemy.pos.distance_to(_enemy.alert_pos)
+	var dist: float = _enemy.pos.distance_to(_enemy.alert_pos)
 	if dist <= 15.0:
 		_enemy.alert_pos = null
 		_enemy.state = "patrol"
 		_last_statuses["InvestigateNoise"] = BTNode.Status.SUCCESS
 		return BTNode.Status.SUCCESS
-	var dir := (_enemy.alert_pos - _enemy.pos).normalized()
+	var dir: Vector2 = (_enemy.alert_pos - _enemy.pos).normalized()
 	_enemy.vel = dir * INVESTIGATE_SPEED
 	_enemy.state = "investigate"
 	_last_statuses["InvestigateNoise"] = BTNode.Status.RUNNING
@@ -117,10 +117,10 @@ func _investigate_noise(ctx: Dictionary) -> BTNode.Status:
 
 func _patrol(ctx: Dictionary) -> BTNode.Status:
 	var target_x: float = _enemy.patrol_target
-	var dist := abs(_enemy.pos.x - target_x)
+	var dist: float = abs(_enemy.pos.x - target_x)
 	if dist <= 5.0:
 		_enemy.patrol_target = PATROL_MIN if target_x == PATROL_MAX else PATROL_MAX
-	var dir := sign(target_x - _enemy.pos.x)
+	var dir: float = sign(target_x - _enemy.pos.x)
 	_enemy.vel = Vector2(dir * PATROL_SPEED, 0)
 	_enemy.state = "patrol"
 	_last_statuses["Patrol"] = BTNode.Status.RUNNING

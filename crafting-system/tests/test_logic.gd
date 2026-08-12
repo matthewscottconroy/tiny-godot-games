@@ -1,15 +1,7 @@
 extends Node
 
-const RECIPES := {
-	"Cloth+Wood":  "Tent",
-	"Fire+Wood":   "Torch",
-	"Iron+Stone":  "Axe",
-	"Iron+Wood":   "Sword",
-	"Herbs+Water": "Potion",
-	"Gold+Stone":  "Gem Ring",
-	"Fire+Iron":   "Steel",
-	"Stone+Wood":  "Hammer",
-}
+# Drives the real CraftingSystem from scripts/crafting_system.gd rather than a
+# copy of its lookup logic, so a change to the component is visible here.
 
 var _pass := 0
 var _fail := 0
@@ -19,8 +11,9 @@ func _ready() -> void:
 	_test_recipe_lookup()
 	_test_recipe_sort()
 	_test_unknown_recipe()
+	_test_add_recipe_chains()
+	_test_recipe_can_be_overwritten()
 	_test_max_selection()
-	_test_craft_clears_selection()
 	_report()
 
 
@@ -40,56 +33,56 @@ func _report() -> void:
 		push_error(summary)
 
 
-func _lookup_recipe(a: String, b: String) -> String:
-	var pair := [a, b]
-	pair.sort()
-	var key := "%s+%s" % [pair[0], pair[1]]
-	if RECIPES.has(key):
-		return RECIPES[key]
-	return "Unknown recipe"
+func _make_book() -> CraftingSystem:
+	var book := CraftingSystem.new()
+	book.add_recipe(["Cloth", "Wood"], "Tent")
+	book.add_recipe(["Fire", "Wood"], "Torch")
+	book.add_recipe(["Iron", "Stone"], "Axe")
+	book.add_recipe(["Iron", "Wood"], "Sword")
+	book.add_recipe(["Herbs", "Water"], "Potion")
+	return book
 
 
 func _test_recipe_lookup() -> void:
-	var result := _lookup_recipe("Fire", "Wood")
-	expect(result == "Torch", "Recipe lookup: Fire+Wood = Torch")
+	expect(_make_book().craft(["Fire", "Wood"]) == "Torch", "Recipe lookup: Fire+Wood = Torch")
 
 
 func _test_recipe_sort() -> void:
-	# Commutative: Wood+Fire should give same result as Fire+Wood
-	var result_a := _lookup_recipe("Fire", "Wood")
-	var result_b := _lookup_recipe("Wood", "Fire")
-	expect(result_a == result_b, "Recipe sort: Wood+Fire == Fire+Wood (commutative)")
-	expect(result_b == "Torch", "Recipe sort: Wood+Fire = Torch")
+	# The point of the component: ingredients are sorted into a canonical key, so
+	# order does not matter at the call site.
+	var book := _make_book()
+	expect(book.craft(["Wood", "Fire"]) == book.craft(["Fire", "Wood"]),
+		"Recipe sort: Wood+Fire == Fire+Wood (commutative)")
+	expect(book.craft(["Wood", "Fire"]) == "Torch", "Recipe sort: Wood+Fire = Torch")
 
 
 func _test_unknown_recipe() -> void:
-	var result := _lookup_recipe("Fire", "Water")
-	expect(result == "Unknown recipe", "Unknown recipe: Fire+Water = 'Unknown recipe'")
+	# craft() reports a miss with "", leaving the wording of the failure to the UI.
+	expect(_make_book().craft(["Fire", "Water"]) == "", "Unknown combination returns an empty string")
+
+
+func _test_add_recipe_chains() -> void:
+	var book := CraftingSystem.new()
+	var returned := book.add_recipe(["Gold", "Stone"], "Gem Ring")
+	expect(returned == book, "add_recipe returns self so registrations can chain")
+	book.add_recipe(["Fire", "Iron"], "Steel").add_recipe(["Stone", "Wood"], "Hammer")
+	expect(book.craft(["Iron", "Fire"]) == "Steel", "chained registration: Fire+Iron = Steel")
+	expect(book.craft(["Wood", "Stone"]) == "Hammer", "chained registration: Stone+Wood = Hammer")
+
+
+func _test_recipe_can_be_overwritten() -> void:
+	var book := CraftingSystem.new()
+	book.add_recipe(["Iron", "Wood"], "Sword")
+	book.add_recipe(["Wood", "Iron"], "Spear")   # same canonical key
+	expect(book.craft(["Iron", "Wood"]) == "Spear", "re-registering a key replaces the result")
 
 
 func _test_max_selection() -> void:
-	# Simulating the toggle logic
-	var selected: Array[String] = []
-	selected.append("Wood")
-	selected.append("Fire")
-	# Adding a 3rd should replace oldest
+	# The demo's UI keeps at most two selected ingredients, dropping the oldest.
+	var selected: Array[String] = ["Wood", "Fire"]
 	if selected.size() >= 2:
 		selected.pop_front()
 	selected.append("Iron")
 	expect(selected.size() == 2, "Max selection: only 2 ingredients selected")
 	expect(selected[0] == "Fire", "Max selection: oldest replaced, Fire remains")
 	expect(selected[1] == "Iron", "Max selection: newest added (Iron)")
-
-
-func _test_craft_clears_selection() -> void:
-	var selected: Array[String] = ["Wood", "Fire"]
-	var result_timer := 0.0
-	# Craft
-	var pair := selected.duplicate()
-	pair.sort()
-	var key := "%s+%s" % [pair[0], pair[1]]
-	var _result := RECIPES.get(key, "Unknown recipe")
-	result_timer = 2.5
-	selected.clear()
-	expect(selected.is_empty(), "Craft clears: selection is empty after crafting")
-	expect(result_timer == 2.5, "Craft clears: result timer set after crafting")

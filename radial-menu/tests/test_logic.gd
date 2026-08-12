@@ -50,7 +50,7 @@ func _test_each_item_maps_to_correct_index() -> void:
 	print("each of 6 items reachable by angle")
 	var seen := {}
 	for i in 6:
-		var mid_angle := float(i) * (TAU / 6.0)
+		var mid_angle := (float(i) + 0.5) * (TAU / 6.0)
 		var pos := CENTER + Vector2.from_angle(mid_angle) * 80.0
 		var idx := update_hover(pos)
 		seen[idx] = true

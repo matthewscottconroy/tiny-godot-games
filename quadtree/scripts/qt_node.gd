@@ -55,7 +55,7 @@ func query(area: Rect2) -> Array:
 	return result
 
 func _get_quadrants(obj: Dictionary) -> Array:
-	var r := obj.get("radius", 5.0)
+	var r: float = obj.get("radius", 5.0)
 	var obj_rect := Rect2(obj.pos - Vector2(r, r), Vector2(r * 2, r * 2))
 	var result: Array = []
 	for c in children:

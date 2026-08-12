@@ -58,7 +58,7 @@ func _refresh_list() -> void:
 		child.queue_free()
 	for it in _get_filtered():
 		var btn    := Button.new()
-		var rc     := RARITY_COLOR.get(it.rarity, Color.WHITE)
+		var rc: Color = RARITY_COLOR.get(it.rarity, Color.WHITE)
 		btn.text   = "%s  [%s]" % [it.item_name, it.rarity]
 		btn.add_theme_color_override("font_color", rc)
 		btn.custom_minimum_size = Vector2(0, 30)
@@ -78,7 +78,7 @@ func _show_detail(it: ItemData) -> void:
 		_detail_box.add_child(lbl)
 		return
 
-	var rc := RARITY_COLOR.get(it.rarity, Color.WHITE)
+	var rc: Color = RARITY_COLOR.get(it.rarity, Color.WHITE)
 
 	var name_lbl := Label.new()
 	name_lbl.text = it.item_name

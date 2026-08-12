@@ -1,5 +1,8 @@
 extends Node
 
+# Drives the real CircleDisplay control from scripts/circle_display.gd — its
+# layout, hit-testing, and click signal — rather than a copy of the maths.
+
 var _pass := 0
 var _fail := 0
 
@@ -12,42 +15,9 @@ func _ready() -> void:
 	_test_place_three_symmetric()
 	_test_place_gap()
 	_test_data_preserved()
-	_test_extra_keys_preserved()
+	_test_configure_replaces_previous_set()
+	_test_click_signal()
 	_report()
-
-# ---- mirror of circle_display.gd logic -------------------------------------
-
-const GAP := 20.0
-
-func _place(specs: Array) -> Array:
-	var circles := []
-	for s in specs:
-		circles.append(s.duplicate())
-
-	var total_w := 0.0
-	for c in circles:
-		total_w += c.get("radius", 30.0) * 2.0
-	if circles.size() > 1:
-		total_w += GAP * (circles.size() - 1)
-
-	var x := -total_w * 0.5
-	for c in circles:
-		var r: float = c.get("radius", 30.0)
-		c["_ox"] = x + r
-		c["_oy"] = 0.0
-		x += r * 2.0 + GAP
-	return circles
-
-func _hit_test(circles: Array, local_pos: Vector2, ctrl_size: Vector2) -> int:
-	var center := ctrl_size * 0.5
-	for i in range(circles.size() - 1, -1, -1):
-		var c := circles[i]
-		var pos := center + Vector2(c["_ox"], c["_oy"])
-		if local_pos.distance_to(pos) <= c.get("radius", 30.0):
-			return i
-	return -1
-
-# ---- helpers ---------------------------------------------------------------
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -60,76 +30,97 @@ func expect(cond: bool, label: String) -> void:
 func expect_near(a: float, b: float, label: String, tol: float = 0.01) -> void:
 	expect(absf(a - b) <= tol, label)
 
-# ---- tests -----------------------------------------------------------------
+const DISPLAY_SIZE := Vector2(600.0, 200.0)
+
+func _make(specs: Array) -> CircleDisplay:
+	var display := CircleDisplay.new()
+	display.size = DISPLAY_SIZE
+	add_child(display)
+	display.configure(specs)
+	return display
+
+func _center() -> Vector2:
+	return DISPLAY_SIZE * 0.5
 
 func _test_hit_inside() -> void:
-	print("hit: inside circle")
-	var circles := _place([{"radius": 40.0}])
-	var sz := Vector2(200.0, 120.0)
-	expect(_hit_test(circles, sz * 0.5, sz) == 0, "click at center of single circle → index 0")
+	print("hit test: inside a circle")
+	var d := _make([{"radius": 40.0, "color": Color.RED}])
+	expect(d._hit_test(_center()) == 0, "click at the centre of a single circle hits index 0")
 
 func _test_hit_outside() -> void:
-	print("hit: outside all circles")
-	var circles := _place([{"radius": 30.0}])
-	var sz := Vector2(200.0, 100.0)
-	expect(_hit_test(circles, Vector2(4.0, 4.0), sz) == -1, "click in corner returns -1")
+	print("hit test: outside every circle")
+	var d := _make([{"radius": 40.0}])
+	expect(d._hit_test(Vector2(2.0, 2.0)) == -1, "a click in the corner returns -1")
+	expect(_make([])._hit_test(_center()) == -1, "an empty display never reports a hit")
 
 func _test_hit_edge() -> void:
-	print("hit: edge boundary")
-	var circles := _place([{"radius": 30.0}])
-	var sz   := Vector2(200.0, 100.0)
-	var ctr  := sz * 0.5
-	# exactly on radius
-	expect(_hit_test(circles, ctr + Vector2(30.0, 0.0), sz) == 0,  "distance == radius → hit")
-	# just outside
-	expect(_hit_test(circles, ctr + Vector2(30.1, 0.0), sz) == -1, "distance > radius → miss")
+	print("hit test: just past the edge")
+	var d := _make([{"radius": 40.0}])
+	expect(d._hit_test(_center() + Vector2(39.0, 0.0)) == 0, "just inside the radius hits")
+	expect(d._hit_test(_center() + Vector2(41.0, 0.0)) == -1, "just outside the radius misses")
 
 func _test_hit_overlap_priority() -> void:
-	print("hit: overlap priority (last drawn wins)")
-	# Two circles at the same center — index 1 is drawn on top
-	var circles := [
-		{"radius": 40.0, "color": Color.RED,  "_ox": 0.0, "_oy": 0.0},
-		{"radius": 40.0, "color": Color.BLUE, "_ox": 0.0, "_oy": 0.0},
-	]
-	var sz := Vector2(200.0, 100.0)
-	expect(_hit_test(circles, sz * 0.5, sz) == 1, "overlapping circles: higher index wins")
+	print("hit test: overlapping circles")
+	# configure() lays circles out with a gap so they never overlap on their own.
+	# Force an overlap to check the documented tie-break: the last-drawn circle
+	# (highest index) wins, matching what the user sees on top.
+	var d := _make([{"radius": 40.0}, {"radius": 40.0}])
+	d._circles[1]["_ox"] = d._circles[0]["_ox"]
+	d._circles[1]["_oy"] = d._circles[0]["_oy"]
+	expect(d._hit_test(d._center_of(d._circles[0])) == 1,
+		"overlapping circles: the higher index wins")
 
 func _test_place_single_centered() -> void:
-	print("layout: single circle offset is zero")
-	var circles := _place([{"radius": 25.0}])
-	expect_near(circles[0]["_ox"], 0.0, "single circle _ox == 0")
-	expect_near(circles[0]["_oy"], 0.0, "single circle _oy == 0")
+	print("layout: a single circle is centred")
+	var d := _make([{"radius": 30.0}])
+	expect_near(d._center_of(d._circles[0]).x, _center().x, "one circle sits on the control's centre")
 
 func _test_place_three_symmetric() -> void:
-	print("layout: three equal circles are symmetric around center")
-	var r := 30.0
-	var circles := _place([{"radius": r}, {"radius": r}, {"radius": r}])
-	expect_near(circles[1]["_ox"], 0.0,              "middle circle _ox == 0")
-	expect_near(circles[0]["_ox"], -circles[2]["_ox"], "outer circles are symmetric")
-	expect(circles[0]["_ox"] < 0.0, "first circle is left of center")
+	print("layout: three equal circles are symmetric")
+	var d := _make([{"radius": 30.0}, {"radius": 30.0}, {"radius": 30.0}])
+	var left := d._center_of(d._circles[0]).x
+	var mid := d._center_of(d._circles[1]).x
+	var right := d._center_of(d._circles[2]).x
+	expect(left < mid and mid < right, "circles are laid out left to right")
+	expect_near(mid, _center().x, "the middle circle is centred")
+	expect_near(_center().x - left, right - _center().x, "the row is symmetric about the centre")
 
 func _test_place_gap() -> void:
-	print("layout: gap between adjacent circles")
-	var r := 20.0
-	var circles := _place([{"radius": r}, {"radius": r}])
-	# Distance between centers = 2*r + GAP
-	var dist := circles[1]["_ox"] - circles[0]["_ox"]
-	expect_near(dist, r * 2.0 + GAP, "centers are 2r + GAP apart")
+	print("layout: circles are separated by the gap")
+	var d := _make([{"radius": 20.0}, {"radius": 20.0}])
+	var span: float = d._circles[1]["_ox"] - d._circles[0]["_ox"]
+	expect_near(span, 20.0 + 20.0 + 20.0, "adjacent centres are r + r + gap apart")
 
 func _test_data_preserved() -> void:
-	print("data: spec fields survive configure")
-	var spec := {"radius": 44.0, "color": Color.TOMATO, "label": "Z"}
-	var circles := _place([spec])
-	expect(circles[0]["label"]  == "Z",            "label preserved")
-	expect(circles[0]["color"]  == Color.TOMATO,   "color preserved")
-	expect(circles[0]["radius"] == 44.0,           "radius preserved")
+	print("configure preserves the caller's spec")
+	var d := _make([{"radius": 25.0, "color": Color.AQUA, "label": "A", "payload": "extra"}])
+	var c: Dictionary = d._circles[0]
+	expect(c["label"] == "A", "the label is preserved")
+	expect(c["payload"] == "extra", "unknown extra keys are preserved for the click signal")
+	expect(c["color"] == Color.AQUA, "the colour is preserved")
 
-func _test_extra_keys_preserved() -> void:
-	print("data: extra keys survive configure")
-	var spec := {"radius": 30.0, "color": Color.WHITE, "id": 42, "tag": "boss"}
-	var circles := _place([spec])
-	expect(circles[0]["id"]  == 42,     "integer extra key preserved")
-	expect(circles[0]["tag"] == "boss", "string extra key preserved")
+func _test_configure_replaces_previous_set() -> void:
+	print("configure replaces rather than appends")
+	var d := _make([{"radius": 30.0}, {"radius": 30.0}])
+	d.configure([{"radius": 10.0}])
+	expect(d._circles.size() == 1, "a second configure() call replaces the previous circles")
+
+func _test_click_signal() -> void:
+	print("circle_clicked carries the index and the spec")
+	var d := _make([{"radius": 40.0, "label": "one", "payload": 7}])
+	var seen := {"index": -99, "data": {}}
+	d.circle_clicked.connect(func(index: int, data: Dictionary) -> void:
+		seen["index"] = index
+		seen["data"] = data)
+
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	event.position = _center()
+	d._gui_input(event)
+
+	expect(seen["index"] == 0, "the clicked index is reported")
+	expect(seen["data"].get("payload") == 7, "the spec — including extra keys — comes back with it")
 
 func _report() -> void:
 	var summary := "[circle-buttons] %d/%d passed" % [_pass, _pass + _fail]

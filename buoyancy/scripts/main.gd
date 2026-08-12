@@ -29,24 +29,24 @@ func _physics_process(delta: float) -> void:
 		box.vel.y += GRAVITY * box.density * delta
 
 		# Calculate submerged depth
-		var bottom := box.pos.y + box.size.y * 0.5
+		var bottom: float = box.pos.y + box.size.y * 0.5
 		var submerged := clampf(bottom - WATER_Y, 0.0, box.size.y)
-		var depth_frac := submerged / box.size.y
+		var depth_frac: float = submerged / box.size.y
 
 		# Apply buoyancy
 		box.vel.y -= BUOYANCY * depth_frac * delta
 
 		# Apply water damping when submerged
 		if depth_frac > 0.0:
-			var damp_factor := pow(DAMPING, delta) * depth_frac + (1.0 - depth_frac)
+			var damp_factor: float = pow(DAMPING, delta) * depth_frac + (1.0 - depth_frac)
 			box.vel *= damp_factor
 
 		# Update position
 		box.pos += box.vel * delta
 
 		# Clamp to screen bounds
-		var half_w := box.size.x * 0.5
-		var half_h := box.size.y * 0.5
+		var half_w: float = box.size.x * 0.5
+		var half_h: float = box.size.y * 0.5
 
 		if box.pos.x - half_w < 0.0:
 			box.pos.x = half_w
@@ -81,7 +81,7 @@ func _draw() -> void:
 
 		var label := "%.1f" % box.density
 		var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-		var text_pos := box.pos - text_size * 0.5 + Vector2(0, font_size * 0.35)
+		var text_pos: Vector2 = box.pos - text_size * 0.5 + Vector2(0, font_size * 0.35)
 		draw_string(font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.BLACK)
 
 	# Title and hint

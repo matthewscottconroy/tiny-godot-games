@@ -1,6 +1,6 @@
 # Verlet Integration
 
-A minimal Godot 4.2 demo showing position-based Verlet rope physics: a chain of particles connected by distance constraints, with mouse drag interaction.
+A minimal Godot 4 demo showing position-based Verlet rope physics: a chain of particles connected by distance constraints, with mouse drag interaction.
 
 ## Controls
 

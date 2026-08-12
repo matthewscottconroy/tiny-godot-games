@@ -10,6 +10,7 @@ func _ready() -> void:
 	test_buffer_fires_when_cooldown_clears()
 	test_buffer_expires_without_firing()
 	test_cooldown_decrements()
+	test_consume_fires_only_once_per_press()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -28,55 +29,75 @@ func _report() -> void:
 
 const ATTACK_COOLDOWN := 0.5
 const BUFFER_WINDOW   := 0.18
+const DELTA           := 0.016
 
-func _tick(cooldown: float, buffer: float, pressed: bool, delta: float) -> Dictionary:
-	var cd := maxf(cooldown - delta, 0.0)
-	var buf := maxf(buffer  - delta, 0.0)
+# These tests drive the real InputBuffer from scripts/input_buffer.gd rather
+# than a copy of its logic, so a change to the component shows up here.
+func _make() -> InputBuffer:
+	var buf := InputBuffer.new()
+	buf.cooldown_time = ATTACK_COOLDOWN
+	buf.buffer_window = BUFFER_WINDOW
+	return buf
+
+# One frame of the player's order of operations: age the timers, apply the
+# press, then ask whether the action may fire.
+func _tick(buf: InputBuffer, pressed: bool, delta: float = DELTA) -> bool:
+	buf.update(delta)
 	if pressed:
-		buf = BUFFER_WINDOW
-	var fired := false
-	if buf > 0.0 and cd == 0.0:
-		fired = true
-		cd    = ATTACK_COOLDOWN
-		buf   = 0.0
-	return {"cooldown": cd, "buffer": buf, "fired": fired}
+		buf.press()
+	return buf.consume()
 
 func test_attack_fires_when_ready() -> void:
-	var r := _tick(0.0, 0.0, true, 0.016)
-	expect(r["fired"], "attack fires immediately when cooldown is 0 and pressed")
+	var buf := _make()
+	expect(_tick(buf, true), "attack fires immediately when cooldown is 0 and pressed")
 
 func test_attack_blocked_during_cooldown() -> void:
-	var r := _tick(0.3, 0.0, true, 0.016)
-	# buffer set, but cooldown not clear yet
-	expect(not r["fired"], "attack doesn't fire during cooldown even with press")
-	expect(r["buffer"] > 0.0, "press sets buffer even during cooldown")
+	var buf := _make()
+	_tick(buf, true)                       # fires, starting the cooldown
+	expect(not _tick(buf, true), "attack doesn't fire during cooldown even with press")
+	expect(buf.buffer_left() > 0.0, "press sets buffer even during cooldown")
 
 func test_buffer_queues_during_cooldown() -> void:
-	var r := _tick(0.3, 0.0, true, 0.016)
-	expect(r["buffer"] > 0.0, "buffer accumulates when pressed during cooldown")
+	var buf := _make()
+	_tick(buf, true)                       # fires
+	_tick(buf, true)                       # blocked, but queued
+	expect(buf.buffer_left() > 0.0, "buffer accumulates when pressed during cooldown")
 
 func test_buffer_fires_when_cooldown_clears() -> void:
-	# Frame 1: press during cooldown
-	var r1 := _tick(0.016, 0.0, true, 0.016)
-	expect(not r1["fired"], "doesn't fire on frame cooldown expires (cd tick before check)")
-	# Frame 2: cooldown now 0, buffer still active
-	var r2 := _tick(r1["cooldown"], r1["buffer"], false, 0.016)
-	expect(r2["fired"], "fires on next frame when cooldown clears with buffer active")
+	var buf := _make()
+	_tick(buf, true)                       # fires; cooldown = 0.5
+	# Press with a hair of cooldown left, then let that last sliver expire.
+	var elapsed := DELTA
+	while buf.cooldown_left() > DELTA:
+		_tick(buf, false)
+		elapsed += DELTA
+	expect(buf.cooldown_left() > 0.0, "cooldown still running just before it clears")
+	var fired_on_press := _tick(buf, true)
+	# update() ages the cooldown to 0 *before* consume() looks at it, so a press
+	# on this frame fires the same frame rather than waiting for the next one.
+	expect(fired_on_press, "queued press fires on the frame the cooldown reaches 0")
 
 func test_buffer_expires_without_firing() -> void:
-	# Press during long cooldown, wait for buffer to expire
-	var r := _tick(0.5, 0.0, true, 0.016)   # press; buffer = 0.18
-	var buf := r["buffer"]
-	# Drain buffer without clearing cooldown
-	var cd := r["cooldown"]
+	var buf := _make()
+	_tick(buf, true)                       # fires; cooldown = 0.5
+	_tick(buf, true)                       # queued during cooldown
+	# Drain the buffer window without ever clearing the cooldown.
 	for i in 15:
-		var s := _tick(cd, buf, false, 0.016)
-		cd = s["cooldown"]
-		buf = s["buffer"]
-	expect(buf == 0.0, "buffer expires after enough frames")
-	# Cooldown still active, no fire
-	expect(cd > 0.0, "cooldown still running when buffer expired")
+		_tick(buf, false)
+	expect(is_zero_approx(buf.buffer_left()), "buffer expires after enough frames")
+	expect(buf.cooldown_left() > 0.0, "cooldown still running when buffer expired")
 
 func test_cooldown_decrements() -> void:
-	var r := _tick(0.5, 0.0, false, 0.1)
-	expect(absf(r["cooldown"] - 0.4) < 0.001, "cooldown decrements by delta each tick")
+	var buf := _make()
+	_tick(buf, true)
+	var before := buf.cooldown_left()
+	_tick(buf, false)
+	expect(is_equal_approx(buf.cooldown_left(), before - DELTA), "cooldown decrements by delta")
+	expect(is_equal_approx(buf.cooldown_ratio(), buf.cooldown_left() / ATTACK_COOLDOWN),
+		"cooldown_ratio tracks the remaining cooldown")
+
+func test_consume_fires_only_once_per_press() -> void:
+	var buf := _make()
+	buf.press()
+	expect(buf.consume(), "consume() is true on the first call after a press")
+	expect(not buf.consume(), "consume() is false on the second call — the press is spent")

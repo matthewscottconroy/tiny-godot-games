@@ -6,6 +6,36 @@ extends Node2D
 
 const DEADZONE := 0.12
 
+# Godot 4's JoyAxis/JoyButton are native enums, not Dictionaries — they have no
+# find_key()/keys() to turn a value back into its name. Keep an explicit table of
+# the inputs this demo reports; iterating it also fixes the display order.
+const AXIS_NAMES := {
+	JOY_AXIS_LEFT_X:         "JOY_AXIS_LEFT_X",
+	JOY_AXIS_LEFT_Y:         "JOY_AXIS_LEFT_Y",
+	JOY_AXIS_RIGHT_X:        "JOY_AXIS_RIGHT_X",
+	JOY_AXIS_RIGHT_Y:        "JOY_AXIS_RIGHT_Y",
+	JOY_AXIS_TRIGGER_LEFT:   "JOY_AXIS_TRIGGER_LEFT",
+	JOY_AXIS_TRIGGER_RIGHT:  "JOY_AXIS_TRIGGER_RIGHT",
+}
+
+const BUTTON_NAMES := {
+	JOY_BUTTON_A:              "A",
+	JOY_BUTTON_B:              "B",
+	JOY_BUTTON_X:              "X",
+	JOY_BUTTON_Y:              "Y",
+	JOY_BUTTON_BACK:           "BACK",
+	JOY_BUTTON_GUIDE:          "GUIDE",
+	JOY_BUTTON_START:          "START",
+	JOY_BUTTON_LEFT_STICK:     "LEFT_STICK",
+	JOY_BUTTON_RIGHT_STICK:    "RIGHT_STICK",
+	JOY_BUTTON_LEFT_SHOULDER:  "LEFT_SHOULDER",
+	JOY_BUTTON_RIGHT_SHOULDER: "RIGHT_SHOULDER",
+	JOY_BUTTON_DPAD_UP:        "DPAD_UP",
+	JOY_BUTTON_DPAD_DOWN:      "DPAD_DOWN",
+	JOY_BUTTON_DPAD_LEFT:      "DPAD_LEFT",
+	JOY_BUTTON_DPAD_RIGHT:     "DPAD_RIGHT",
+}
+
 func _ready() -> void:
 	Input.joy_connection_changed.connect(_on_joy_connection)
 	$VibrateBtn.pressed.connect(_vibrate)
@@ -34,17 +64,16 @@ func _process(_delta: float) -> void:
 
 	var id  := pads[0]
 	var axes := []
-	for ax in [JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y,
-			   JOY_AXIS_TRIGGER_LEFT, JOY_AXIS_TRIGGER_RIGHT]:
+	for ax: JoyAxis in AXIS_NAMES:
 		var raw := Input.get_joy_axis(id, ax)
-		var val := 0.0 if abs(raw) < DEADZONE else raw
-		axes.append("  %-20s  %.3f" % [JoyAxis.find_key(ax), val])
+		var val := 0.0 if absf(raw) < DEADZONE else raw
+		axes.append("  %-20s  %.3f" % [AXIS_NAMES[ax], val])
 	axis_label.text = "Axes (deadzone %.2f):\n" % DEADZONE + "\n".join(axes)
 
 	var pressed_btns := []
-	for b in range(JOY_BUTTON_A, JOY_BUTTON_MAX):
+	for b: JoyButton in BUTTON_NAMES:
 		if Input.is_joy_button_pressed(id, b):
-			pressed_btns.append(JoyButton.find_key(b))
+			pressed_btns.append(BUTTON_NAMES[b])
 	button_label.text = "Buttons pressed: " + (", ".join(pressed_btns) if pressed_btns else "(none)")
 	queue_redraw()
 

@@ -51,8 +51,8 @@ func test_dash_blocked_while_dashing() -> void:
 
 func test_dash_timer_expires() -> void:
 	var timer := DASH_DURATION
-	timer -= 0.016 * 9  # ~9 frames
-	expect(timer > 0.0, "dash timer not yet expired after 9 frames")
+	timer -= 0.016 * 8  # 0.128s — still inside the 0.14s dash window
+	expect(timer > 0.0, "dash timer not yet expired after 8 frames")
 	timer -= DASH_DURATION
 	expect(timer <= 0.0, "dash timer expired")
 

@@ -10,7 +10,8 @@ Status: **Phase 0 pilot complete**; **Phase 1 in progress**.
 - ✅ Category 4 — Game Systems (RPG core): `crafting-system` (→ `CraftingSystem`), `experience-leveling` (→ `LevelSystem`), `inventory` (→ `Inventory`), `quest-system` (→ `QuestSystem`), `drop-table` (docs-only)
 - ✅ Category 5 — Content & flow: `wave-spawner` (→ `WaveSpawner`), `dialogue-tree` (→ `DialogueTree`), `skill-tree` (→ `SkillTree`), `dialogue-box` (package), `notification-queue` (package)
 - **Tier A: 28 of ~40 done.** Remaining: spatial/algorithms (`quadtree`, `boid-flocking`, `grid-pathfinding`, `pathfinding-astar`, `dungeon-generator`, `wave-function-collapse`), UI/feel (`tooltip`, `floating-text`, `trail-effect`, `screen-shake`), systems (`ability-system`, `combo-system`, `checkpoint-system`, `interaction-system`, `stamina-system`, `behavior-tree`, `state-machine-hfsm`).
-- ⏳ Then Phase 2 (Tier B) and Phase 3 (docs, incl. `Godot 4.2 → Godot 4` prose fix across ~24 READMEs)
+- ✅ Docs: the `Godot 4.2 → Godot 4` prose fix is done across all 24 affected READMEs.
+- ⏳ Then Phase 2 (Tier B) and Phase 3 (remaining docs)
 
 ## Guiding principle (overrides the tiering)
 
@@ -42,7 +43,7 @@ Pilot evidence of this rule: `state-machine` was slated as Tier A "split," but i
 - **Split policy:** the reusable script must not reference demo-only nodes (labels, hint text). Communication goes demo → component via method/`@export`, component → demo via **signal**.
 - **Input:** every demo uses built-in `ui_*` actions. Add a standard reuse-doc line: *"Uses `ui_*` for zero-setup; in a real project define named actions (`move_left`, `jump`, …) and swap them."* Do **not** add `[input]` maps (keeps demos zero-config).
 - **Globals:** the 3 autoload demos (`EventBus`, `ScoreManager`, `Transition`) get a doc note: how to register + rename to avoid collisions.
-- **Tests:** the suites replicate logic inline (e.g. `_calc_state`) rather than importing scene scripts, so splitting is low-risk — but run `./run-tests.sh` after every phase to confirm.
+- **Tests:** once a demo has a `class_name`, its suite must drive that type rather than replicate the logic inline. Inline copies stayed green while the real scripts failed to parse, which is exactly the failure componentization is supposed to make impossible. `./run-tests.sh` also boots each demo's real main scene as a smoke check, so a split that breaks the scene fails immediately.
 
 ---
 

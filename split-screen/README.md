@@ -1,6 +1,6 @@
 # Split Screen
 
-Two-player simultaneous platformer using Godot 4.2's `SubViewport` and `SubViewportContainer`. Each player has their own independent world, physics simulation, and camera — displayed side by side in the same 640×480 window.
+Two-player simultaneous platformer using Godot 4's `SubViewport` and `SubViewportContainer`. Each player has their own independent world, physics simulation, and camera — displayed side by side in the same 640×480 window.
 
 ## Purpose
 

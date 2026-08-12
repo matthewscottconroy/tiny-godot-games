@@ -17,14 +17,14 @@ var _wave_offset := 0.0
 const WATER_Y := 260.0
 
 func _ready() -> void:
-	$HUD/SpeedSlider.value_changed.connect(func(v: float) -> void:
+	$HUD/SpeedRow/SpeedSlider.value_changed.connect(func(v: float) -> void:
 		_water_mat.set_shader_parameter("wave_speed", v)
 	)
-	$HUD/AmpSlider.value_changed.connect(func(v: float) -> void:
+	$HUD/AmpRow/AmpSlider.value_changed.connect(func(v: float) -> void:
 		_water_mat.set_shader_parameter("wave_amplitude", v)
 	)
-	$HUD/SpeedSlider.value = 1.2
-	$HUD/AmpSlider.value   = 0.018
+	$HUD/SpeedRow/SpeedSlider.value = 1.2
+	$HUD/AmpRow/AmpSlider.value   = 0.018
 
 func _physics_process(delta: float) -> void:
 	_in_water = _player_pos.y + 14 > WATER_Y

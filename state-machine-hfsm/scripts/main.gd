@@ -230,7 +230,7 @@ func _draw_character() -> void:
 	draw_string(ThemeDB.fallback_font, Vector2(80, 388), "HP: %d" % _health, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.9, 0.9, 0.9))
 
 	# State label under character
-	var state_label := _alive.active_child.name if _alive.active_child else "Alive"
+	var state_label: String = _alive.active_child.name if _alive.active_child else "Alive"
 	if _combat.is_active() and _combat.active_child:
 		state_label = "Combat / %s" % _combat.active_child.name
 	draw_string(ThemeDB.fallback_font, Vector2(cx - 50, 410), state_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, body_col)
@@ -302,7 +302,7 @@ func _draw_tree() -> void:
 func _draw_log() -> void:
 	draw_rect(Rect2(0, 395, 308, 45), Color(0, 0, 0, 0.65))
 	draw_string(ThemeDB.fallback_font, Vector2(6, 408), "Transition Log:", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.7, 0.7, 0.7))
-	var start_idx := max(0, _log.size() - 2)
+	var start_idx := maxi(0, _log.size() - 2)
 	for i in range(start_idx, _log.size()):
-		var y := 420.0 + (i - start_idx) * 14.0
+		var y: float = 420.0 + (i - start_idx) * 14.0
 		draw_string(ThemeDB.fallback_font, Vector2(6, y), _log[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.85, 0.85, 0.6))

@@ -37,9 +37,11 @@ func _test_light_toggle() -> void:
 	print("TEST: light toggle colors")
 	var dark_color := Color(0.15, 0.15, 0.15)
 	var bright_color := Color.WHITE
-	expect(dark_color.r == 0.15, "dark red channel is 0.15")
-	expect(dark_color.g == 0.15, "dark green channel is 0.15")
-	expect(dark_color.b == 0.15, "dark blue channel is 0.15")
+	# Color packs its channels as 32-bit floats, so 0.15 does not survive a
+	# round trip exactly — compare approximately.
+	expect(is_equal_approx(dark_color.r, 0.15), "dark red channel is 0.15")
+	expect(is_equal_approx(dark_color.g, 0.15), "dark green channel is 0.15")
+	expect(is_equal_approx(dark_color.b, 0.15), "dark blue channel is 0.15")
 	expect(bright_color == Color(1, 1, 1), "bright is full white")
 	expect(dark_color != bright_color, "dark and bright differ")
 

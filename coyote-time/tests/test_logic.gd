@@ -128,14 +128,21 @@ func _test_jump_fires_when_both_timers_active() -> void:
 
 func _test_timers_tick_down() -> void:
 	print("timers tick down correctly and clamp to zero")
+	# Age each timer with the other one clear: if both are armed, tick() fires a
+	# jump and zeroes them, which is a different behaviour than counting down.
 	var p := FakePlayer.new()
 	p.coyote_timer = 0.05
-	p.jump_buffer  = 0.08
+	p.jump_buffer  = 0.0
 	p.was_on_floor = false
-
 	p.tick(0.016, false, false)
 	expect_approx(p.coyote_timer, 0.05 - 0.016, "coyote timer decremented by delta")
-	expect_approx(p.jump_buffer,  0.08 - 0.016, "jump buffer decremented by delta")
+
+	var q := FakePlayer.new()
+	q.coyote_timer = 0.0
+	q.jump_buffer  = 0.08
+	q.was_on_floor = false
+	q.tick(0.016, false, false)
+	expect_approx(q.jump_buffer, 0.08 - 0.016, "jump buffer decremented by delta")
 
 	# Exhaust both timers
 	p.coyote_timer = 0.001

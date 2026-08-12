@@ -80,7 +80,7 @@ func _test_buzz_is_binary() -> void:
 	var all_binary := true
 	for i in 500:
 		var t := float(i) / 500.0
-		var raw_sign := sign(sin(TAU * (float(i) * 120.0 / MIX_RATE)))
+		var raw_sign := signf(sin(TAU * (float(i) * 120.0 / MIX_RATE)))
 		# The sign() function returns -1, 0, or +1
 		if not (raw_sign == -1.0 or raw_sign == 0.0 or raw_sign == 1.0):
 			all_binary = false

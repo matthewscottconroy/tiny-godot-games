@@ -110,7 +110,11 @@ func _build_state_machine() -> void:
 		t.xfade_time = 0.08
 		sm.add_transition(pair[0], pair[1], t)
 
-	sm.set_start_node("idle")
+	# A state machine has no set_start_node(); entry is expressed as a transition
+	# from the built-in "Start" node, which is always present under that name.
+	var start_transition := AnimationNodeStateMachineTransition.new()
+	start_transition.advance_mode = AnimationNodeStateMachineTransition.ADVANCE_MODE_AUTO
+	sm.add_transition("Start", "idle", start_transition)
 
 	_anim_tree.tree_root = sm
 	_anim_tree.anim_player = NodePath("../AnimationPlayer")
@@ -173,7 +177,7 @@ func _update_state() -> void:
 		if cur in ["jump", "land", "idle", "walk"] and _vel.y > 80:
 			_playback.travel("fall")
 
-	var display := cur if cur != "" else "—"
+	var display: String = cur if cur != "" else "—"
 	_state_label.text = "State: " + display
 
 func _draw() -> void:

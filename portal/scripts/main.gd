@@ -129,11 +129,11 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _check_portal_entry(ball: Dictionary, from_portal: Dictionary, to_portal: Dictionary) -> void:
-	var dist := ball["pos"].distance_to(from_portal["pos"])
+	var dist: float = ball["pos"].distance_to(from_portal["pos"])
 	if dist > PORTAL_ENTRY_DIST:
 		return
 	# Check ball is moving toward portal (into the surface)
-	var toward := ball["vel"].dot(-from_portal["normal"])
+	var toward: float = ball["vel"].dot(-from_portal["normal"])
 	if toward <= 0:
 		return
 	# Teleport

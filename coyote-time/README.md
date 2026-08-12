@@ -1,6 +1,6 @@
 # Coyote Time
 
-A minimal Godot 4.2 demo showing two classic platformer feel improvements: **coyote time** and **jump buffering**.
+A minimal Godot 4 demo showing two classic platformer feel improvements: **coyote time** and **jump buffering**.
 
 ## Controls
 

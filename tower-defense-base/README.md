@@ -1,6 +1,6 @@
 # Tower Defense Base
 
-A minimal Godot 4.2 demo showing the core tower defense loop: path enemies, tower placement, projectile targeting, gold economy, and wave scaling.
+A minimal Godot 4 demo showing the core tower defense loop: path enemies, tower placement, projectile targeting, gold economy, and wave scaling.
 
 ## Controls
 

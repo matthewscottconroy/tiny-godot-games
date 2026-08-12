@@ -56,13 +56,14 @@ func _test_exit_called() -> void:
 	var root    := HFSMState.new("Root")
 	var idle    := HFSMState.new("Idle")
 	var walk    := HFSMState.new("Walk")
-	var exited  := false
-	idle._on_exit = func(): exited = true
+	# Lambdas capture by value, so record the call in a reference type.
+	var seen := {"exited": false}
+	idle._on_exit = func(): seen["exited"] = true
 	root.add_child(idle)
 	root.add_child(walk)
 	root.enter()
 	root.transition_to(walk)
-	expect(exited, "_on_exit was called when leaving idle")
+	expect(seen["exited"], "_on_exit was called when leaving idle")
 
 func _test_enter_default_child() -> void:
 	print("Test: transitioning to Combat enters first child (Attack) by default")
@@ -108,8 +109,8 @@ func _test_parent_exit_exits_child() -> void:
 	var dead    := HFSMState.new("Dead")
 	var combat  := HFSMState.new("Combat")
 	var attack  := HFSMState.new("Attack")
-	var combat_exited := false
-	combat._on_exit = func(): combat_exited = true
+	var seen := {"combat_exited": false}
+	combat._on_exit = func(): seen["combat_exited"] = true
 	root.add_child(alive)
 	root.add_child(dead)
 	alive.add_child(combat)
@@ -118,4 +119,4 @@ func _test_parent_exit_exits_child() -> void:
 	alive.transition_to(combat)
 	# Now transition root away from alive (which should exit combat too)
 	root.transition_to(dead)
-	expect(combat_exited, "combat._on_exit fired when alive was exited")
+	expect(seen["combat_exited"], "combat._on_exit fired when alive was exited")

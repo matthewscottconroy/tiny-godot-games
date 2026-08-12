@@ -3,10 +3,12 @@ extends Node2D
 const AGENT_SPEED := 120.0
 
 # Obstacle rectangles (used for both visual and navmesh holes)
+# Hole outlines must not overlap each other or the partition step fails. Each
+# rect is inflated by MARGIN below, so leave at least 2 * MARGIN between them.
 const OBSTACLES := [
 	Rect2(160, 120, 130, 180),
 	Rect2(350, 180, 130, 160),
-	Rect2(220, 340, 200, 60),
+	Rect2(220, 356, 200, 60),
 ]
 
 var _agent: CharacterBody2D

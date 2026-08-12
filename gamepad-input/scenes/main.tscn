@@ -20,7 +20,7 @@ offset_right = 632.0
 offset_bottom = 66.0
 text = "No gamepad connected — plug one in and it will appear here"
 theme_override_font_sizes/font_size = 15
-modulate = Color(1, 0.6, 0.3)
+modulate = Color(1, 0.6, 0.3, 1)
 
 [node name="AxisLabel" type="Label" parent="."]
 offset_left = 8.0

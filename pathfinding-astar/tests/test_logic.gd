@@ -39,7 +39,7 @@ func _get_neighbors(cell: Vector2i, walls: Array) -> Array:
 	var dirs := [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]
 	var result := []
 	for d in dirs:
-		var n := cell + d
+		var n: Vector2i = cell + d
 		if n.x >= 0 and n.x < COLS and n.y >= 0 and n.y < ROWS:
 			if not walls[n.y][n.x]:
 				result.append(n)

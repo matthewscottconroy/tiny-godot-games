@@ -110,7 +110,7 @@ func _process(delta: float) -> void:
 			var sample := 0.0
 			if _note_frames_left > 0:
 				# Mix active frequencies
-				var amp := 0.25 / max(1, _active_freqs.size())
+				var amp: float = 0.25 / max(1, _active_freqs.size())
 				for freq in _active_freqs:
 					sample += sin(TAU * freq * _phase / SAMPLE_RATE) * amp
 				# Apply a simple decay envelope
@@ -197,7 +197,7 @@ func _draw() -> void:
 
 		for s in range(STEPS):
 			var cell_x := GRID_X + s * CELL_W
-			var is_active := _grid[note][s]
+			var is_active: bool = _grid[note][s]
 			var is_current := s == _step
 
 			var bg_color: Color

@@ -37,7 +37,7 @@ func _draw() -> void:
 		var table := _tables[i]
 
 		# Enemy body
-		var col := [Color.SEA_GREEN, Color.TOMATO, Color.FIREBRICK][i]
+		var col: Color = [Color.SEA_GREEN, Color.TOMATO, Color.FIREBRICK][i]
 		draw_circle(Vector2(x, 220), 34, col)
 		draw_arc(Vector2(x, 220), 34, 0, TAU, 32, col.lightened(0.4), 2.0)
 
@@ -52,8 +52,8 @@ func _draw() -> void:
 		var chances := table.get_chances()
 		var bar_y := 280.0
 		for item in chances:
-			var pct := chances[item]
-			var ic  := ITEM_COLORS.get(item, Color.WHITE)
+			var pct: float = chances[item]
+			var ic: Color = ITEM_COLORS.get(item, Color.WHITE)
 			draw_rect(Rect2(x - 50, bar_y, 100, 8), Color(0.2, 0.2, 0.2))
 			draw_rect(Rect2(x - 50, bar_y, 100.0 * pct, 8), ic)
 			bar_y += 12.0
@@ -78,8 +78,8 @@ func _spawn_drop(enemy_idx: int, item: String) -> void:
 	if item == "Nothing":
 		return
 	var x_pos := [110.0, 320.0, 530.0]
-	var x     := x_pos[enemy_idx]
-	var col   := ITEM_COLORS.get(item, Color.WHITE)
+	var x: float = x_pos[enemy_idx]
+	var col: Color = ITEM_COLORS.get(item, Color.WHITE)
 
 	# Spawn a visual circle that floats up and fades
 	var dot := ColorRect.new()
@@ -103,6 +103,6 @@ func _update_stats() -> void:
 			continue
 		lines.append("%s (%d kills):" % [names[i], _rolls[i]])
 		for item in _counts[i]:
-			var pct := 100.0 * _counts[i][item] / _rolls[i]
+			var pct: float = 100.0 * _counts[i][item] / _rolls[i]
 			lines.append("  %-12s %d  (%.0f%%)" % [item, _counts[i][item], pct])
 	_stats_label.text = "\n".join(lines)

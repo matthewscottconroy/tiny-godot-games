@@ -108,9 +108,9 @@ func _draw() -> void:
 		draw_circle(ball["pos"], BALL_R, ball["color"])
 		draw_arc(ball["pos"], BALL_R, 0, TAU, 24, Color(0.4, 0.4, 0.45), 1.5)
 		# Velocity vector
-		var vel_len := ball["vel"].length()
+		var vel_len: float = ball["vel"].length()
 		if vel_len > 5.0:
-			var vel_draw := ball["vel"].normalized() * minf(vel_len * 0.1, 20.0)
+			var vel_draw: Vector2 = ball["vel"].normalized() * minf(vel_len * 0.1, 20.0)
 			draw_line(ball["pos"], ball["pos"] + vel_draw, Color(1, 1, 0, 0.6), 1.5)
 
 	# Draw magnet

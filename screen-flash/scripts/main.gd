@@ -11,15 +11,16 @@ func _on_hazard_entered(body: Node2D, _zone: Area2D) -> void:
 	if body.is_in_group("player"):
 		flash(Color(1.0, 0.1, 0.1, 0.65), 0.35)
 
-func _process(_delta: float) -> void:
-	if Input.is_key_just_pressed(KEY_1):
-		flash(Color(1.0, 0.1, 0.1, 0.65), 0.35)   # damage — red
-	elif Input.is_key_just_pressed(KEY_2):
-		flash(Color(1.0, 0.9, 0.1, 0.70), 0.25)   # pickup — yellow
-	elif Input.is_key_just_pressed(KEY_3):
-		flash(Color(0.2, 0.6, 1.0, 0.55), 0.40)   # transition — blue
-	elif Input.is_key_just_pressed(KEY_4):
-		flash(Color(1.0, 1.0, 1.0, 0.90), 0.45)   # respawn — white
+# One event per physical press (echo filtered), so each key triggers one flash.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if not key.pressed or key.echo:
+		return
+	match key.keycode:
+		KEY_1: flash(Color(1.0, 0.1, 0.1, 0.65), 0.35)   # damage — red
+		KEY_2: flash(Color(1.0, 0.9, 0.1, 0.70), 0.25)   # pickup — yellow
+		KEY_3: flash(Color(0.2, 0.6, 1.0, 0.55), 0.40)   # transition — blue
+		KEY_4: flash(Color(1.0, 1.0, 1.0, 0.90), 0.45)   # respawn — white
 
 func flash(color: Color, duration: float) -> void:
 	_flash_rect.color = color

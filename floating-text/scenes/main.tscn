@@ -38,7 +38,7 @@ position = Vector2(110, 240)
 script = ExtResource("1")
 min_dmg = 10
 max_dmg = 25
-body_col = Color(0.85, 0.25, 0.25)
+body_col = Color(0.85, 0.25, 0.25, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Target1"]
 shape = SubResource("CircleShape2D_t1")
@@ -48,7 +48,7 @@ position = Vector2(255, 220)
 script = ExtResource("1")
 min_dmg = 15
 max_dmg = 50
-body_col = Color(0.2, 0.55, 0.9)
+body_col = Color(0.2, 0.55, 0.9, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Target2"]
 shape = SubResource("CircleShape2D_t2")
@@ -58,7 +58,7 @@ position = Vector2(400, 240)
 script = ExtResource("1")
 min_dmg = 25
 max_dmg = 80
-body_col = Color(0.7, 0.4, 0.1)
+body_col = Color(0.7, 0.4, 0.1, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Target3"]
 shape = SubResource("CircleShape2D_t3")
@@ -68,7 +68,7 @@ position = Vector2(540, 220)
 script = ExtResource("1")
 min_dmg = 40
 max_dmg = 120
-body_col = Color(0.5, 0.1, 0.7)
+body_col = Color(0.5, 0.1, 0.7, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Target4"]
 shape = SubResource("CircleShape2D_t4")

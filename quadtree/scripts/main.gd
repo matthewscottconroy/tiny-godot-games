@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 			if other == ball:
 				continue
 			_qt_checks += 1
-			var dist := ball.pos.distance_to(other.pos)
+			var dist: float = ball.pos.distance_to(other.pos)
 			if dist < BALL_R * 2.0:
 				ball.colliding = true
 				other.colliding = true

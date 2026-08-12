@@ -48,7 +48,7 @@ func _valid(c: Vector2i) -> bool:
 func _neighbors(grid: Array, c: Vector2i) -> Array:
 	var result := []
 	for d in [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]:
-		var nb := c + d
+		var nb: Vector2i = c + d
 		if _valid(nb) and grid[nb.y][nb.x]:
 			result.append(nb)
 	return result

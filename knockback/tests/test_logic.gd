@@ -1,14 +1,18 @@
 extends Node
 
+# Drives the real Knockback from scripts/knockback.gd rather than a copy of its
+# impulse and decay maths.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
 	test_knockback_direction_from_hit()
+	test_hit_sets_iframes()
 	test_knockback_blocked_during_iframes()
+	test_hit_allowed_again_after_iframes_expire()
 	test_knockback_decays_each_frame()
 	test_knockback_adds_to_control()
-	test_kb_up_clears_after_one_frame()
 	test_iframes_decrement()
 	_report()
 
@@ -26,51 +30,59 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-const KB_IMPULSE := 480.0
-const KB_UP      := -260.0
-const KB_DECAY   := 7.0
-
-func _compute_knockback_dir(player_pos: Vector2, hit_from: Vector2) -> Vector2:
-	return (player_pos - hit_from).normalized()
-
-func _apply_hit(player_pos: Vector2, from: Vector2, iframes: float) -> Dictionary:
-	if iframes > 0.0:
-		return {"knockback": Vector2.ZERO, "iframes": iframes, "applied": false}
-	var dir := _compute_knockback_dir(player_pos, from)
-	return {
-		"knockback": Vector2(dir.x * KB_IMPULSE, KB_UP),
-		"iframes": 0.8,
-		"applied": true
-	}
+const DELTA := 0.016
 
 func test_knockback_direction_from_hit() -> void:
-	var dir := _compute_knockback_dir(Vector2(100, 0), Vector2(0, 0))
-	expect(dir.x > 0.0, "knockback pushes player away from hit source")
+	var kb := Knockback.new()
+	kb.hit(Vector2(0, 0), Vector2(100, 0))   # hit from the left
+	expect(kb.velocity.x > 0.0, "knockback pushes player away from hit source")
+	expect(kb.velocity.y == kb.up, "vertical launch is the configured `up` speed")
+	expect(is_equal_approx(kb.velocity.x, kb.impulse), "horizontal launch is the full impulse")
+
+func test_hit_sets_iframes() -> void:
+	var kb := Knockback.new()
+	expect(not kb.is_invincible(), "not invincible before any hit")
+	expect(kb.hit(Vector2.ZERO, Vector2(100, 0)), "first hit lands and returns true")
+	expect(kb.is_invincible(), "invincible immediately after a hit")
 
 func test_knockback_blocked_during_iframes() -> void:
-	var r := _apply_hit(Vector2(100, 0), Vector2(0, 0), 0.5)
-	expect(not r["applied"], "hit ignored when iframes > 0")
+	var kb := Knockback.new()
+	kb.hit(Vector2.ZERO, Vector2(100, 0))
+	var before := kb.velocity
+	expect(not kb.hit(Vector2(200, 0), Vector2(100, 0)), "hit ignored while invincible")
+	expect(kb.velocity == before, "a blocked hit does not change the knockback velocity")
+
+func test_hit_allowed_again_after_iframes_expire() -> void:
+	var kb := Knockback.new()
+	kb.hit(Vector2.ZERO, Vector2(100, 0))
+	# Age past the i-frame window.
+	var elapsed := 0.0
+	while elapsed <= kb.iframe_time:
+		kb.update(DELTA)
+		elapsed += DELTA
+	expect(not kb.is_invincible(), "i-frames expire after iframe_time")
+	expect(kb.hit(Vector2.ZERO, Vector2(100, 0)), "a new hit lands once i-frames are gone")
 
 func test_knockback_decays_each_frame() -> void:
-	var kb := Vector2(480, 0)
-	kb = kb.lerp(Vector2.ZERO, KB_DECAY * 0.016)
-	expect(kb.x < 480.0, "knockback decays per frame")
+	var kb := Knockback.new()
+	kb.hit(Vector2.ZERO, Vector2(100, 0))
+	var launch_x := kb.velocity.x
+	kb.update(DELTA)
+	expect(kb.velocity.x < launch_x, "knockback decays per frame")
+	expect(kb.velocity.x > 0.0, "one frame of decay does not zero it out")
 
 func test_knockback_adds_to_control() -> void:
-	var ctrl_x    := 200.0
-	var knockback  := Vector2(300, 0)
-	var vel_x      := ctrl_x + knockback.x
-	expect(vel_x == 500.0, "knockback adds to control velocity")
-
-func test_kb_up_clears_after_one_frame() -> void:
-	var kb := Vector2(300, KB_UP)
-	var vel_y: float
-	if kb.y != 0.0:
-		vel_y = kb.y
-		kb.y  = 0.0
-	expect(kb.y == 0.0, "knockback.y clears after being applied to velocity.y")
+	# The owning body layers knockback on top of its own movement rather than
+	# replacing it — that is the whole point of keeping it in its own vector.
+	var kb := Knockback.new()
+	kb.impulse = 300.0
+	kb.hit(Vector2.ZERO, Vector2(100, 0))
+	var control_x := 200.0
+	expect(is_equal_approx(control_x + kb.velocity.x, 500.0), "knockback adds to control velocity")
 
 func test_iframes_decrement() -> void:
-	var iframes := 0.8
-	iframes = maxf(iframes - 0.016, 0.0)
-	expect(iframes < 0.8, "iframes countdown each frame")
+	var kb := Knockback.new()
+	kb.hit(Vector2.ZERO, Vector2(100, 0))
+	var before := kb.iframes
+	kb.update(DELTA)
+	expect(is_equal_approx(kb.iframes, before - DELTA), "iframes count down by delta each frame")

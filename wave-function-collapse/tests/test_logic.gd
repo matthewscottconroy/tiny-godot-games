@@ -30,8 +30,8 @@ func _test_adjacency_rules() -> void:
 	print("adjacency rule symmetry")
 	for tile_a in NUM_TILES:
 		for tile_b in NUM_TILES:
-			var a_allows_b := tile_b in RULES[tile_a]
-			var b_allows_a := tile_a in RULES[tile_b]
+			var a_allows_b: bool = tile_b in RULES[tile_a]
+			var b_allows_a: bool = tile_a in RULES[tile_b]
 			expect(a_allows_b == b_allows_a,
 				"rule symmetry: tile %d / tile %d" % [tile_a, tile_b])
 

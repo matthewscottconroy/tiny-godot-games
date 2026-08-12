@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func _set_mode(new_mode: ShaderMode) -> void:
 	mode = new_mode
-	var path := SHADERS[mode]
+	var path: String = SHADERS[mode]
 	if path.is_empty():
 		sprite.material = null
 		mode_label.text = "No shader — raw sprite"

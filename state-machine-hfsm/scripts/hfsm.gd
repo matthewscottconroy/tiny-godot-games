@@ -1,7 +1,15 @@
 class_name HFSMState
 
 var name: String
-var parent: HFSMState = null
+
+# HFSMState is RefCounted, so a parent holding its children AND each child
+# holding its parent would form a reference cycle that never frees. The upward
+# link is stored weakly; `parent` still reads like a plain property.
+var _parent_ref: WeakRef = null
+var parent: HFSMState:
+	get:
+		return _parent_ref.get_ref() if _parent_ref != null else null
+
 var children: Array[HFSMState] = []
 var active_child: HFSMState = null
 var _on_enter: Callable = func(): pass
@@ -12,7 +20,7 @@ func _init(n: String) -> void:
 	name = n
 
 func add_child(child: HFSMState) -> HFSMState:
-	child.parent = self
+	child._parent_ref = weakref(self)
 	children.append(child)
 	return child
 

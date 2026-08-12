@@ -36,14 +36,14 @@ func _ready() -> void:
 
 
 func _action_spawn_circle() -> void:
-	var c := SHAPE_COLORS[_color_idx % SHAPE_COLORS.size()]
+	var c: Color = SHAPE_COLORS[_color_idx % SHAPE_COLORS.size()]
 	_color_idx += 1
 	_shapes.append({"type": "circle", "pos": _last_right_click, "color": c})
 	_push_log("Spawned circle at (%d,%d)" % [int(_last_right_click.x), int(_last_right_click.y)])
 
 
 func _action_spawn_square() -> void:
-	var c := SHAPE_COLORS[_color_idx % SHAPE_COLORS.size()]
+	var c: Color = SHAPE_COLORS[_color_idx % SHAPE_COLORS.size()]
 	_color_idx += 1
 	_shapes.append({"type": "square", "pos": _last_right_click, "color": c})
 	_push_log("Spawned square at (%d,%d)" % [int(_last_right_click.x), int(_last_right_click.y)])

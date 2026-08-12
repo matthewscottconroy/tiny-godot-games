@@ -22,5 +22,5 @@ func _draw() -> void:
 	draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 32, Color(0.4, 0.6, 1.0), 2.0)
 	# Direction dot
 	if joystick and joystick.direction.length() > 0.05:
-		var dot_pos := joystick.direction * 7.0
+		var dot_pos: Vector2 = joystick.direction * 7.0
 		draw_circle(dot_pos, 3.0, Color.WHITE)

@@ -36,7 +36,7 @@ offset_right = 632.0
 offset_bottom = 420.0
 text = "Move the player square to test the bindings."
 theme_override_font_sizes/font_size = 14
-modulate = Color(1, 1, 0.4)
+modulate = Color(1, 1, 0.4, 1)
 
 [node name="ResetBtn" type="Button" parent="."]
 offset_left = 8.0

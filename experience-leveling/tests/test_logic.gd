@@ -39,7 +39,9 @@ func _calc_xp_threshold(level: int) -> int:
 func _test_xp_threshold() -> void:
 	expect(_calc_xp_threshold(1) == 50, "XP threshold level 1 = 50")
 	expect(_calc_xp_threshold(2) == int(50 * 1.4), "XP threshold level 2 = 70")
-	expect(_calc_xp_threshold(3) == int(50 * 1.96), "XP threshold level 3 = 98")
+	# pow(1.4, 2) lands just under 1.96, and int() truncates rather than rounds,
+	# so the curve yields 97 here — matching LevelSystem.threshold().
+	expect(_calc_xp_threshold(3) == 97, "XP threshold level 3 = 97")
 
 
 func _test_level_up() -> void:
