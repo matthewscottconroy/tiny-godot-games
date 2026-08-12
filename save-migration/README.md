@@ -1,0 +1,83 @@
+# Save Migration
+
+Loading save files written by older versions of your game: a version field, one small step per version bump, and a refusal when the chain is broken.
+
+## Purpose
+
+The first time you ship a patch that changes your save format, every existing player's file becomes a liability. The naive fix — a load function full of `if not data.has("inventory")` special cases — grows a new branch every release and becomes the file nobody dares touch.
+
+Versioned migration inverts that. Each save records the format it was written in, and you register one step per version bump. A step only has to know how to get from N to N+1, so it stays small and reviewable forever; a save from three versions ago is upgraded by running three steps in order. Just as important is what happens when migration *cannot* work — a missing step, or a save from a build newer than the one running. This demo refuses in both cases rather than handing back something plausible, because silently writing a guess over a player's progress is the one failure that loses people permanently.
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| → / Space | Next sample save |
+| ← | Previous sample save |
+
+## How It Works
+
+**Every save carries a version.** `version_of()` treats a missing field as version 0 — saves written before anyone thought to add versioning, which is the case you always end up needing.
+
+**Steps are registered per bump.** `add_step(from_version, callable)` maps a version to the function that upgrades past it. The demo registers three:
+
+```gdscript
+migrator.add_step(1, func(d):                     # 1 -> 2: pack loose x/y
+    d["pos"] = {"x": d.get("x", 0.0), "y": d.get("y", 0.0)}
+    d.erase("x"); d.erase("y")
+    return d)
+```
+
+**`migrate()` walks the chain.** It runs each step from the save's version up to the current one, stamping the new `version` after each, and reports which steps it applied — useful in a log when a player sends you a broken file.
+
+**It works on a deep copy.** The caller's dictionary is never mutated, so a failed migration leaves the loaded data exactly as it was.
+
+**Two cases refuse.** A gap in the chain (no step registered for some version) and a save from the future (`version` higher than this build knows) both return `ok: false` with an explanatory error. The alternative — skipping the gap, or loading a newer save as though it were current — corrupts data quietly.
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Dictionary.duplicate(true)` | Deep copy, so a step cannot mutate the caller's data |
+| `Dictionary.get(key, default)` | Read fields that may not exist in an old format |
+| `Dictionary.erase(key)` | Drop fields a new format no longer uses |
+| `Callable` | A migration step stored per version |
+| `Callable.call(args)` | Run the step without knowing what it does |
+| `PackedStringArray` | The list of applied steps, for logging |
+
+## Key Constants
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `CURRENT_VERSION` | 3 | The format a fresh save is written in |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/save_migrator.gd` | The `SaveMigrator` component: version detection, the step chain, refusal cases |
+| `scripts/main.gd` | Demo driver: sample saves from each historical version, and the timeline |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/save_migrator.gd` — the `SaveMigrator` type. `scripts/main.gd` is the demo driver and is not needed.
+
+**Public API**
+- `_init(latest_version := 1)` — the version fresh saves are written in.
+- `add_step(from_version, Callable) -> SaveMigrator` — register one bump; chains.
+- `version_of(data) -> int` — a missing field reads as 0.
+- `needs_migration(data) -> bool`
+- `migrate(data) -> Dictionary` — `{ok, data, from, to, steps, error}`.
+
+**Integrate**
+1. Stamp `version` into everything you save, from day one — retrofitting it is the painful case this demo opens with.
+2. On load: `var r := migrator.migrate(loaded)`. If `r.ok`, use `r.data`; otherwise show the error and keep a backup of the original file rather than overwriting it.
+3. When you change the format, bump `current_version` and add exactly one step. Never edit an old step — a shipped step is a historical record of what that version's data looked like.
+
+**Notes**
+- `class_name SaveMigrator` is global to the project — rename it if you already define that type.
+- Pairs directly with [save-load](../save-load), which handles the reading and writing this sits behind.
+- Steps run in memory. Write the migrated data back to disk only once the whole chain succeeds, so an interrupted migration cannot leave a half-upgraded file.
+- No project settings, autoloads, or input actions are required.

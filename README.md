@@ -1,8 +1,10 @@
 # Tiny Godot Games
 
-A collection of **157 tiny, self-contained Godot 4 demos** — each one isolates a single game-development concept in the smallest complete project that teaches it. Every demo is its own Godot project with a focused `README.md`, runnable scene, and an automated test suite.
+A collection of **165 tiny, self-contained Godot 4 demos** — each one isolates a single game-development concept in the smallest complete project that teaches it. Every demo is its own Godot project with a focused `README.md`, runnable scene, and an automated test suite.
 
 Built for **Godot 4.7** (Forward+). Every demo is **2D** — there is no 3D content here.
+
+New here, or want a route rather than an index? **[Learning paths](docs/LEARNING_PATHS.md)** orders these demos into tracks — build a platformer, an RPG's systems, multiplayer — with a difficulty marker on each step.
 
 ## Using a demo
 
@@ -161,6 +163,7 @@ script on every push — see [.github/workflows/tests.yml](.github/workflows/tes
 |------|-------------|
 | [data-tables](data-tables) | A Resource-based item database with a filter-and-detail UI. |
 | [save-load](save-load) | Persist structured game state to JSON in the user data dir, across sessions. |
+| [save-migration](save-migration) | Upgrading saves written by older versions of your game, one step per version bump. |
 | [config-file](config-file) | A settings panel persisted to `user://settings.cfg` via `ConfigFile`. |
 | [undo-redo](undo-redo) | A drawing canvas using Godot 4's built-in `UndoRedo` (Ctrl+Z / Ctrl+Y). |
 | [localization](localization) | `TranslationServer` string tables switched at runtime across EN/ES/FR. |
@@ -186,6 +189,8 @@ script on every push — see [.github/workflows/tests.yml](.github/workflows/tes
 |------|-------------|
 | [pause-menu](pause-menu) | `get_tree().paused` with a `PROCESS_MODE_ALWAYS` `CanvasLayer` menu. |
 | [settings-menu](settings-menu) | A settings panel with volume slider, fullscreen toggle, and player color. |
+| [accessibility-options](accessibility-options) | Colourblind-safe palettes, reduced motion, text scaling, and shape cues. |
+| [subtitle-system](subtitle-system) | A caption queue for speech and non-speech audio, timed by reading speed. |
 | [radial-menu](radial-menu) | Hold Tab to open a six-item radial action menu. |
 | [context-menu](context-menu) | A right-click menu built entirely in `_draw()`/`_input()` — no Control nodes. |
 | [circle-buttons](circle-buttons) | A reusable component rendering a data array as clickable circles. |
@@ -203,6 +208,7 @@ script on every push — see [.github/workflows/tests.yml](.github/workflows/tes
 |------|-------------|
 | [gamepad-input](gamepad-input) | Joystick detection, analog axes with deadzone, buttons, and vibration. |
 | [input-remapping](input-remapping) | Runtime key rebinding via the `InputMap` singleton. |
+| [input-recording](input-recording) | Capturing input per frame and replaying it deterministically. |
 | [local-multiplayer](local-multiplayer) | Two players on one keyboard via per-instance input schemes. |
 
 ### 🔊 Audio
@@ -271,14 +277,22 @@ script on every push — see [.github/workflows/tests.yml](.github/workflows/tes
 | [line-drawing](line-drawing) | Freehand stroke drawing via immediate-mode `_draw()`. |
 | [polygon-clip](polygon-clip) | An interactive `Polygon2D` vertex editor with convex hull via `Geometry2D`. |
 
+### 🧰 Editor Tooling
+| Demo | Description |
+|------|-------------|
+| [tool-script](tool-script) | `@tool`: a layout helper that arranges its children in the editor, before the game runs. |
+| [editor-plugin](editor-plugin) | An `EditorPlugin` adding a dock and a custom node type, with symmetric teardown. |
+
 ### 🌐 Networking & Misc
 | Demo | Description |
 |------|-------------|
 | [multiplayer-rpc](multiplayer-rpc) | High-level multiplayer over ENet: host/join, a server-authoritative roster, and `@rpc`. |
+| [multiplayer-prediction](multiplayer-prediction) | Applying input locally, then reconciling when the authoritative server disagrees. |
+| [performance-profiling](performance-profiling) | Measuring where a frame's time goes, against the budget the target rate gives you. |
 | [http-request](http-request) | Fetch and parse JSON from a public API with the `HTTPRequest` node. |
 | [lock-picking](lock-picking) | Rotate a lock cylinder to find a hidden angle; tension builds when close. |
 | [rhythm-minigame](rhythm-minigame) | Timed-input rhythm mechanics with a scoring judgment window. |
 
 ---
 
-*157 demos. Each teaches one thing, completely.*
+*165 demos. Each teaches one thing, completely.*

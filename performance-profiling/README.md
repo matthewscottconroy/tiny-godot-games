@@ -1,0 +1,80 @@
+# Performance Profiling
+
+Measuring where a frame's time actually goes, against the budget the target frame rate gives you.
+
+## Purpose
+
+"The game is slow" is not something you can act on. "Pathfinding is taking 9ms of a 16.7ms frame" is. The gap between those two statements is the entire skill, and closing it needs three things people usually skip: a budget, named sections, and a rolling window.
+
+The budget comes from the target rate — 60 fps is 16.67ms per frame, and everything you do has to fit inside it. Named sections turn a single number into a ranking, which is what tells you where to look. The rolling window stops one unlucky frame from dominating the reading, which is the mistake that sends people optimising something that was never actually slow.
+
+This demo also pairs the custom timings with Godot's own `Performance` monitors, because some of what you need — draw calls, object count, static memory — you cannot measure from GDScript and should not try to.
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| 1 / 2 | Fewer / more particles (moves the `simulate` section) |
+| 3 / 4 | Less / more sort work (moves the `sort` section) |
+| R | Reset the sample window |
+
+## How It Works
+
+**Sections are timed with a monotonic clock.** `begin(name)` records `Time.get_ticks_usec()`; `end(name)` adds the elapsed time to this frame's total for that section. Measuring the same section twice in a frame accumulates rather than overwriting.
+
+**`end_frame()` rolls the frame into a window.** The last `window` frames are kept and averaged, so the report reflects steady-state cost rather than whatever happened this instant.
+
+**The budget makes it actionable.** `budget_used()` is the fraction of a frame consumed and `over_budget()` is the yes/no. `worst_first()` ranks sections by cost with each one's share of the total — the list you actually read.
+
+**Sampling is not free.** It is a timer read per section per frame. In a real game this goes behind a debug flag rather than shipping hot, which is why the component is a plain `RefCounted` you can simply not create.
+
+## Key Godot APIs
+
+| API | Purpose |
+|-----|---------|
+| `Time.get_ticks_usec()` | Monotonic microsecond clock — not affected by wall-clock changes |
+| `Performance.get_monitor()` | Engine-side counters GDScript cannot compute |
+| `Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME` | Draw calls, the usual 2D bottleneck |
+| `Performance.MEMORY_STATIC` | Static memory in bytes |
+| `Engine.get_frames_per_second()` | The actual achieved rate |
+| `Array.sort_custom()` | Ranking sections worst-first |
+
+## Key Constants
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `budget_ms` | 16.67 | Frame budget for 60 fps |
+| `window` | 60 | Frames averaged in the rolling window |
+
+## Files
+
+| File | What it holds |
+|------|---------------|
+| `scripts/frame_budget.gd` | The `FrameBudget` component: sections, window, budget, ranking |
+| `scripts/main.gd` | Demo driver: three sections of adjustable cost, plus engine monitors |
+| `scenes/main.tscn` | The runnable scene |
+| `tests/test_logic.gd` | Headless test suite |
+
+## Use as a building block
+
+**Copy:** `scripts/frame_budget.gd` — the `FrameBudget` type. `scripts/main.gd` is the demo driver and is not needed.
+
+**Public API**
+- `_init(target_fps := 60.0, sample_window := 60)`
+- `begin(section)` / `end(section)` / `end_frame()`
+- `averages() -> Dictionary`, `total_ms() -> float`
+- `budget_used() -> float`, `over_budget() -> bool`
+- `worst_first() -> Array` — `{section, ms, share}`, most expensive first.
+- `reset()`, `samples()`, `sections()`
+
+**Integrate**
+1. Create one instance behind a debug flag and wrap your main phases: input, AI, physics, drawing.
+2. Call `end_frame()` once per frame, at the end.
+3. Show `worst_first()` in an on-screen overlay — see [debug-overlay](../debug-overlay) for the display side.
+4. Profile a build, not the editor. Editor overhead is real and will mislead you.
+
+**Notes**
+- `class_name FrameBudget` is global to the project — rename it if you already define that type.
+- This measures CPU time in GDScript. If the sections all look cheap but the frame rate is still low, the cost is in rendering or physics — that is what the `Performance` monitors are for, and then Godot's own profiler.
+- Timings in a test are wall-clock and therefore noisy; the suite compares sections against each other rather than against absolute values.
+- No project settings, autoloads, or input actions are required.
