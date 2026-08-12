@@ -54,6 +54,20 @@ Both checks run against a specific demo too, and either can be run on its own:
 godot --headless --path state-machine res://tests/test.tscn --quit-after 5
 ```
 
+Other tooling:
+
+```bash
+tools/check_docs.py       # README structure, control claims, index drift
+tools/new-demo.sh <name>  # scaffold a demo that is green from the start
+tools/screenshots.sh      # capture one PNG per demo (needs xvfb)
+tools/build_gallery.py    # write docs/GALLERY.md from those screenshots
+tools/export_web.sh       # export demos for the browser (needs export templates)
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions these enforce, and
+[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) for why the components are copied
+rather than shipped as an addon.
+
 The script imports each project first (generating `.godot/`) so `class_name`
 globals and assets resolve the same way they do in CI, which runs the identical
 script on every push — see [.github/workflows/tests.yml](.github/workflows/tests.yml).

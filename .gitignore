@@ -2,6 +2,9 @@
 .godot/
 .nomedia
 
+# Build output from tools/export_web.sh
+build/
+
 # Godot-specific ignores
 .import/
 export.cfg
