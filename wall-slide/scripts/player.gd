@@ -11,24 +11,41 @@ var _is_sliding  := false
 
 @onready var _label: Label = $InfoLabel
 
+## Is the player pressing INTO the wall it is touching?
+##
+## `wall_normal` points away from the wall, so pressing into it means the input
+## and the normal have opposite signs. Sliding also requires being airborne —
+## standing on the floor next to a wall is not a slide.
+func should_slide(h: float, on_wall: bool, on_floor: bool, wall_normal_x: float) -> bool:
+	if not on_wall or on_floor:
+		return false
+	return (h * wall_normal_x) < 0.0
+
+## Apply gravity for this frame, reduced and capped while sliding. Returns the
+## new vertical velocity; `_slide_dist` accumulates as a side effect.
+func tick_vertical(vy: float, delta: float, sliding: bool) -> float:
+	var grav_scale := WALL_SLIDE_GRAV if sliding else 1.0
+	vy += GRAVITY * grav_scale * delta
+	if sliding:
+		_slide_dist += absf(vy) * delta
+		# The cap is what makes a slide readable: without it the reduced gravity
+		# would still accelerate to an unhelpful speed over a tall wall.
+		vy = minf(vy, SLIDE_SPEED_CAP)
+	return vy
+
+func is_sliding() -> bool:
+	return _is_sliding
+
+func slide_distance() -> float:
+	return _slide_dist
+
 func _physics_process(delta: float) -> void:
-	var on_wall  := is_on_wall()
 	var on_floor := is_on_floor()
 	var h        := Input.get_axis("ui_left", "ui_right")
 
-	_is_sliding = false
-	if on_wall and not on_floor:
-		var wn := get_wall_normal()
-		if (h * wn.x) < 0.0:
-			_is_sliding = true
-
-	var grav_scale := WALL_SLIDE_GRAV if _is_sliding else 1.0
-	velocity.y += GRAVITY * grav_scale * delta
-
-	if _is_sliding:
-		_slide_dist += absf(velocity.y) * delta
-		velocity.y = minf(velocity.y, SLIDE_SPEED_CAP)
-
+	_is_sliding = should_slide(h, is_on_wall(), on_floor,
+		get_wall_normal().x if is_on_wall() else 0.0)
+	velocity.y = tick_vertical(velocity.y, delta, _is_sliding)
 	velocity.x = h * SPEED
 
 	if on_floor and Input.is_action_just_pressed("ui_up"):
