@@ -46,11 +46,18 @@ func _physics_process(delta: float) -> void:
 	var down_just := down_pressed and not _down_pressed_last
 	_jump_pressed_last = jump_pressed
 	_down_pressed_last = down_pressed
+	tick(delta, Input.get_axis("ui_left", "ui_right"), jump_just, down_just)
 
+## One step of movement, given this frame's input.
+##
+## Both states are here together because hanging is not a pause: it replaces
+## gravity, movement and jumping with a different set of rules, and the only way
+## in or out is through this function.
+func tick(delta: float, move_axis: float, jump_just: bool, down_just: bool) -> void:
 	match _state:
 		PState.NORMAL:
 			_vel.y += GRAVITY * delta
-			_vel.x = Input.get_axis("ui_left", "ui_right") * SPEED
+			_vel.x = move_axis * SPEED
 			if _on_floor and jump_just:
 				_vel.y = JUMP_VEL
 			_pos += _vel * delta

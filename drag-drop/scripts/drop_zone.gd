@@ -11,7 +11,10 @@ func accept_drop(item: Node2D) -> void:
 	item.start_pos = position
 	has_item = true
 	queue_redraw()
-	get_parent().on_drop()
+	# `owner` is the scene root, not this node's parent: the zones are grouped
+	# under a Zones node, so get_parent() is that grouping node and has no
+	# on_drop() to call.
+	owner.on_drop()
 
 func _draw() -> void:
 	var border := Color.LIME_GREEN if has_item else Color(0.7, 0.7, 0.7, 0.5)
