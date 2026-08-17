@@ -1,15 +1,21 @@
 extends Node
 
+# Drives the real A* from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	test_path_found_on_open_grid()
-	test_no_path_when_blocked()
-	test_path_avoids_walls()
-	test_manhattan_heuristic()
-	test_path_starts_at_start()
-	test_path_ends_at_goal()
+	_test_the_grid_starts_open()
+	_test_clicks_land_on_the_right_cell()
+	_test_cells_off_the_board_are_rejected()
+	_test_a_path_across_open_ground_is_direct()
+	_test_the_path_is_a_walk_from_start_to_goal()
+	_test_the_path_goes_around_a_wall()
+	_test_a_walled_in_goal_has_no_path()
+	_test_the_path_never_crosses_a_wall()
+	_test_clicking_sets_start_then_goal_then_resets()
+	_test_walls_can_only_be_drawn_before_the_goal()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -26,82 +32,156 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-const COLS := 5
-const ROWS := 5
+func _make() -> Node2D:
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	return scene
 
-func _make_grid(walls: Array = []) -> Array:
-	var grid: Array = []
-	for y in ROWS:
-		var row := []
-		for x in COLS: row.append(true)
-		grid.append(row)
-	for w in walls:
-		grid[w.y][w.x] = false
-	return grid
+func _centre_of(m: Node2D, cell: Vector2i) -> Vector2:
+	return Vector2(m.OFFSET_X + cell.x * m.CELL + m.CELL * 0.5,
+		m.OFFSET_Y + cell.y * m.CELL + m.CELL * 0.5)
 
-func _heuristic(a: Vector2i, b: Vector2i) -> int:
-	return absi(a.x - b.x) + absi(a.y - b.y)
+func _click(m: Node2D, cell: Vector2i, button: int) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = button
+	e.pressed = true
+	e.position = _centre_of(m, cell)
+	m._input(e)
 
-func _valid(c: Vector2i) -> bool:
-	return c.x >= 0 and c.x < COLS and c.y >= 0 and c.y < ROWS
+func _wall(m: Node2D, cell: Vector2i) -> void:
+	m._grid[cell.y][cell.x] = false
 
-func _neighbors(grid: Array, c: Vector2i) -> Array:
-	var result := []
-	for d in [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]:
-		var nb: Vector2i = c + d
-		if _valid(nb) and grid[nb.y][nb.x]:
-			result.append(nb)
-	return result
+## Ask for a path between two cells without going through the mouse.
+func _path_between(m: Node2D, from: Vector2i, to: Vector2i) -> Array:
+	m._start = from
+	m._goal = to
+	return m._astar()
 
-func _astar(grid: Array, start: Vector2i, goal: Vector2i) -> Array:
-	var open := [{"pos": start, "f": _heuristic(start, goal)}]
-	var came_from := {}
-	var g_score := {start: 0}
-	while open.size() > 0:
-		var bi := 0
-		for i in open.size():
-			if open[i]["f"] < open[bi]["f"]: bi = i
-		var cur: Vector2i = open[bi]["pos"]
-		open.remove_at(bi)
-		if cur == goal:
-			var path := [cur]
-			while came_from.has(cur):
-				cur = came_from[cur]
-				path.push_front(cur)
-			return path
-		for nb in _neighbors(grid, cur):
-			var tg: int = g_score.get(cur, 999) + 1
-			if tg < g_score.get(nb, 999):
-				came_from[nb] = cur; g_score[nb] = tg
-				var found := false
-				for n in open:
-					if n["pos"] == nb: found = true; break
-				if not found:
-					open.append({"pos": nb, "f": tg + _heuristic(nb, goal)})
-	return []
+func _test_the_grid_starts_open() -> void:
+	print("the board")
+	var m := _make()
+	expect(m._grid.size() == m.ROWS, "the grid has a row per ROWS")
+	expect(m._grid[0].size() == m.COLS, "and a column per COLS")
+	var all_open := true
+	for row in m._grid:
+		for cell in row:
+			if not cell:
+				all_open = false
+	expect(all_open, "every cell starts walkable")
 
-func test_path_found_on_open_grid() -> void:
-	var path := _astar(_make_grid(), Vector2i(0,0), Vector2i(4,4))
-	expect(path.size() > 0, "path found on open 5x5 grid")
+func _test_clicks_land_on_the_right_cell() -> void:
+	print("hit testing")
+	var m := _make()
+	for cell in [Vector2i(0, 0), Vector2i(3, 7), Vector2i(m.COLS - 1, m.ROWS - 1)]:
+		expect(m._screen_to_cell(_centre_of(m, cell)) == cell,
+			"a click in the middle of %s maps back to it" % cell)
 
-func test_no_path_when_blocked() -> void:
-	var walls := [Vector2i(0,1), Vector2i(1,1), Vector2i(2,1), Vector2i(3,1), Vector2i(4,1)]
-	var path  := _astar(_make_grid(walls), Vector2i(2,0), Vector2i(2,4))
-	expect(path.size() == 0, "no path when row is fully blocked")
+func _test_cells_off_the_board_are_rejected() -> void:
+	print("bounds")
+	var m := _make()
+	expect(m._valid(Vector2i(0, 0)), "the top-left corner is on the board")
+	expect(m._valid(Vector2i(m.COLS - 1, m.ROWS - 1)), "and so is the bottom-right")
+	expect(not m._valid(Vector2i(-1, 0)), "one column left of it is not")
+	expect(not m._valid(Vector2i(0, -1)), "nor one row above")
+	expect(not m._valid(Vector2i(m.COLS, 0)), "nor one past the right edge")
+	expect(not m._valid(Vector2i(0, m.ROWS)), "nor one below the bottom")
 
-func test_path_avoids_walls() -> void:
-	var walls := [Vector2i(1,0), Vector2i(1,1), Vector2i(1,2)]
-	var path  := _astar(_make_grid(walls), Vector2i(0,0), Vector2i(4,0))
-	for p in path:
-		expect(not (p.x == 1 and p.y <= 2), "path does not pass through wall cell")
+func _test_a_path_across_open_ground_is_direct() -> void:
+	print("shortest path")
+	var m := _make()
+	var from := Vector2i(2, 2)
+	var to := Vector2i(9, 6)
+	var path := _path_between(m, from, to)
+	# On an open grid with four-way movement, the shortest route is the
+	# Manhattan distance — anything longer means A* took a detour.
+	var manhattan: int = absi(to.x - from.x) + absi(to.y - from.y)
+	expect(path.size() == manhattan + 1,
+		"the path is as short as the grid allows (%d steps)" % manhattan)
 
-func test_manhattan_heuristic() -> void:
-	expect(_heuristic(Vector2i(0,0), Vector2i(3,4)) == 7, "Manhattan h(0,0→3,4) = 7")
+func _test_the_path_is_a_walk_from_start_to_goal() -> void:
+	print("path shape")
+	var m := _make()
+	var from := Vector2i(1, 1)
+	var to := Vector2i(12, 9)
+	var path := _path_between(m, from, to)
+	expect(path.size() > 0, "there is a path")
+	expect(path[0] == from, "which begins at the start")
+	expect(path[path.size() - 1] == to, "and ends at the goal")
 
-func test_path_starts_at_start() -> void:
-	var path := _astar(_make_grid(), Vector2i(0,0), Vector2i(4,4))
-	expect(path.size() > 0 and path[0] == Vector2i(0,0), "path starts at start cell")
+	var contiguous := true
+	for i in path.size() - 1:
+		var step: Vector2i = path[i + 1] - path[i]
+		if absi(step.x) + absi(step.y) != 1:
+			contiguous = false
+	expect(contiguous, "and every step moves exactly one cell — no teleporting")
 
-func test_path_ends_at_goal() -> void:
-	var path := _astar(_make_grid(), Vector2i(0,0), Vector2i(4,4))
-	expect(path.size() > 0 and path[-1] == Vector2i(4,4), "path ends at goal cell")
+func _test_the_path_goes_around_a_wall() -> void:
+	print("routing")
+	var m := _make()
+	var from := Vector2i(1, 5)
+	var to := Vector2i(5, 5)
+	var direct := _path_between(m, from, to).size()
+
+	# A wall straight across the middle of the route.
+	for y in range(0, 8):
+		_wall(m, Vector2i(3, y))
+	var around := _path_between(m, from, to)
+	expect(around.size() > direct, "a wall in the way makes the route longer")
+	expect(around[around.size() - 1] == to, "but it still reaches the goal")
+
+func _test_a_walled_in_goal_has_no_path() -> void:
+	print("no route")
+	var m := _make()
+	var to := Vector2i(10, 7)
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		_wall(m, to + d)
+	var path := _path_between(m, Vector2i(1, 1), to)
+	expect(path.is_empty(), "a goal walled in on all sides is unreachable")
+
+	var off := _make()
+	expect(off._astar().is_empty(), "and asking before the cells are placed gives nothing")
+
+func _test_the_path_never_crosses_a_wall() -> void:
+	print("walls hold")
+	var m := _make()
+	# A barrier with one gap, so the only route is through it.
+	for y in range(0, m.ROWS):
+		if y != 11:
+			_wall(m, Vector2i(6, y))
+	var path := _path_between(m, Vector2i(2, 2), Vector2i(12, 2))
+	expect(path.size() > 0, "the gap leaves a way through")
+	var clear := true
+	for cell in path:
+		if not m._grid[cell.y][cell.x]:
+			clear = false
+	expect(clear, "and no step of the path stands on a wall")
+	expect(path.has(Vector2i(6, 11)), "so it has to go through the gap")
+
+func _test_clicking_sets_start_then_goal_then_resets() -> void:
+	print("placing the ends")
+	var m := _make()
+	_click(m, Vector2i(2, 2), MOUSE_BUTTON_LEFT)
+	expect(m._start == Vector2i(2, 2), "the first click sets the start")
+	expect(m._path.is_empty(), "with nothing to path to yet")
+
+	_click(m, Vector2i(8, 5), MOUSE_BUTTON_LEFT)
+	expect(m._goal == Vector2i(8, 5), "the second sets the goal")
+	expect(m._path.size() > 0, "and the path appears")
+
+	_click(m, Vector2i(4, 4), MOUSE_BUTTON_LEFT)
+	expect(m._path.is_empty(), "the third clears it")
+	expect(not m._valid(m._start), "along with the start")
+	expect(not m._valid(m._goal), "and the goal")
+
+func _test_walls_can_only_be_drawn_before_the_goal() -> void:
+	print("drawing walls")
+	var m := _make()
+	_click(m, Vector2i(4, 4), MOUSE_BUTTON_RIGHT)
+	expect(not m._grid[4][4], "right-click puts a wall down")
+	_click(m, Vector2i(4, 4), MOUSE_BUTTON_RIGHT)
+	expect(m._grid[4][4], "and right-clicking it again takes it away")
+
+	_click(m, Vector2i(1, 1), MOUSE_BUTTON_LEFT)
+	_click(m, Vector2i(9, 9), MOUSE_BUTTON_LEFT)
+	_click(m, Vector2i(5, 5), MOUSE_BUTTON_RIGHT)
+	expect(m._grid[5][5], "once a path is drawn the walls are locked until reset")
