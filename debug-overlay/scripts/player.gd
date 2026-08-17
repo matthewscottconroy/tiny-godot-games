@@ -13,17 +13,25 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED
-	if Input.is_action_just_pressed("ui_up") and is_on_floor():
+	if can_jump(Input.is_action_just_pressed("ui_up"), is_on_floor()):
 		velocity.y = JUMP_VEL
 	move_and_slide()
 	queue_redraw()
+	state = state_for(is_on_floor(), velocity.x)
 
-	if not is_on_floor():
-		state = "air"
-	elif absf(velocity.x) > 1.0:
-		state = "run"
-	else:
-		state = "idle"
+func can_jump(jump_pressed: bool, on_floor: bool) -> bool:
+	return jump_pressed and on_floor
+
+## The word the overlay prints for what the player is doing.
+##
+## The speed threshold is not zero: a body resting against a wall keeps a hair
+## of velocity, and calling that "run" would leave the readout twitching.
+func state_for(on_floor: bool, horizontal_speed: float) -> String:
+	if not on_floor:
+		return "air"
+	if absf(horizontal_speed) > 1.0:
+		return "run"
+	return "idle"
 
 func _draw() -> void:
 	draw_rect(Rect2(-12, -24, 24, 48), Color.DODGER_BLUE)

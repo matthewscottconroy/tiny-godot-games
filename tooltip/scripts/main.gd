@@ -59,7 +59,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_mouse_pos = get_global_mouse_position()
+	tick(delta, get_global_mouse_position())
+	queue_redraw()
+
+## One frame of hovering, given where the cursor is.
+##
+## The delay is what stops tooltips flashing up as the cursor crosses a row of
+## items on its way somewhere else: the timer only builds while the cursor
+## stays on the same item, and moving to another resets it.
+func tick(delta: float, mouse_pos: Vector2) -> void:
+	_mouse_pos = mouse_pos
 
 	var new_hovered := -1
 	for i in range(_items.size()):
@@ -79,8 +88,6 @@ func _process(delta: float) -> void:
 		_tooltip_alpha = min(1.0, _tooltip_alpha + delta / FADE_IN_TIME)
 	else:
 		_tooltip_alpha = max(0.0, _tooltip_alpha - delta / FADE_OUT_TIME)
-
-	queue_redraw()
 
 
 func _clamp_tooltip_rect(mouse_pos: Vector2, size: Vector2) -> Vector2:
