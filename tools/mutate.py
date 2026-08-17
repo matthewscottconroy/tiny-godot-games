@@ -152,6 +152,7 @@ MUTATIONS = [
 # and anything inside a string (approximated by skipping lines that are mostly
 # string, which is good enough to avoid rewriting printed labels).
 SKIP_LINE = re.compile(r"^\s*(#|##|@|class_name|extends|signal)")
+FUNC_LINE = re.compile(r"^func\s+(\w+)")
 
 
 # main.gd is the demo driver — it builds the scene, wires the HUD, and draws the
@@ -212,8 +213,16 @@ def candidates(demo, include_driver=False):
     for path in demo_scripts(demo, include_driver):
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
+        drawing = False
         for i, line in enumerate(lines):
-            if SKIP_LINE.match(line) or not line.strip():
+            if FUNC_LINE.match(line):
+                # A _draw() body is pixels, not logic: mutating a colour or a
+                # fill flag produces a demo that still behaves identically and a
+                # survivor nobody can kill. Skipping it makes the score mean
+                # what docs/TEST_INTEGRITY.md says it means. `_draw_grid` and
+                # friends are helpers of the same kind.
+                drawing = FUNC_LINE.match(line).group(1).startswith("_draw")
+            if drawing or SKIP_LINE.match(line) or not line.strip():
                 continue
             masked = strip_strings(line)
             for name, pattern, replacement in MUTATIONS:

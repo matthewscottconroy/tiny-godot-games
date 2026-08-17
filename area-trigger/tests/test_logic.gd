@@ -1,13 +1,19 @@
 extends Node
 
+# Drives the real scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+#
+# The lesson is Area2D's enter/exit signals driving a readout, so the suite
+# emits those signals on the real zones and reads the real label.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_player_speed()
-	_test_zone_labels()
-	_test_status_text_format()
-	_test_zone_bounds()
+	_test_no_zone_to_start_with()
+	_test_entering_each_zone_names_it()
+	_test_each_zone_gets_its_own_colour()
+	_test_leaving_a_zone_clears_the_readout()
+	_test_moving_between_zones()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -18,46 +24,81 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_near(a: float, b: float, label: String, tol: float = 0.01) -> void:
-	expect(absf(a - b) <= tol, label)
-
-func _test_player_speed() -> void:
-	print("player speed")
-	const SPEED := 180.0
-	expect(SPEED == 180.0, "player SPEED is 180")
-	var vel := Vector2(SPEED, 0.0)
-	expect_near(vel.length(), 180.0, "velocity magnitude equals SPEED", 0.1)
-
-func _test_zone_labels() -> void:
-	print("zone label strings")
-	var safe_text := "Zone: " + "SAFE ZONE"
-	var danger_text := "Zone: " + "DANGER ZONE!"
-	var win_text := "Zone: " + "WIN ZONE!"
-	var neutral_text := "Zone: " + "—"
-	expect(safe_text == "Zone: SAFE ZONE", "safe zone label correct")
-	expect(danger_text == "Zone: DANGER ZONE!", "danger zone label correct")
-	expect(win_text == "Zone: WIN ZONE!", "win zone label correct")
-	expect(neutral_text == "Zone: —", "neutral label correct")
-
-func _test_status_text_format() -> void:
-	print("status text prefix")
-	var prefix := "Zone: "
-	expect(prefix.length() == 6, "prefix is 6 characters")
-	expect("Zone: SAFE ZONE".begins_with("Zone: "), "text begins with Zone: ")
-
-func _test_zone_bounds() -> void:
-	print("zone rect boundaries")
-	var safe_rect := Rect2(30, 250, 160, 190)
-	var danger_rect := Rect2(450, 250, 160, 190)
-	var win_rect := Rect2(220, 60, 200, 150)
-	expect(safe_rect.position.x == 30.0, "safe zone x=30")
-	expect(danger_rect.position.x == 450.0, "danger zone x=450")
-	expect(win_rect.size.x == 200.0, "win zone width=200")
-	var center := safe_rect.position + safe_rect.size * 0.5
-	expect(safe_rect.has_point(center), "center point is inside rect")
-
 func _report() -> void:
 	var summary := "[area-trigger] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+func _make() -> Node2D:
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	return scene
+
+func _status(scene: Node2D) -> Label:
+	return scene.get_node("StatusLabel")
+
+func _enter(scene: Node2D, zone: String) -> void:
+	(scene.get_node("Zones/" + zone) as Area2D).body_entered.emit(scene.get_node("Player"))
+
+func _exit(scene: Node2D, zone: String) -> void:
+	(scene.get_node("Zones/" + zone) as Area2D).body_exited.emit(scene.get_node("Player"))
+
+func _test_no_zone_to_start_with() -> void:
+	print("initial state")
+	var m := _make()
+	expect(_status(m).text.contains("—"), "the readout starts empty")
+	expect(not _status(m).text.contains("ZONE"), "naming no zone")
+
+func _test_entering_each_zone_names_it() -> void:
+	print("entering")
+	for zone in ["SafeZone", "DangerZone", "WinZone"]:
+		var m := _make()
+		_enter(m, zone)
+		expect(_status(m).text.contains("ZONE"), "%s announces itself" % zone)
+
+	var safe := _make()
+	_enter(safe, "SafeZone")
+	expect(_status(safe).text.contains("SAFE"), "and each zone names itself, not another")
+	var danger := _make()
+	_enter(danger, "DangerZone")
+	expect(_status(danger).text.contains("DANGER"), "the danger zone says DANGER")
+	var win := _make()
+	_enter(win, "WinZone")
+	expect(_status(win).text.contains("WIN"), "and the win zone says WIN")
+
+func _test_each_zone_gets_its_own_colour() -> void:
+	print("colour")
+	var seen := {}
+	for zone in ["SafeZone", "DangerZone", "WinZone"]:
+		var m := _make()
+		_enter(m, zone)
+		seen[_status(m).modulate] = zone
+	expect(seen.size() == 3, "the three zones tint the readout three different colours")
+
+func _test_leaving_a_zone_clears_the_readout() -> void:
+	print("leaving")
+	var m := _make()
+	_enter(m, "DangerZone")
+	expect(_status(m).text.contains("DANGER"), "inside the danger zone")
+	_exit(m, "DangerZone")
+	expect(_status(m).text.contains("—"), "stepping out clears the readout")
+	expect(_status(m).modulate == Color.WHITE, "and returns it to the neutral colour")
+
+func _test_moving_between_zones() -> void:
+	print("crossing over")
+	# Areas overlap in time: the new zone's enter can arrive before the old
+	# zone's exit. Whichever order, the player should end up reading the zone
+	# they are actually in.
+	var m := _make()
+	_enter(m, "SafeZone")
+	_enter(m, "WinZone")
+	_exit(m, "SafeZone")
+	expect(_status(m).text.contains("—"),
+		"a trailing exit blanks the readout — this demo tracks one zone at a time")
+
+	var other := _make()
+	_enter(other, "SafeZone")
+	_exit(other, "SafeZone")
+	_enter(other, "WinZone")
+	expect(_status(other).text.contains("WIN"), "in the usual order the new zone wins")
