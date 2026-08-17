@@ -86,6 +86,13 @@ func _test_using_an_ability_spends_mana_and_starts_its_cooldown() -> void:
 	expect(m._abilities[i]["timer"] > 0.0, "and goes on cooldown")
 	expect(m._abilities[i]["effect_timer"] > 0.0, "with an effect to draw")
 
+	# The effect is a ring that expands and fades, so its timer has to run down.
+	var flash: float = m._abilities[i]["effect_timer"]
+	_run(m, 0.1)
+	expect(m._abilities[i]["effect_timer"] < flash, "which fades rather than growing")
+	_run(m, 2.0)
+	expect(is_zero_approx(m._abilities[i]["effect_timer"]), "and is gone shortly after")
+
 func _test_an_ability_on_cooldown_cannot_be_used() -> void:
 	print("cooldown")
 	var m := _make()
@@ -185,6 +192,6 @@ func _test_the_log_keeps_the_last_few_lines() -> void:
 	var m := _make()
 	for i in 12:
 		m._add_log("line %d" % i)
-	expect(m._log.size() <= 5, "the log is trimmed rather than growing forever")
+	expect(m._log.size() == 5, "the log keeps exactly the last five lines")
 	expect(m._log[m._log.size() - 1] == "line 11", "keeping the most recent line")
 	expect(not m._log.has("line 0"), "and dropping the oldest")
