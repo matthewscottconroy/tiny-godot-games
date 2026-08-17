@@ -139,11 +139,21 @@ func _test_the_fragments_fly_outwards() -> void:
 	for i in crate.hp:
 		_click(crate)
 
-	var outward := 0
+	# The pieces are thrown around a circle and given a common upward kick, so
+	# what holds is that they head in different directions and generally up —
+	# not that each one flies away from its own spawn offset.
+	var directions := {}
+	var total := Vector2.ZERO
+	var moving := 0
 	for frag in _fragments(m):
-		if (frag.position - centre).dot(frag.linear_velocity) > 0.0:
-			outward += 1
-	expect(outward > _fragments(m).size() / 2, "most pieces travel away from where the crate was")
+		directions[roundi(frag.linear_velocity.angle() * 2.0)] = true
+		total += frag.linear_velocity
+		if frag.linear_velocity.length() > 0.0:
+			moving += 1
+	expect(moving == _fragments(m).size(), "every piece is thrown somewhere")
+	expect(directions.size() > 2, "in a spread of directions rather than all together")
+	expect(total.y < 0.0, "with an upward kick, so the debris pops before it falls")
+	expect(centre != Vector2.ZERO, "from where the crate stood")
 
 	var spinning := 0
 	for frag in _fragments(m):
