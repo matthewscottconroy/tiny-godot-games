@@ -36,12 +36,20 @@ First full run, four mutations per demo:
 10 suites caught everything, 115 caught nothing, 23 partial
 ```
 
-After converting four suites to drive real code, the recorded floor is:
+After converting fourteen suites and correcting the measurement, the recorded
+floor is:
 
 ```
-97/544 mutations caught (18%)
-16 suites caught everything, 111 caught nothing
+86/423 mutations caught (20.3%)
+15 suites caught everything, 105 caught nothing
 ```
+
+The sample is smaller because the sweep now uses three mutations per demo rather
+than four; the ratio is what the ratchet compares. The measurement changed too:
+`scripts/main.gd` used to be excluded unconditionally as "the demo driver",
+which is right when it only wires the scene and wrong for the ~66 demos whose
+logic lives there — the exclusion hid exactly the code a conversion had just
+covered. It is now included whenever the suite references it.
 
 The split is exactly what the design predicts. Suites that drive the demo's real
 type score well:
@@ -109,11 +117,27 @@ The work is deliberately incremental. Converting all 111 remaining zero-scoring
 suites at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
-Four are done, each 0% -> 100%: `experience-leveling` and `drop-table` needed
-only a rewritten suite because the component already existed, while
-`coyote-time` and `double-jump` needed their logic lifting into a method first.
-That refactor is worth doing for its own sake — it is the same change that makes
-a demo reusable — so the two goals point the same way.
+Fourteen are done. Some needed only a rewritten suite because the component
+already existed (`experience-leveling`, `drop-table`, `autoload-score`,
+`boid-flocking`, `groups`); the rest needed their logic lifting into a method
+first (`coyote-time`, `double-jump`, `variable-jump-height`, `wall-slide`,
+`wall-jump`, `state-machine`, `top-down-controller`, `grid-movement`,
+`spread-shot`, `camera-deadzone`). That refactor is worth doing for its own sake
+— it is the same change that makes a demo reusable — so the two goals point the
+same way.
+
+**The conversions keep finding real bugs**, which is the argument for doing the
+rest:
+
+- `wall-jump` launched the player *into* the wall. `get_wall_normal()` already
+  points away from it, so the demo's extra negation reversed the launch. Present
+  since the first commit; it survived because the old suite recomputed the
+  launch inline with its own sign convention, so demo and test disagreed and
+  only the test was ever consulted.
+- `variable-jump-height` and `wall-slide` both started life with their state
+  flag set such that the mechanic could fire before it had been triggered.
+- `quadtree` recursed infinitely on a one-character error, and its suite
+  reported only a hang rather than a failure.
 
 `docs/GAPS.md` lists demo-shaped gaps; this is the test-shaped one, and it is
 the larger pile of work.
