@@ -1,14 +1,25 @@
 extends Node
 
+# Drives the real canvas from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+#
+# The lesson is Godot's UndoRedo: strokes are committed as actions with a do
+# and an undo, so the suite drives the real UndoRedo rather than keeping its own
+# stack alongside it.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_add_stroke_increases_count()
-	_test_remove_last_stroke_decreases_count()
-	_test_undo_removes_stroke()
-	_test_redo_restores_stroke()
-	_test_action_name_stored()
+	_test_the_canvas_starts_blank()
+	_test_a_drag_commits_a_stroke()
+	_test_a_click_that_never_moved_is_not_a_stroke()
+	_test_undo_takes_the_last_stroke_back()
+	_test_redo_puts_it_back()
+	_test_undo_walks_all_the_way_back()
+	_test_undoing_past_the_start_is_harmless()
+	_test_a_new_stroke_discards_the_redo_branch()
+	_test_the_counter_follows_the_strokes()
+	_test_clearing_wipes_the_history_too()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -19,87 +30,152 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-# ---- minimal simulation of main.gd logic (no scene tree required) ----
-
-class DrawingModel:
-	var strokes: Array = []
-	var undo_redo := UndoRedo.new()
-
-	func add_stroke(stroke: PackedVector2Array) -> void:
-		strokes.append(stroke)
-
-	func remove_last_stroke() -> void:
-		if strokes.size() > 0:
-			strokes.pop_back()
-
-	func commit_stroke(stroke: PackedVector2Array) -> void:
-		undo_redo.create_action("Draw Stroke")
-		undo_redo.add_do_method(add_stroke.bind(stroke))
-		undo_redo.add_undo_method(remove_last_stroke)
-		undo_redo.commit_action()
-
-	func undo() -> void:
-		undo_redo.undo()
-
-	func redo() -> void:
-		undo_redo.redo()
-
-func _make_stroke(points: int) -> PackedVector2Array:
-	var s := PackedVector2Array()
-	for i in range(points):
-		s.append(Vector2(i * 10.0, 50.0))
-	return s
-
-# ---- tests ----
-
-func _test_add_stroke_increases_count() -> void:
-	print("add_stroke increases stroke count")
-	var m := DrawingModel.new()
-	expect(m.strokes.size() == 0, "starts empty")
-	m.add_stroke(_make_stroke(3))
-	expect(m.strokes.size() == 1, "count is 1 after add")
-	m.add_stroke(_make_stroke(5))
-	expect(m.strokes.size() == 2, "count is 2 after second add")
-
-func _test_remove_last_stroke_decreases_count() -> void:
-	print("remove_last_stroke decreases stroke count")
-	var m := DrawingModel.new()
-	m.add_stroke(_make_stroke(4))
-	m.add_stroke(_make_stroke(4))
-	expect(m.strokes.size() == 2, "two strokes before remove")
-	m.remove_last_stroke()
-	expect(m.strokes.size() == 1, "one stroke after remove")
-	m.remove_last_stroke()
-	expect(m.strokes.size() == 0, "empty after second remove")
-	m.remove_last_stroke()  # should not crash on empty
-	expect(m.strokes.size() == 0, "still empty after remove on empty")
-
-func _test_undo_removes_stroke() -> void:
-	print("undo() removes last committed stroke")
-	var m := DrawingModel.new()
-	m.commit_stroke(_make_stroke(3))
-	expect(m.strokes.size() == 1, "one stroke after commit")
-	m.undo()
-	expect(m.strokes.size() == 0, "zero strokes after undo")
-
-func _test_redo_restores_stroke() -> void:
-	print("redo() after undo() restores stroke")
-	var m := DrawingModel.new()
-	m.commit_stroke(_make_stroke(3))
-	m.undo()
-	expect(m.strokes.size() == 0, "zero after undo")
-	m.redo()
-	expect(m.strokes.size() == 1, "one stroke restored after redo")
-
-func _test_action_name_stored() -> void:
-	print("UndoRedo stores action name correctly")
-	var m := DrawingModel.new()
-	m.commit_stroke(_make_stroke(2))
-	# get_action_name(0) returns the name of the last committed action
-	expect(m.undo_redo.get_action_name(0) == "Draw Stroke", "action name is 'Draw Stroke'")
-
 func _report() -> void:
 	var summary := "[undo-redo] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+func _make() -> Node2D:
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	return scene
+
+func _stroke(m: Node2D, from: Vector2, points: int = 4) -> void:
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = from
+	m._input(down)
+	for i in points:
+		var motion := InputEventMouseMotion.new()
+		motion.position = from + Vector2(float(i + 1) * 10.0, 0.0)
+		m._input(motion)
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
+	up.pressed = false
+	up.position = from + Vector2(float(points) * 10.0, 0.0)
+	m._input(up)
+
+func _key(m: Node2D, code: Key, shift: bool = false) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = true
+	e.ctrl_pressed = true
+	e.shift_pressed = shift
+	m._unhandled_key_input(e)
+
+func _undo(m: Node2D) -> void:
+	_key(m, KEY_Z)
+
+func _redo(m: Node2D) -> void:
+	_key(m, KEY_Y)
+
+func _test_the_canvas_starts_blank() -> void:
+	print("a blank canvas")
+	var m := _make()
+	expect(m._strokes.is_empty(), "nothing drawn yet")
+	expect(not m._drawing, "and no stroke in progress")
+
+func _test_a_drag_commits_a_stroke() -> void:
+	print("drawing")
+	var m := _make()
+	_stroke(m, Vector2(100.0, 200.0))
+	expect(m._strokes.size() == 1, "a press-drag-release commits one stroke")
+	_stroke(m, Vector2(100.0, 300.0))
+	expect(m._strokes.size() == 2, "and a second drag another")
+
+func _test_a_click_that_never_moved_is_not_a_stroke() -> void:
+	print("clicking")
+	var m := _make()
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = Vector2(100.0, 200.0)
+	m._input(down)
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
+	up.pressed = false
+	up.position = Vector2(100.0, 200.0)
+	m._input(up)
+	expect(m._strokes.is_empty(), "a single point draws no line, so nothing is committed")
+
+func _test_undo_takes_the_last_stroke_back() -> void:
+	print("undo")
+	var m := _make()
+	_stroke(m, Vector2(100.0, 200.0))
+	_stroke(m, Vector2(100.0, 300.0))
+	_undo(m)
+	expect(m._strokes.size() == 1, "ctrl-Z removes the most recent stroke")
+
+func _test_redo_puts_it_back() -> void:
+	print("redo")
+	var m := _make()
+	_stroke(m, Vector2(100.0, 200.0))
+	_undo(m)
+	expect(m._strokes.is_empty(), "undone")
+	_redo(m)
+	expect(m._strokes.size() == 1, "ctrl-Y brings the stroke back")
+
+	var shifted := _make()
+	_stroke(shifted, Vector2(100.0, 200.0))
+	_undo(shifted)
+	_key(shifted, KEY_Z, true)
+	expect(shifted._strokes.size() == 1, "and so does ctrl-shift-Z")
+
+func _test_undo_walks_all_the_way_back() -> void:
+	print("undoing repeatedly")
+	var m := _make()
+	for i in 4:
+		_stroke(m, Vector2(100.0, 150.0 + i * 40.0))
+	expect(m._strokes.size() == 4, "four strokes drawn")
+	for i in 4:
+		_undo(m)
+	expect(m._strokes.is_empty(), "and undone one at a time back to a blank canvas")
+	for i in 4:
+		_redo(m)
+	expect(m._strokes.size() == 4, "then redone the same way")
+
+func _test_undoing_past_the_start_is_harmless() -> void:
+	print("the end of the history")
+	var m := _make()
+	_stroke(m, Vector2(100.0, 200.0))
+	for i in 5:
+		_undo(m)
+	expect(m._strokes.is_empty(), "undoing more times than there are strokes leaves it blank")
+	_redo(m)
+	expect(m._strokes.size() == 1, "and the history is still intact afterwards")
+
+func _test_a_new_stroke_discards_the_redo_branch() -> void:
+	print("branching")
+	var m := _make()
+	_stroke(m, Vector2(100.0, 200.0))
+	_stroke(m, Vector2(100.0, 300.0))
+	_undo(m)
+	# Drawing after an undo replaces the future, as in any editor.
+	_stroke(m, Vector2(100.0, 400.0))
+	var after_new: int = m._strokes.size()
+	_redo(m)
+	expect(m._strokes.size() == after_new, "redo has nothing left to replay after a new stroke")
+
+func _test_the_counter_follows_the_strokes() -> void:
+	print("the readout")
+	var m := _make()
+	var label: Label = m.get_node("HUD/HistoryLabel")
+	expect(label.text.contains("0"), "the counter starts at zero")
+	_stroke(m, Vector2(100.0, 200.0))
+	expect(label.text.contains("1"), "and counts a committed stroke")
+	_undo(m)
+	expect(label.text.contains("0"), "and an undone one back off again")
+
+func _test_clearing_wipes_the_history_too() -> void:
+	print("clear")
+	var m := _make()
+	_stroke(m, Vector2(100.0, 200.0))
+	_stroke(m, Vector2(100.0, 300.0))
+	m._clear_all()
+	expect(m._strokes.is_empty(), "clear empties the canvas")
+	# The history goes with it: undoing back into a cleared canvas would put
+	# strokes back that the user deliberately threw away.
+	_undo(m)
+	expect(m._strokes.is_empty(), "and undo cannot resurrect the cleared strokes")
