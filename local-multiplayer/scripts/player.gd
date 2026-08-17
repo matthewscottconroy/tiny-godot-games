@@ -18,9 +18,19 @@ func _physics_process(_delta: float) -> void:
 	queue_redraw()
 
 func _get_dir() -> Vector2:
-	if player_id == 1:
-		return Vector2(
-			float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
-			float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
-		)
+	if uses_wasd():
+		return axis_from(
+			Input.is_key_pressed(KEY_D), Input.is_key_pressed(KEY_A),
+			Input.is_key_pressed(KEY_S), Input.is_key_pressed(KEY_W))
 	return Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+
+## Player one is on WASD; everyone else uses the ui_* actions.
+##
+## Two players on one keyboard cannot share a set of keys, and the ui_* actions
+## are already bound to the arrows — so only one player can use them.
+func uses_wasd() -> bool:
+	return player_id == 1
+
+## Turn four held keys into a direction, with opposite keys cancelling out.
+func axis_from(right: bool, left: bool, down: bool, up: bool) -> Vector2:
+	return Vector2(float(right) - float(left), float(down) - float(up))

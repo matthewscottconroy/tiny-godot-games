@@ -13,38 +13,48 @@ var state := State.IDLE
 @onready var _label: Label = $StateLabel
 
 func _physics_process(delta: float) -> void:
-	var dir := Input.get_axis("ui_left", "ui_right")
+	tick(delta, Input.get_axis("ui_left", "ui_right"),
+		Input.is_action_just_pressed("ui_up"),
+		is_on_floor(), is_on_wall_only(), get_wall_normal().x)
+	move_and_slide()
+	queue_redraw()
 
-	if is_on_floor():
+## One frame of movement, given this frame's input and what the body is touching.
+##
+## The three cases are genuinely different rules rather than variations on one:
+## on the floor the player has full control, on a wall they have none but slide
+## slowly, and in the air control comes back gradually.
+func tick(delta: float, dir: float, jump_just: bool,
+		on_floor: bool, on_wall: bool, wall_normal_x: float) -> void:
+	if on_floor:
 		velocity.y = 0.0
 		velocity.x = dir * SPEED
-		if Input.is_action_just_pressed("ui_up"):
+		if jump_just:
 			velocity.y = JUMP_VEL
-	elif is_on_wall_only():
+	elif on_wall:
 		# Slide down slowly
 		velocity.y = minf(velocity.y + GRAVITY * delta, WALL_SLIDE)
 		velocity.x = 0.0
-		if Input.is_action_just_pressed("ui_up"):
-			var normal := get_wall_normal()
-			velocity.x = normal.x * WALL_JUMP_X
+		if jump_just:
+			# The wall normal already points away from the wall, so the push
+			# follows it rather than opposing it.
+			velocity.x = wall_normal_x * WALL_JUMP_X
 			velocity.y = WALL_JUMP_Y
 	else:
 		velocity.y += GRAVITY * delta
 		velocity.x = lerpf(velocity.x, dir * SPEED, 0.08)
 
-	move_and_slide()
-	_update_state()
-	queue_redraw()
+	update_state(on_floor, on_wall)
 
-func _update_state() -> void:
+func update_state(on_floor: bool, on_wall: bool) -> void:
 	var prev := state
-	if is_on_floor():
+	if on_floor:
 		state = State.RUN if absf(velocity.x) > 10 else State.IDLE
-	elif is_on_wall_only():
+	elif on_wall:
 		state = State.WALL_SLIDE
 	else:
 		state = State.JUMP if velocity.y < 0 else State.FALL
-	if state != prev:
+	if state != prev and _label:
 		_label.text = State.keys()[state]
 
 func _draw() -> void:
