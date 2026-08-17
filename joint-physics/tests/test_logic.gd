@@ -88,14 +88,24 @@ func _test_the_first_link_is_offset_so_it_swings() -> void:
 	var m := _make()
 	# Hung dead straight, a pendulum sits there forever. The demo starts it
 	# leaning so it has somewhere to fall.
-	expect(not is_equal_approx(m._pend_bodies[1].position.x, m._pend_bodies[0].position.x),
-		"the first link starts off to one side of the anchor")
+	expect(m._pend_bodies[1].position.x < m._pend_bodies[0].position.x,
+		"the first link starts to the left of the anchor, so the chain falls to the right")
+	for i in range(2, m._pend_bodies.size()):
+		expect_quiet(is_equal_approx(m._pend_bodies[i].position.x, m.PEND_X),
+			"the links below it hang straight down")
+	expect(_quiet_failures == 0, "and only the first link is offset")
 
 func _test_the_spring_is_slung_between_two_anchors() -> void:
 	print("the spring rig")
 	var m := _make()
 	expect(m._spring_left is StaticBody2D and m._spring_right is StaticBody2D,
 		"the spring hangs from two fixed points")
+	# One either side of the weight: two anchors on the same side would pull it
+	# sideways rather than suspending it.
+	expect(m._spring_left.position.x < m.SPRING_CX, "the left anchor is on the left")
+	expect(m._spring_right.position.x > m.SPRING_CX, "and the right one on the right")
+	expect(is_equal_approx(m._spring_left.position.y, m._spring_right.position.y),
+		"both at the same height")
 	expect(m._spring_weight is RigidBody2D, "with a weight between them")
 	expect(m._spring_weight.mass > 1.0, "heavy enough to stretch the springs")
 	expect(_joints(m, "DampedSpringJoint2D").size() == 2, "and a spring to each anchor")
@@ -110,6 +120,13 @@ func _test_the_spring_is_stretched_at_rest() -> void:
 		expect_quiet(spring.rest_length < spring.length, "a spring is stretched at rest")
 		expect_quiet(spring.stiffness > 0.0, "and stiff enough to pull back")
 		expect_quiet(spring.damping > 0.0, "with damping, so it settles")
+		# The joint's own position is the anchor the spring pulls about, so it
+		# belongs between the two bodies it joins.
+		var midway: bool = mini(int(m._spring_left.position.x), int(m._spring_weight.position.x)) \
+			<= int(spring.position.x) \
+			and int(spring.position.x) <= maxi(int(m._spring_right.position.x),
+				int(m._spring_weight.position.x))
+		expect_quiet(midway, "and sits between the bodies it joins")
 	expect(_quiet_failures == 0, "both springs are stretched, stiff and damped")
 
 func _test_the_pendulum_swings() -> void:
