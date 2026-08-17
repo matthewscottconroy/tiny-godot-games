@@ -1,14 +1,25 @@
 extends Node
 
+# Drives the real translation table from scenes/main.tscn — see
+# docs/TEST_INTEGRITY.md.
+#
+# TranslationServer is global, so the suite puts the locale back when it is
+# done — a leftover would change what every later demo sees.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_all_locales_have_all_keys()
-	_test_translation_round_trip()
-	_test_locale_switch_changes_strings()
-	_test_missing_key_returns_key()
+	_test_every_language_has_every_key()
+	_test_the_languages_are_actually_different()
+	_test_the_translations_are_registered_with_godot()
+	_test_it_opens_in_english()
+	_test_switching_language_changes_the_text()
+	_test_the_language_buttons_switch()
+	_test_the_key_list_is_shown_with_its_translations()
+	_test_an_unknown_key_comes_back_as_itself()
 	_report()
+	TranslationServer.set_locale("en")
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -18,78 +29,109 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-# ---- data mirrored from main.gd ----
-
-const KEYS := ["TITLE", "GREETING", "SCORE", "LIVES", "GAME_OVER", "START", "QUIT", "SETTINGS"]
-
-const TRANSLATIONS := {
-	"en": {
-		"TITLE": "Adventure Quest", "GREETING": "Welcome, hero!",
-		"SCORE": "Score", "LIVES": "Lives", "GAME_OVER": "Game Over",
-		"START": "Start Game", "QUIT": "Quit", "SETTINGS": "Settings",
-	},
-	"es": {
-		"TITLE": "Aventura Épica", "GREETING": "¡Bienvenido, héroe!",
-		"SCORE": "Puntuación", "LIVES": "Vidas", "GAME_OVER": "Juego terminado",
-		"START": "Iniciar juego", "QUIT": "Salir", "SETTINGS": "Ajustes",
-	},
-	"fr": {
-		"TITLE": "Quête Aventure", "GREETING": "Bienvenue, héros!",
-		"SCORE": "Score", "LIVES": "Vies", "GAME_OVER": "Partie terminée",
-		"START": "Commencer", "QUIT": "Quitter", "SETTINGS": "Paramètres",
-	},
-}
-
-# ---- helpers ----
-
-func _build_translation_server() -> void:
-	for locale in TRANSLATIONS:
-		var tr := Translation.new()
-		tr.locale = locale
-		for k in TRANSLATIONS[locale]:
-			tr.add_message(k, TRANSLATIONS[locale][k])
-		TranslationServer.add_translation(tr)
-
-# ---- tests ----
-
-func _test_all_locales_have_all_keys() -> void:
-	print("all locales have all 8 keys")
-	for locale in TRANSLATIONS:
-		for k in KEYS:
-			expect(TRANSLATIONS[locale].has(k), "locale '%s' has key '%s'" % [locale, k])
-
-func _test_translation_round_trip() -> void:
-	print("Translation.add_message / translate round-trip")
-	_build_translation_server()
-	TranslationServer.set_locale("en")
-	expect(TranslationServer.translate("TITLE") == "Adventure Quest", "en TITLE round-trip")
-	TranslationServer.set_locale("es")
-	expect(TranslationServer.translate("TITLE") == "Aventura Épica", "es TITLE round-trip")
-	TranslationServer.set_locale("fr")
-	expect(TranslationServer.translate("GREETING") == "Bienvenue, héros!", "fr GREETING round-trip")
-
-func _test_locale_switch_changes_strings() -> void:
-	print("locale switch changes returned strings")
-	_build_translation_server()
-	TranslationServer.set_locale("en")
-	var en_start := TranslationServer.translate("START")
-	TranslationServer.set_locale("es")
-	var es_start := TranslationServer.translate("START")
-	expect(en_start != es_start, "EN vs ES START differ")
-	TranslationServer.set_locale("fr")
-	var fr_start := TranslationServer.translate("START")
-	expect(en_start != fr_start, "EN vs FR START differ")
-
-func _test_missing_key_returns_key() -> void:
-	print("missing key returns the key string itself")
-	_build_translation_server()
-	TranslationServer.set_locale("en")
-	var result := TranslationServer.translate("NONEXISTENT_KEY_XYZ")
-	# Godot returns the key when no translation is found
-	expect(result == "NONEXISTENT_KEY_XYZ", "missing key returns key string")
-
 func _report() -> void:
 	var summary := "[localization] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+var _scene: Control
+
+func _make() -> Control:
+	if is_instance_valid(_scene):
+		remove_child(_scene)
+		_scene.free()
+	_scene = load("res://scenes/main.tscn").instantiate()
+	add_child(_scene)
+	return _scene
+
+func _label(m: Control, path: String) -> Label:
+	return m.get_node("VBox/" + path)
+
+func _test_every_language_has_every_key() -> void:
+	print("coverage")
+	var m := _make()
+	expect(m.TRANSLATIONS.size() > 1, "there is more than one language")
+	for locale in m.TRANSLATIONS:
+		var table: Dictionary = m.TRANSLATIONS[locale]
+		for key in m.KEYS:
+			# A missing key shows the raw key on screen, which is how half-
+			# translated games end up displaying GAME_OVER to a player.
+			expect_quiet(table.has(key), "%s is missing %s" % [locale, key])
+			expect_quiet(table.get(key, "") != "", "%s has %s blank" % [locale, key])
+	expect(_quiet_failures == 0, "every language translates every key")
+
+func _test_the_languages_are_actually_different() -> void:
+	print("distinct languages")
+	var m := _make()
+	var locales: Array = m.TRANSLATIONS.keys()
+	for key in m.KEYS:
+		var values := {}
+		for locale in locales:
+			values[m.TRANSLATIONS[locale][key]] = true
+		expect_quiet(values.size() > 1, "%s reads the same in every language" % key)
+	expect(_quiet_failures == 0, "the languages differ from each other, key by key")
+
+func _test_the_translations_are_registered_with_godot() -> void:
+	print("registration")
+	var m := _make()
+	# Held in a dictionary and never handed to the TranslationServer, the table
+	# would be documentation rather than a translation.
+	TranslationServer.set_locale("es")
+	expect(TranslationServer.translate("TITLE") == m.TRANSLATIONS["es"]["TITLE"],
+		"the server returns the Spanish title")
+	TranslationServer.set_locale("en")
+
+func _test_it_opens_in_english() -> void:
+	print("the default")
+	var m := _make()
+	expect(m._current_locale == "en", "the demo opens in English")
+	expect(_label(m, "TitleLabel").text == m.TRANSLATIONS["en"]["TITLE"], "with the English title")
+
+func _test_switching_language_changes_the_text() -> void:
+	print("switching")
+	var m := _make()
+	var english: String = _label(m, "TitleLabel").text
+	m._set_locale("fr")
+	expect(m._current_locale == "fr", "the locale changes")
+	expect(_label(m, "TitleLabel").text != english, "and the title with it")
+	expect(_label(m, "TitleLabel").text == m.TRANSLATIONS["fr"]["TITLE"], "to the French one")
+	expect(_label(m, "GreetingLabel").text == m.TRANSLATIONS["fr"]["GREETING"],
+		"and every other visible string too")
+	expect(_label(m, "CurrentLangLabel").text.contains("fr"), "with the readout naming the language")
+	m._set_locale("en")
+
+func _test_the_language_buttons_switch() -> void:
+	print("the buttons")
+	var m := _make()
+	(m.get_node("VBox/LangRow/BtnES") as Button).pressed.emit()
+	expect(m._current_locale == "es", "the Spanish button switches to Spanish")
+	(m.get_node("VBox/LangRow/BtnEN") as Button).pressed.emit()
+	expect(m._current_locale == "en", "and the English button back to English")
+
+func _test_the_key_list_is_shown_with_its_translations() -> void:
+	print("the table")
+	var m := _make()
+	var grid: GridContainer = m.get_node("VBox/Grid")
+	var children := grid.get_children()
+	expect(children.size() >= m.KEYS.size() * 2, "the grid has a row per key")
+	for i in m.KEYS.size():
+		var key_label := children[i * 2] as Label
+		var value_label := children[i * 2 + 1] as Label
+		expect_quiet(key_label.text == m.KEYS[i], "row %d names its key" % i)
+		expect_quiet(value_label.text == m.TRANSLATIONS["en"][m.KEYS[i]],
+			"row %d shows the translation beside it" % i)
+	expect(_quiet_failures == 0, "each row pairs a key with its translation")
+
+func _test_an_unknown_key_comes_back_as_itself() -> void:
+	print("missing keys")
+	_make()
+	expect(TranslationServer.translate("NO_SUCH_KEY") == "NO_SUCH_KEY",
+		"an untranslated key falls back to itself rather than an empty string")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, ")")
