@@ -111,6 +111,25 @@ script instead of a copy of it.**
 4. If the demo is a shader or engine-feature showcase with no logic of its own,
    a low score is expected and fine. The smoke check is the real guard there.
 
+## Scores that cannot reach 100%
+
+Three kinds of surviving mutation are not worth chasing, and a score should be
+read with them in mind:
+
+- **Input-reading lines.** `if Input.is_action_just_pressed(...) and on_floor:`
+  cannot be driven without simulating input. Extracting the *rule* moves the
+  testable part out; what remains is the wiring.
+- **Display code.** A `_draw()` colour or a HUD label string is not logic. Where
+  it lives in a script the tool mutates, it will survive.
+- **Equivalent mutations.** Some changes do not alter observable behaviour at
+  all. `moving-platforms` offsets by `_origin + offset`; flipping it to `-` just
+  mirrors a symmetric sine, which over time is indistinguishable. That one
+  turned out to be killable after all — the *first* movement direction differs,
+  because `sin` is positive just after zero — but the general case exists and a
+  genuinely equivalent mutation can never be killed.
+
+A demo scoring 50% with the other 50% in those three categories is done.
+
 ## Current state
 
 The work is deliberately incremental. Converting all 111 remaining zero-scoring
