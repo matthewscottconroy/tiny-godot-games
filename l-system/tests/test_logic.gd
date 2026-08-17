@@ -79,6 +79,9 @@ func _test_the_turtle_draws_a_segment_per_f() -> void:
 	expect(pts.size() == 2, "one F is one line — a start and an end")
 	expect(pts[0] == Vector2.ZERO, "starting where the turtle stands")
 	expect(is_equal_approx(pts[0].distance_to(pts[1]), 10.0), "a segment long")
+	# Facing right at angle zero, so the segment has to end to the right —
+	# drawing it backwards would put the whole figure behind the turtle.
+	expect(pts[1].is_equal_approx(Vector2(10.0, 0.0)), "drawn in the direction the turtle faces")
 
 	expect(_walk(m, "FFF").size() == 6, "three Fs are three lines")
 	var trail := _walk(m, "FF")
@@ -154,9 +157,15 @@ func _test_space_moves_to_the_next_preset() -> void:
 	e.keycode = KEY_SPACE
 	e.pressed = true
 	m._input(e)
-	expect(m._name_str != first, "space moves to the next preset")
+	expect(m._name_str == m.PRESETS[1]["name"], "space moves to the next preset in the list")
 	expect(m._lines != first_lines, "and redraws the figure")
 
 	for i in m.PRESETS.size() - 1:
 		m._input(e)
 	expect(m._name_str == first, "and the list comes back round to the first")
+
+	var release := InputEventKey.new()
+	release.keycode = KEY_SPACE
+	release.pressed = false
+	m._input(release)
+	expect(m._name_str == first, "letting go of space does not advance again")
