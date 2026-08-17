@@ -175,8 +175,16 @@ $ cat bouncing-ball/tests/frames
 
 The headless viewport is **64x64**, not the project's window size — the dummy
 display driver opens a minimal window. A suite that hard-codes 640x480 while the
-demo reads `get_viewport_rect()` is testing two different play areas. Derive
-positions from the live rect instead.
+demo reads `get_viewport_rect()` is testing two different play areas. Either
+derive positions from the live rect, or resize the window first — which works
+even under the dummy driver:
+
+```gdscript
+get_window().size = Vector2i(640, 480)
+```
+
+`export-vars` needs the resize: its play area has a 40 px margin at the top and
+30 at the bottom, which leaves no room at all inside a 64 px window.
 
 `move_and_slide()` is the usual reason a suite needs this. It hands the
 movement to the physics server, which applies it on the server's own step — so
