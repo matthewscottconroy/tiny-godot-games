@@ -39,12 +39,20 @@ func _physics_process(delta: float) -> void:
 	_transition()
 	queue_redraw()
 
+## The whole state machine: derive the state from physics rather than tracking
+## it with flags. Taking its inputs as parameters keeps it a pure function of
+## the body's motion, which is both the lesson and what makes it testable.
+func state_for(on_floor: bool, vel: Vector2) -> State:
+	if on_floor:
+		# Below the threshold counts as idle, so tiny residual drift after
+		# stopping does not read as walking.
+		return State.WALK if absf(vel.x) > walk_threshold else State.IDLE
+	# Airborne: rising is a jump, descending is a fall.
+	return State.JUMP if vel.y < 0 else State.FALL
+
 func _transition() -> void:
 	var prev := state
-	if is_on_floor():
-		state = State.WALK if abs(velocity.x) > walk_threshold else State.IDLE
-	else:
-		state = State.JUMP if velocity.y < 0 else State.FALL
+	state = state_for(is_on_floor(), velocity)
 	if state != prev:
 		state_label.text = State.keys()[state]
 		state_changed.emit(state)

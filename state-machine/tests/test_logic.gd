@@ -1,15 +1,21 @@
 extends Node
 
+# Drives the real player from scripts/player.gd. The previous suite recomputed
+# the transition table inline — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	test_idle_when_stationary_on_floor()
-	test_walk_when_moving_on_floor()
-	test_jump_when_rising()
-	test_fall_when_falling()
-	test_idle_to_walk_transition()
-	test_walk_to_fall_transition()
+	_test_idle_when_still_on_floor()
+	_test_walk_above_the_threshold()
+	_test_threshold_is_exclusive()
+	_test_direction_does_not_matter()
+	_test_jump_when_rising()
+	_test_fall_when_descending()
+	_test_airborne_beats_horizontal_speed()
+	_test_states_are_mutually_exclusive()
+	_test_signal_fires_only_on_change()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -26,42 +32,82 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# Replicate _transition() logic from player.gd
-enum State { IDLE, WALK, JUMP, FALL }
+var _script: GDScript = load("res://scripts/player.gd")
 
-func _calc_state(on_floor: bool, vel_x: float, vel_y: float) -> State:
-	if on_floor:
-		return State.WALK if abs(vel_x) > 10 else State.IDLE
-	else:
-		return State.JUMP if vel_y < 0 else State.FALL
+func _make() -> CharacterBody2D:
+	var p := CharacterBody2D.new()
+	p.set_script(_script)
+	add_child(p)
+	return p
 
-# --- tests ---
+func _test_idle_when_still_on_floor() -> void:
+	print("idle")
+	var p := _make()
+	expect(p.state_for(true, Vector2.ZERO) == p.State.IDLE, "standing still on the floor is IDLE")
 
-func test_idle_when_stationary_on_floor() -> void:
-	expect(_calc_state(true, 0.0, 0.0)   == State.IDLE, "standing still on floor → IDLE")
-	expect(_calc_state(true, 5.0, 0.0)   == State.IDLE, "tiny horizontal vel on floor → IDLE (threshold)")
+func _test_walk_above_the_threshold() -> void:
+	print("walk")
+	var p := _make()
+	expect(p.state_for(true, Vector2(p.walk_threshold + 1.0, 0)) == p.State.WALK,
+		"moving faster than the threshold is WALK")
 
-func test_walk_when_moving_on_floor() -> void:
-	expect(_calc_state(true, 200.0, 0.0) == State.WALK, "moving right on floor → WALK")
-	expect(_calc_state(true, -200.0, 0.0) == State.WALK, "moving left on floor → WALK")
-	expect(_calc_state(true, 11.0, 0.0)  == State.WALK, "vel.x just above threshold → WALK")
+func _test_threshold_is_exclusive() -> void:
+	print("the threshold")
+	var p := _make()
+	# Exactly at the threshold counts as idle, which is what stops residual
+	# drift after stopping from flickering the state.
+	expect(p.state_for(true, Vector2(p.walk_threshold, 0)) == p.State.IDLE,
+		"exactly at the threshold is still IDLE")
+	expect(p.state_for(true, Vector2(p.walk_threshold - 0.1, 0)) == p.State.IDLE,
+		"just below it is IDLE")
 
-func test_jump_when_rising() -> void:
-	expect(_calc_state(false, 0.0, -420.0) == State.JUMP, "rising (vel_y < 0) → JUMP")
-	expect(_calc_state(false, 100.0, -1.0) == State.JUMP, "any upward velocity → JUMP")
+func _test_direction_does_not_matter() -> void:
+	print("direction")
+	var p := _make()
+	var fast: float = p.walk_threshold + 50.0
+	expect(p.state_for(true, Vector2(-fast, 0)) == p.State.WALK,
+		"walking left is WALK too — the state uses speed, not signed velocity")
 
-func test_fall_when_falling() -> void:
-	expect(_calc_state(false, 0.0, 100.0)  == State.FALL, "falling (vel_y > 0) → FALL")
-	expect(_calc_state(false, 50.0, 0.0)   == State.FALL, "horizontal only, airborne → FALL (vel_y == 0)")
+func _test_jump_when_rising() -> void:
+	print("jump")
+	var p := _make()
+	expect(p.state_for(false, Vector2(0, -200)) == p.State.JUMP,
+		"airborne and rising is JUMP")
 
-func test_idle_to_walk_transition() -> void:
-	var s := _calc_state(true, 0.0, 0.0)
-	expect(s == State.IDLE, "starts IDLE")
-	s = _calc_state(true, 200.0, 0.0)
-	expect(s == State.WALK, "transitions to WALK on horizontal input")
+func _test_fall_when_descending() -> void:
+	print("fall")
+	var p := _make()
+	expect(p.state_for(false, Vector2(0, 200)) == p.State.FALL,
+		"airborne and descending is FALL")
+	expect(p.state_for(false, Vector2.ZERO) == p.State.FALL,
+		"the apex, with no vertical speed, counts as FALL rather than JUMP")
 
-func test_walk_to_fall_transition() -> void:
-	var s := _calc_state(true, 200.0, 0.0)
-	expect(s == State.WALK, "WALK while on floor")
-	s = _calc_state(false, 200.0, 50.0)
-	expect(s == State.FALL, "FALL after leaving floor with downward velocity")
+func _test_airborne_beats_horizontal_speed() -> void:
+	print("airborne wins")
+	var p := _make()
+	expect(p.state_for(false, Vector2(999, -200)) == p.State.JUMP,
+		"running fast in mid-air is still JUMP, not WALK")
+
+func _test_states_are_mutually_exclusive() -> void:
+	print("one state at a time")
+	# The point of an FSM over boolean flags: every input maps to exactly one
+	# state, so contradictory combinations cannot arise.
+	var p := _make()
+	var seen := {}
+	for on_floor in [true, false]:
+		for vx in [0.0, 500.0]:
+			for vy in [-100.0, 0.0, 100.0]:
+				var st: int = p.state_for(on_floor, Vector2(vx, vy))
+				seen[st] = true
+				expect(st >= 0 and st < p.State.size(), "every input yields a valid state")
+	expect(seen.size() == 4, "all four states are reachable")
+
+func _test_signal_fires_only_on_change() -> void:
+	print("state_changed")
+	var p := _make()
+	var changes: Array[int] = []
+	p.state_changed.connect(func(s: int) -> void: changes.append(s))
+	p.state = p.State.IDLE
+	p.velocity = Vector2.ZERO
+	p._transition()
+	expect(changes.is_empty(), "staying in the same state emits nothing")
