@@ -1,16 +1,23 @@
 extends Node
 
+# Drives the real game from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_beat_interval()
-	_test_note_fall_speed()
-	_test_perfect_judgment()
-	_test_good_judgment()
-	_test_miss_judgment()
-	_test_combo_increments()
-	_test_combo_resets_on_miss()
+	_test_it_starts_empty()
+	_test_notes_fall()
+	_test_a_note_dead_on_the_line_is_perfect()
+	_test_a_note_near_the_line_is_good()
+	_test_a_note_nowhere_near_the_line_is_a_miss()
+	_test_pressing_with_no_notes_is_a_miss()
+	_test_a_note_can_only_be_hit_once()
+	_test_the_nearest_note_is_the_one_judged()
+	_test_a_note_falling_past_the_line_is_a_miss()
+	_test_the_combo_builds_and_breaks()
+	_test_a_longer_combo_is_worth_more()
+	_test_notes_spawn_on_the_beat()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -21,61 +28,140 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_near(a: float, b: float, label: String, tol: float = 0.01) -> void:
-	expect(absf(a - b) <= tol, label)
-
-const BPM           := 120.0
-const BEAT_INTERVAL := 60.0 / BPM
-const FALL_SPEED    := 240.0
-const TARGET_Y      := 400.0
-const PERFECT_DIST  := 10.0
-const GOOD_DIST     := 26.0
-
-func _test_beat_interval() -> void:
-	print("beat interval at 120 BPM")
-	expect_near(BEAT_INTERVAL, 0.5, "beat interval is 0.5s at 120 BPM")
-
-func _test_note_fall_speed() -> void:
-	print("note falls at FALL_SPEED")
-	var y := 0.0
-	var delta := 0.016
-	y += FALL_SPEED * delta
-	expect_near(y, FALL_SPEED * delta, "note y advances by FALL_SPEED * delta per frame")
-
-func _test_perfect_judgment() -> void:
-	print("perfect judgment window")
-	var note_y := TARGET_Y + 5.0
-	var dist := absf(note_y - TARGET_Y)
-	expect(dist <= PERFECT_DIST, "note within PERFECT_DIST is a perfect hit")
-
-func _test_good_judgment() -> void:
-	print("good judgment window")
-	var note_y := TARGET_Y + 20.0
-	var dist := absf(note_y - TARGET_Y)
-	expect(dist > PERFECT_DIST and dist <= GOOD_DIST, "note outside perfect but within good is a good hit")
-
-func _test_miss_judgment() -> void:
-	print("miss judgment")
-	var note_y := TARGET_Y + 40.0
-	var dist := absf(note_y - TARGET_Y)
-	expect(dist > GOOD_DIST, "note beyond GOOD_DIST is a miss")
-
-func _test_combo_increments() -> void:
-	print("combo increments on hit")
-	var combo := 0
-	combo += 1
-	expect(combo == 1, "combo is 1 after first hit")
-	combo += 1
-	expect(combo == 2, "combo is 2 after second hit")
-
-func _test_combo_resets_on_miss() -> void:
-	print("combo resets to 0 on miss")
-	var combo := 5
-	combo = 0
-	expect(combo == 0, "combo resets to 0 on miss")
-
 func _report() -> void:
 	var summary := "[rhythm-minigame] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/main.gd")
+
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
+
+## One note, placed a given distance short of the target line.
+func _note_at(m: Node2D, y: float) -> Dictionary:
+	var note := {"y": y, "hit": false}
+	m._notes.append(note)
+	return note
+
+func _press_space(m: Node2D) -> void:
+	var e := InputEventKey.new()
+	e.keycode = KEY_SPACE
+	e.pressed = true
+	m._input(e)
+
+func _test_it_starts_empty() -> void:
+	print("the opening bar")
+	var m := _make()
+	expect(m._notes.is_empty(), "no notes on screen yet")
+	expect(m._score == 0 and m._combo == 0, "and nothing scored")
+
+func _test_notes_fall() -> void:
+	print("falling")
+	var m := _make()
+	var note := _note_at(m, 100.0)
+	m._process(STEP)
+	expect(note["y"] > 100.0, "a note moves down the track")
+	expect(is_equal_approx(note["y"], 100.0 + m.FALL_SPEED * STEP), "at the fall speed")
+
+func _test_a_note_dead_on_the_line_is_perfect() -> void:
+	print("perfect")
+	var m := _make()
+	var note := _note_at(m, m.TARGET_Y)
+	_press_space(m)
+	expect(m._feedback == "PERFECT!", "a note exactly on the line is perfect")
+	expect(m._score > 100, "worth more than a good hit")
+	expect(note["hit"], "and the note is spent")
+
+func _test_a_note_near_the_line_is_good() -> void:
+	print("good")
+	var m := _make()
+	_note_at(m, m.TARGET_Y + (m.PERFECT_DIST + m.GOOD_DIST) * 0.5)
+	_press_space(m)
+	expect(m._feedback == "GOOD", "a note inside the outer ring is good")
+	expect(m._score == 50, "worth a flat fifty")
+
+func _test_a_note_nowhere_near_the_line_is_a_miss() -> void:
+	print("too early")
+	var m := _make()
+	var note := _note_at(m, m.TARGET_Y - m.GOOD_DIST * 3.0)
+	_press_space(m)
+	expect(m._feedback == "MISS", "hitting well before the note arrives is a miss")
+	expect(m._score == 0, "and scores nothing")
+	expect(not note["hit"], "the note stays in play")
+
+func _test_pressing_with_no_notes_is_a_miss() -> void:
+	print("mashing")
+	var m := _make()
+	_press_space(m)
+	expect(m._feedback == "MISS", "pressing with an empty track is a miss")
+
+func _test_a_note_can_only_be_hit_once() -> void:
+	print("double hits")
+	var m := _make()
+	_note_at(m, m.TARGET_Y)
+	_press_space(m)
+	var scored: int = m._score
+	_press_space(m)
+	expect(m._score == scored, "hitting a spent note again scores nothing")
+	expect(m._feedback == "MISS", "it counts as a miss instead")
+
+func _test_the_nearest_note_is_the_one_judged() -> void:
+	print("choosing a note")
+	var m := _make()
+	var far := _note_at(m, m.TARGET_Y - 200.0)
+	var near := _note_at(m, m.TARGET_Y + 2.0)
+	_press_space(m)
+	expect(near["hit"], "the note closest to the line is the one hit")
+	expect(not far["hit"], "not the one still on its way down")
+
+func _test_a_note_falling_past_the_line_is_a_miss() -> void:
+	print("letting one go")
+	var m := _make()
+	_note_at(m, m.TARGET_Y + m.GOOD_DIST * 2.0 + 1.0)
+	m._combo = 5
+	m._process(STEP)
+	expect(m._feedback == "MISS", "a note that falls past the line is missed")
+	expect(m._combo == 0, "which breaks the combo")
+	var live := 0
+	for note in m._notes:
+		if not note["hit"]:
+			live += 1
+	expect(live == 0, "and the note is taken off the track")
+
+func _test_the_combo_builds_and_breaks() -> void:
+	print("the combo")
+	var m := _make()
+	for i in 3:
+		_note_at(m, m.TARGET_Y)
+		_press_space(m)
+	expect(m._combo == 3, "three hits in a row is a three-combo")
+	_press_space(m)
+	expect(m._combo == 0, "and one miss resets it to nothing")
+
+func _test_a_longer_combo_is_worth_more() -> void:
+	print("combo scoring")
+	var m := _make()
+	_note_at(m, m.TARGET_Y)
+	_press_space(m)
+	var first: int = m._score
+
+	var later := _make()
+	later._combo = 10
+	_note_at(later, later.TARGET_Y)
+	_press_space(later)
+	expect(later._score > first, "the same note is worth more deep into a combo")
+
+func _test_notes_spawn_on_the_beat() -> void:
+	print("the beat")
+	var m := _make()
+	# Not every beat spawns a note, so this counts beats' worth of time rather
+	# than expecting one note per beat.
+	for i in int(m.BEAT_INTERVAL * 60.0) * 8:
+		m._process(STEP)
+	expect(m._notes.size() > 0, "notes appear as the beats go by")
+	expect(m._notes.size() <= 8, "at most one per beat")
