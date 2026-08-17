@@ -172,6 +172,12 @@ $ cat bouncing-ball/tests/frames
 200
 ```
 
+`move_and_slide()` is the usual reason a suite needs this. It hands the
+movement to the physics server, which applies it on the server's own step — so
+calling `_physics_process` by hand sets the velocity and moves nothing. Assert
+on `velocity` if that is what you mean, and await real `physics_frame`s if you
+mean the body actually moved.
+
 Both `run-tests.sh` and `tools/mutate.py` read it. It is per-demo on purpose:
 the budget is paid on every run, and a mutation run pays it once per mutant, so
 raising it for everyone would make the slow tool slower still. Note that
