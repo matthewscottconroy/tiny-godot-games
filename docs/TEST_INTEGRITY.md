@@ -139,6 +139,22 @@ And a fourth case, where the score is not just capped but undefined:
   run the real scene and watch the ball, because the alternative is a suite that
   reimplements a bounce the demo does not contain.
 
+## Deriving your inputs from the code under test
+
+A suite that computes where to click by calling the demo's own layout function
+moves with it. `config-file` scored 50% on its first conversion for exactly
+this reason: every mutation that shifted a control also shifted the click that
+was supposed to find it, so the suite passed and the survivor looked
+unkillable.
+
+The fix is one test that states the layout independently — controls inside the
+panel, rows in order and not overlapping, the save button centred. Everything
+else can keep deriving its clicks, which is what keeps the suite readable.
+
+The same trap catches any suite whose expected value is computed the way the
+code computes it. Comparing a shoelace area against a rectangle whose area you
+know is a test; comparing it against a second shoelace implementation is not.
+
 ## Watching a scene play out
 
 Suites run with `--quit-after 5` frames, which is enough for `_ready` and a
