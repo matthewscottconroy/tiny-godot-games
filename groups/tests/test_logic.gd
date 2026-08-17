@@ -1,15 +1,21 @@
 extends Node
 
+# Drives the real enemies from scripts/enemy.gd, and the real group calls the
+# demo uses — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_initial_hp()
-	_test_take_damage()
-	_test_take_damage_to_zero()
-	_test_freeze_toggle()
-	_test_bounce_bounds()
-	_test_initial_spawn_count()
+	_test_damage_reduces_hp()
+	_test_damage_clamps_at_zero()
+	_test_lethal_damage_frees_the_node()
+	_test_freeze_toggles()
+	_test_frozen_enemy_does_not_move()
+	_test_unfrozen_enemy_moves()
+	_test_bounces_off_the_bounds()
+	_test_group_call_reaches_every_member()
+	_test_group_call_skips_non_members()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -20,53 +26,94 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_near(a: float, b: float, label: String, tol: float = 0.01) -> void:
-	expect(absf(a - b) <= tol, label)
-
-func _test_initial_hp() -> void:
-	print("initial hp")
-	var hp := 100
-	expect(hp == 100, "enemy starts with 100 HP")
-
-func _test_take_damage() -> void:
-	print("take_damage reduces HP")
-	var hp := 100
-	hp = max(0, hp - 25)
-	expect(hp == 75, "take_damage(25) reduces to 75")
-	hp = max(0, hp - 25)
-	expect(hp == 50, "take_damage(25) again reduces to 50")
-
-func _test_take_damage_to_zero() -> void:
-	print("take_damage cannot go below 0")
-	var hp := 10
-	hp = max(0, hp - 50)
-	expect(hp == 0, "take_damage clamps at 0")
-
-func _test_freeze_toggle() -> void:
-	print("freeze toggle")
-	var frozen := false
-	frozen = !frozen
-	expect(frozen, "freeze_toggle activates freeze")
-	frozen = !frozen
-	expect(not frozen, "freeze_toggle deactivates freeze")
-
-func _test_bounce_bounds() -> void:
-	print("bounce bounds x:[60,580] y:[80,390]")
-	var pos := Vector2(50.0, 85.0)
-	var vel := Vector2(-50.0, 0.0)
-	if pos.x < 60 or pos.x > 580:
-		vel.x = -vel.x
-		pos.x = clamp(pos.x, 60.0, 580.0)
-	expect(vel.x > 0.0, "velocity reversed at left wall")
-	expect(pos.x >= 60.0, "position clamped to left bound")
-
-func _test_initial_spawn_count() -> void:
-	print("initial spawn count")
-	var initial_enemies := 7
-	expect(initial_enemies == 7, "7 enemies spawned initially")
-
 func _report() -> void:
 	var summary := "[groups] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const GROUP := "enemies"
+var _script: GDScript = load("res://scripts/enemy.gd")
+
+func _make(pos: Vector2 = Vector2(300, 200), vel: Vector2 = Vector2.ZERO) -> Node2D:
+	var e := Node2D.new()
+	e.set_script(_script)
+	add_child(e)
+	e.position = pos
+	e.vel = vel
+	return e
+
+func _test_damage_reduces_hp() -> void:
+	print("damage")
+	var e := _make()
+	var before: int = e.hp
+	e.take_damage(25)
+	expect(e.hp == before - 25, "hp drops by exactly the amount dealt")
+
+func _test_damage_clamps_at_zero() -> void:
+	print("clamping")
+	var e := _make()
+	e.take_damage(e.hp - 1)
+	e.take_damage(999)
+	expect(e.hp == 0, "hp clamps at zero rather than going negative")
+
+func _test_lethal_damage_frees_the_node() -> void:
+	print("death")
+	var e := _make()
+	e.take_damage(9999)
+	expect(e.is_queued_for_deletion(), "an enemy reduced to zero removes itself")
+
+func _test_freeze_toggles() -> void:
+	print("freeze toggle")
+	var e := _make()
+	expect(not e.frozen, "starts unfrozen")
+	e.freeze_toggle()
+	expect(e.frozen, "one call freezes")
+	e.freeze_toggle()
+	expect(not e.frozen, "another unfreezes — it is a toggle, not a setter")
+
+func _test_frozen_enemy_does_not_move() -> void:
+	print("frozen enemies hold still")
+	var e := _make(Vector2(300, 200), Vector2(100, 0))
+	e.freeze_toggle()
+	var before: Vector2 = e.position
+	e._process(0.1)
+	expect(e.position == before, "a frozen enemy ignores its velocity")
+
+func _test_unfrozen_enemy_moves() -> void:
+	print("unfrozen enemies move")
+	var e := _make(Vector2(300, 200), Vector2(100, 0))
+	e._process(0.1)
+	expect(e.position.x > 300.0, "an unfrozen enemy advances along its velocity")
+
+func _test_bounces_off_the_bounds() -> void:
+	print("bouncing")
+	# Heading right, already at the right edge: the next step must turn it round
+	# and keep it inside rather than letting it escape.
+	var e := _make(Vector2(579, 200), Vector2(100, 0))
+	e._process(0.5)
+	expect(e.vel.x < 0.0, "velocity reverses at the boundary")
+	expect(e.position.x <= 580.0, "and the position is clamped back inside")
+
+func _test_group_call_reaches_every_member() -> void:
+	print("call_group")
+	# The point of the demo: address many nodes without holding references.
+	# Enemies join the group themselves in _ready(), which is the demo's point:
+	# nothing has to keep a list of them.
+	var a := _make(); var b := _make(); var c := _make()
+	for e in [a, b, c]:
+		expect(e.is_in_group(GROUP), "an enemy joins the group on its own")
+	get_tree().call_group(GROUP, "take_damage", 10)
+	expect(a.hp == 90 and b.hp == 90 and c.hp == 90,
+		"one call_group reaches all three enemies")
+
+func _test_group_call_skips_non_members() -> void:
+	print("group membership")
+	var member := _make()
+	var outsider := _make()
+	# Leaving the group must stop the calls reaching it — otherwise "group"
+	# would mean nothing.
+	outsider.remove_from_group(GROUP)
+	get_tree().call_group(GROUP, "take_damage", 10)
+	expect(member.hp == 90, "the member is affected")
+	expect(outsider.hp == 100, "a node that left the group is untouched")
