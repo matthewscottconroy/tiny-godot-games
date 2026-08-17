@@ -75,6 +75,17 @@ func _test_painting_at_the_edge_stays_on_the_grid() -> void:
 	expect(_count(m, m.Cell.SAND) < (m._brush * 2 + 1) * (m._brush * 2 + 1),
 		"and the part of the brush past the edge is simply dropped")
 
+	# Dropped, not wrapped: a negative index would quietly paint the far side of
+	# the grid, which looks like material appearing out of nowhere.
+	var wrapped := false
+	for y in m.GRID_H:
+		if m._grid[y][m.GRID_W - 1] != m.Cell.EMPTY:
+			wrapped = true
+	for x in m.GRID_W:
+		if m._grid[m.GRID_H - 1][x] != m.Cell.EMPTY:
+			wrapped = true
+	expect(not wrapped, "and nothing appears on the opposite edge")
+
 func _test_the_number_keys_pick_a_material() -> void:
 	print("choosing a material")
 	var m := _make()
@@ -112,6 +123,24 @@ func _test_sand_slides_off_a_pile() -> void:
 		or m._grid[m.GRID_H - 1][41] == m.Cell.SAND
 	expect(slid, "a grain landing on another slides off to one side")
 
+	# With only one diagonal open, the grain has to take that one — both sides
+	# are checked, not just whichever the code happens to test first.
+	var leftward := _make()
+	leftward._grid[leftward.GRID_H - 1][40] = leftward.Cell.SAND
+	leftward._grid[leftward.GRID_H - 1][41] = leftward.Cell.SAND
+	leftward._grid[leftward.GRID_H - 2][40] = leftward.Cell.SAND
+	leftward._step()
+	expect(leftward._grid[leftward.GRID_H - 1][39] == leftward.Cell.SAND,
+		"with only the left diagonal open, the grain slides left")
+
+	var rightward := _make()
+	rightward._grid[rightward.GRID_H - 1][40] = rightward.Cell.SAND
+	rightward._grid[rightward.GRID_H - 1][39] = rightward.Cell.SAND
+	rightward._grid[rightward.GRID_H - 2][40] = rightward.Cell.SAND
+	rightward._step()
+	expect(rightward._grid[rightward.GRID_H - 1][41] == rightward.Cell.SAND,
+		"and with only the right one open, it slides right")
+
 	var boxed := _make()
 	boxed._grid[boxed.GRID_H - 1][40] = boxed.Cell.SAND
 	boxed._grid[boxed.GRID_H - 1][39] = boxed.Cell.SAND
@@ -146,8 +175,14 @@ func _test_water_spreads_out_flat() -> void:
 	m._grid[floor_y][40] = m.Cell.WATER
 	m._grid[floor_y - 1][40] = m.Cell.WATER
 	m._step()
-	var spread: bool = m._grid[floor_y][39] == m.Cell.WATER or m._grid[floor_y][41] == m.Cell.WATER
-	expect(spread, "water blocked below flows sideways instead of stacking")
+	# It flows into whichever neighbour the coin-flip picks, in its own row —
+	# the drop below it is already occupied.
+	var moved_off: bool = m._grid[floor_y - 1][40] != m.Cell.WATER
+	var sideways: bool = m._grid[floor_y - 1][39] == m.Cell.WATER \
+		or m._grid[floor_y - 1][41] == m.Cell.WATER \
+		or m._grid[floor_y][39] == m.Cell.WATER \
+		or m._grid[floor_y][41] == m.Cell.WATER
+	expect(moved_off and sideways, "water blocked below flows sideways instead of stacking")
 
 	var tower := _make()
 	for y in range(tower.GRID_H - 6, tower.GRID_H):
