@@ -14,7 +14,10 @@ tools/leakcheck.sh                    # every demo
 VERBOSE=1 tools/leakcheck.sh <demo>   # show clean results too
 ```
 
-A full scan of all 165 demos found five reports. Investigating each turned up
+**Current state: 165 clean, 0 leaking.** The two engine-side reports are
+allowlisted with evidence; the race is filtered by confirm-on-retry.
+
+The first full scan found five reports. Investigating each turned up
 **two real leaks, two engine-side reports, and one race** — a distinction worth
 making, because "fixing" the last three would have meant adding code that does
 nothing.
