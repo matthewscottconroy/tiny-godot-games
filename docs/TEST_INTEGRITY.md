@@ -173,6 +173,11 @@ $ cat bouncing-ball/tests/frames
 200
 ```
 
+The headless viewport is **64x64**, not the project's window size — the dummy
+display driver opens a minimal window. A suite that hard-codes 640x480 while the
+demo reads `get_viewport_rect()` is testing two different play areas. Derive
+positions from the live rect instead.
+
 `move_and_slide()` is the usual reason a suite needs this. It hands the
 movement to the physics server, which applies it on the server's own step — so
 calling `_physics_process` by hand sets the velocity and moves nothing. Assert
