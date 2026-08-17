@@ -104,10 +104,22 @@ func _test_states_are_mutually_exclusive() -> void:
 
 func _test_signal_fires_only_on_change() -> void:
 	print("state_changed")
-	var p := _make()
+	# A bare body has never called move_and_slide(), so is_on_floor() is false —
+	# seed the state with what state_for() will actually derive.
+	var player := _make()
+	player.velocity = Vector2.ZERO
+	player.state = player.state_for(false, Vector2.ZERO)     # FALL
+
 	var changes: Array[int] = []
-	p.state_changed.connect(func(s: int) -> void: changes.append(s))
-	p.state = p.State.IDLE
-	p.velocity = Vector2.ZERO
-	p._transition()
+	player.state_changed.connect(func(s: int) -> void: changes.append(s))
+
+	player._transition()
 	expect(changes.is_empty(), "staying in the same state emits nothing")
+
+	# Rising while airborne is a different state, so this must emit.
+	player.velocity = Vector2(0, -300)
+	player._transition()
+	expect(changes == [player.State.JUMP], "entering a new state emits it exactly once")
+
+	player._transition()
+	expect(changes.size() == 1, "and holding that state does not emit again")

@@ -54,8 +54,10 @@ func _transition() -> void:
 	var prev := state
 	state = state_for(is_on_floor(), velocity)
 	if state != prev:
-		state_label.text = State.keys()[state]
+		if state_label:
+			state_label.text = State.keys()[state]
 		state_changed.emit(state)
 
 func _ready() -> void:
-	state_label.text = State.keys()[state]
+	if state_label:
+		state_label.text = State.keys()[state]
