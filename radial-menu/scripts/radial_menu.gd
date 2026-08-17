@@ -34,12 +34,21 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 func _update_hover() -> void:
-	var mouse := get_global_mouse_position() - CENTER
-	if mouse.length() < INNER_R:
-		_hovered = -1
-		return
-	var angle := fmod(mouse.angle() + TAU, TAU)
-	_hovered = int(angle / (TAU / float(ITEMS.size())))
+	_hovered = hovered_for(get_global_mouse_position())
+
+## Which wedge the cursor is over, or -1 for none.
+##
+## Wedges are drawn centred on each item's angle, so the first one spans half a
+## slice either side of zero. Rotating by half a slice before the division lines
+## the hit test up with what is on screen — without it the highlight sat half a
+## wedge away from the pointer.
+func hovered_for(mouse_pos: Vector2) -> int:
+	var offset := mouse_pos - CENTER
+	if offset.length() < INNER_R:
+		return -1
+	var slice := TAU / float(ITEMS.size())
+	var angle := fmod(offset.angle() + slice * 0.5 + TAU, TAU)
+	return int(angle / slice) % ITEMS.size()
 
 func _select() -> void:
 	if _hovered >= 0 and _hovered < ITEMS.size():
