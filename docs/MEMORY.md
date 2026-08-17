@@ -84,6 +84,28 @@ Rather than allowlist it, the checker confirms every hit by running a second
 time and only reports if it reproduces. That is more robust than a growing list
 of exceptions and catches future flakiness for free.
 
+## Safeguards in the tooling
+
+Repeated OOM crashes prompted `tools/memguard.sh`, which every Godot-spawning
+tool now sources. Four protections, because any one alone leaves a hole:
+
+| Guard | What it does | Override |
+|-------|--------------|----------|
+| Pre-flight | Refuses to start below 2GB available | `MEM_MIN_START_MB` |
+| Bounded jobs | Concurrency from free memory, not just cores; halved again if another Godot is already running; hard cap 8 | `JOBS`, `MEM_MAX_JOBS` |
+| Live floor | Aborts mid-run below 1GB, checked between chunks | `MEM_FLOOR_MB` |
+| Reaping | Kills our own children on exit or interrupt | — |
+
+Every Godot spawn also runs under an address-space `ulimit` (`MEM_ULIMIT_MB`,
+4GB) so a runaway child is killed alone rather than taking the machine with it.
+The cap was checked against normal operation before being relied on.
+
+`run-tests.sh` processes demos in chunks so the floor is re-checked as it goes
+and reports a partial result rather than dying. `tools/mutate.py` checks between
+demos and, crucially, **refuses to write or check the mutation baseline after an
+aborted run** — a partial sweep is not comparable, and recording it would
+silently lower the floor.
+
 ## Memory used by the test tooling
 
 `run-tests.sh` runs demos in parallel. Each job is a full Godot process holding

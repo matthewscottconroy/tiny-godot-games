@@ -29,12 +29,54 @@ import json
 import os
 import random
 import re
-import shutil
+import resource
 import subprocess
 import sys
-import tempfile
 
 GODOT = os.environ.get("GODOT", "godot")
+
+# --- Memory safeguards -----------------------------------------------------
+#
+# The bash tools get these from tools/memguard.sh; this is the same policy in
+# Python. A full sweep is hundreds of Godot invocations, so a run that starts
+# fine can still meet memory pressure partway through — stopping cleanly with a
+# partial result beats being OOM-killed.
+
+MEM_MIN_START_MB = int(os.environ.get("MEM_MIN_START_MB", "2048"))
+MEM_FLOOR_MB = int(os.environ.get("MEM_FLOOR_MB", "1024"))
+MEM_ULIMIT_MB = int(os.environ.get("MEM_ULIMIT_MB", "4096"))
+
+
+def available_mb():
+    """Available memory, or a large number on platforms without /proc."""
+    try:
+        with open("/proc/meminfo", encoding="utf-8") as handle:
+            for line in handle:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except OSError:
+        pass
+    return 99999
+
+
+def preflight():
+    avail = available_mb()
+    if avail < MEM_MIN_START_MB:
+        print("error: only %dMB available, need %dMB to start.\n"
+              "       This spawns Godot processes one at a time but many of them.\n"
+              "       Override deliberately with MEM_MIN_START_MB=512."
+              % (avail, MEM_MIN_START_MB), file=sys.stderr)
+        return False
+    return True
+
+
+def _limit_address_space():
+    """Cap the child's address space so a runaway allocation dies alone."""
+    limit = MEM_ULIMIT_MB * 1024 * 1024
+    try:
+        resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+    except (ValueError, OSError):
+        pass          # not fatal: the other guards still apply
 
 # Ordered by how likely each is to be a behaviour change rather than a crash.
 # Each entry is (name, pattern, replacement).
@@ -107,7 +149,8 @@ def run_suite(demo, timeout=90):
     try:
         proc = subprocess.run(
             [GODOT, "--headless", "--path", demo, "res://tests/test.tscn", "--quit-after", "5"],
-            capture_output=True, text=True, timeout=timeout)
+            capture_output=True, text=True, timeout=timeout,
+            preexec_fn=_limit_address_space)
     except subprocess.TimeoutExpired:
         return False
     summary = re.findall(r"(\d+)/(\d+) passed", proc.stdout)
@@ -188,9 +231,22 @@ def main():
     demos = args.demos or sorted(os.path.dirname(p) for p in glob.glob("*/project.godot"))
     rng = random.Random(args.seed)
 
+    if not preflight():
+        return 3
+
     results = []
     total_killed = total_survived = 0
+    aborted = False
     for demo in demos:
+        # Between demos: a sweep is long enough that pressure can arrive partway.
+        avail = available_mb()
+        if avail < MEM_FLOOR_MB:
+            print("\nABORTING: memory dropped to %dMB, below the %dMB floor.\n"
+                  "          Partial results above; the baseline was NOT updated."
+                  % (avail, MEM_FLOOR_MB), file=sys.stderr)
+            aborted = True
+            break
+
         result = check_demo(demo, args.limit, rng, args.include_driver)
         results.append(result)
         total_killed += result["killed"]
@@ -230,6 +286,11 @@ def main():
     # The ratchet. The score may only go up; improving a suite means recording a
     # new floor with --update. Compared as a ratio so the baseline survives new
     # demos being added.
+    if aborted:
+        # A partial sweep must never write or check a baseline: the ratio is not
+        # comparable, and recording it would silently lower the floor.
+        print("run was aborted early — baseline untouched", file=sys.stderr)
+        return 4
     if args.update:
         _write_baseline(total_killed, tried, len(demos))
         return 0
