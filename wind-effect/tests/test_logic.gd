@@ -17,6 +17,7 @@ func _ready() -> void:
 	_test_the_field_never_empties_or_grows()
 	_test_the_strength_keys_have_limits()
 	_test_key_releases_change_nothing()
+	_test_the_wind_gusts()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -193,3 +194,25 @@ func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:
 		_quiet_failures += 1
 		print("  (", label, " — failed)")
+
+func _test_the_wind_gusts() -> void:
+	print("gusting")
+	# The wind is its base strength plus a slow swell, so a leaf caught on the
+	# rising half of that swell is pushed harder than one on the falling half.
+	# Without the swell — or with it inverted — the two are the same.
+	var rising := _make()
+	rising._wind_angle = 0.0
+	rising._wind_strength = 100.0
+	rising._time = 0.0
+	var on_the_gust := _one_leaf(rising, Vector2(320.0, 240.0))
+	_run(rising, 0.4)
+
+	var falling := _make()
+	falling._wind_angle = 0.0
+	falling._wind_strength = 100.0
+	falling._time = PI / 0.7          # half a swell later, where it is dropping
+	var in_the_lull := _one_leaf(falling, Vector2(320.0, 240.0))
+	_run(falling, 0.4)
+
+	expect(on_the_gust["vel"].x > in_the_lull["vel"].x,
+		"a leaf caught on a gust is pushed harder than one in the lull")
