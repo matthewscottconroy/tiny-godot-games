@@ -10,6 +10,7 @@ func _ready() -> void:
 	_test_enter_default_child()
 	_test_active_path()
 	_test_parent_exit_exits_child()
+	_test_re_entering_keeps_the_current_child()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -120,3 +121,21 @@ func _test_parent_exit_exits_child() -> void:
 	# Now transition root away from alive (which should exit combat too)
 	root.transition_to(dead)
 	expect(seen["combat_exited"], "combat._on_exit fired when alive was exited")
+
+func _test_re_entering_keeps_the_current_child() -> void:
+	print("Test: re-entering a state does not reset it to its first child")
+	var root  := HFSMState.new("Root")
+	var idle  := HFSMState.new("Idle")
+	var walk  := HFSMState.new("Walk")
+	root.add_child(idle)
+	root.add_child(walk)
+	root.enter()
+	root.transition_to(walk)
+	# The default-child rule applies only when nothing is active yet — otherwise
+	# any re-entry would silently throw away the current sub-state.
+	root.enter()
+	expect(root.active_child == walk, "walk is still active after entering root again")
+
+	var leaf := HFSMState.new("Leaf")
+	leaf.enter()
+	expect(leaf.active_child == null, "a childless state has nothing to enter into")

@@ -25,6 +25,7 @@ Scripts are restored after every run, including on Ctrl-C.
 
 import argparse
 import glob
+import io
 import json
 import os
 import random
@@ -208,6 +209,21 @@ def candidates(demo, include_driver=False):
     return out
 
 
+def _frame_budget(demo):
+    """Frames the suite gets before the engine quits.
+
+    Matches run-tests.sh: a demo that has to watch physics play out asks for
+    more in tests/frames; everyone else keeps the cheap default, which is paid
+    once per mutant and so dominates a mutation run.
+    """
+    path = os.path.join(demo, "tests", "frames")
+    if os.path.exists(path):
+        with io.open(path, encoding="utf-8") as fh:
+            digits = "".join(c for c in fh.read() if c.isdigit())
+        if digits:
+            return digits
+    return "5"
+
 def run_suite(demo, timeout=90):
     """Run only the logic suite. True if it passed."""
     if not os.path.exists(os.path.join(demo, "tests", "test.tscn")):
@@ -217,7 +233,8 @@ def run_suite(demo, timeout=90):
         # Stream and truncate rather than buffer: a mutation that makes a demo
         # error every frame would otherwise grow this process without bound.
         proc = subprocess.Popen(
-            [GODOT, "--headless", "--path", demo, "res://tests/test.tscn", "--quit-after", "5"],
+            [GODOT, "--headless", "--path", demo, "res://tests/test.tscn",
+             "--quit-after", _frame_budget(demo)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             preexec_fn=_limit_address_space)
         try:

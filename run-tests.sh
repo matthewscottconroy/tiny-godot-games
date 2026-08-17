@@ -91,8 +91,13 @@ do_check() {
       # needs a physics step — direct_space_state is only valid inside
       # _physics_process — would otherwise never run. Suites that finish in
       # _ready are unaffected.
-      local output status n m
-      output="$(mem_capture mem_run_godot "$GODOT" --headless --path "$demo" res://tests/test.tscn --quit-after 5)"
+      #
+      # A demo that has to watch a body move over time needs more than a few
+      # frames, so it can ask for them in tests/frames. Everyone else keeps the
+      # cheap default: the budget is paid on every run, including every mutant.
+      local output status n m frames
+      frames="$(test -f "$demo/tests/frames" && tr -cd '0-9' < "$demo/tests/frames")"
+      output="$(mem_capture mem_run_godot "$GODOT" --headless --path "$demo" res://tests/test.tscn --quit-after "${frames:-5}")"
       status=$?
       summary="$(printf '%s\n' "$output" | grep -oE '[0-9]+/[0-9]+ passed' | tail -1)"
       n="${summary%%/*}"

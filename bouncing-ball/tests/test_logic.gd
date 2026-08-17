@@ -1,16 +1,14 @@
 extends Node
 
+# Drives the real scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+#
+# The bounce here belongs to the physics engine, not to a script: the demo is a
+# RigidBody2D with a bouncy PhysicsMaterial inside four static walls. So the
+# suite runs the actual scene and watches the ball, rather than reimplementing
+# a bounce that exists nowhere in the demo. tests/frames buys the physics time.
+
 var _pass := 0
 var _fail := 0
-
-func _ready() -> void:
-	test_ball_moves_by_velocity_times_delta()
-	test_bounce_reverses_x_on_left_wall()
-	test_bounce_reverses_x_on_right_wall()
-	test_bounce_reverses_y_on_top_wall()
-	test_bounce_reverses_y_on_bottom_wall()
-	test_no_bounce_in_open_space()
-	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -26,61 +24,78 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# Simulate the physics step from ball.gd
-const RADIUS  := 16.0
-const W       := 640.0
-const H       := 480.0
+const RADIUS := 20.0
+const FLOOR_TOP := 460.0     # Floor body sits at y=470 with a 20-tall box
+const LEFT_WALL := 20.0      # inner face of the left wall
+const RIGHT_WALL := 620.0
 
-func _step(pos: Vector2, vel: Vector2, delta: float) -> Array:
-	pos += vel * delta
-	if pos.x - RADIUS < 0 or pos.x + RADIUS > W:
-		vel.x = -vel.x
-	if pos.y - RADIUS < 0 or pos.y + RADIUS > H:
-		vel.y = -vel.y
-	return [pos, vel]
+var _ball: RigidBody2D
+var _samples: Array[Vector2] = []
 
-# --- tests ---
+func _ready() -> void:
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	_ball = scene.get_node("Ball")
 
-func test_ball_moves_by_velocity_times_delta() -> void:
-	var pos := Vector2(320, 240)
-	var vel := Vector2(100, 50)
-	var res  := _step(pos, vel, 1.0)
-	var new_pos : Vector2 = res[0]
-	expect(is_equal_approx(new_pos.x, 420.0), "x moves by vel.x * delta")
-	expect(is_equal_approx(new_pos.y, 290.0), "y moves by vel.y * delta")
+	var start := _ball.position
+	# ~1.3s of simulation: long enough to fall, land, and come back up.
+	for i in 80:
+		await get_tree().physics_frame
+		_samples.append(_ball.position)
 
-func test_bounce_reverses_x_on_left_wall() -> void:
-	var pos := Vector2(RADIUS - 5, 240)  # Already past left edge
-	var vel := Vector2(-200, 0)
-	var res  := _step(pos, vel, 0.016)
-	var new_vel : Vector2 = res[1]
-	expect(new_vel.x > 0, "x velocity flipped positive after left wall hit")
+	_test_the_ball_falls()
+	_test_it_never_leaves_the_box(start)
+	_test_it_bounces_back_up()
+	_test_the_bounce_loses_energy()
+	_test_the_material_is_what_makes_it_bounce()
+	_report()
 
-func test_bounce_reverses_x_on_right_wall() -> void:
-	var pos := Vector2(W - RADIUS + 5, 240)  # Past right edge
-	var vel := Vector2(200, 0)
-	var res  := _step(pos, vel, 0.016)
-	var new_vel : Vector2 = res[1]
-	expect(new_vel.x < 0, "x velocity flipped negative after right wall hit")
+func _lowest_index() -> int:
+	var idx := 0
+	for i in _samples.size():
+		if _samples[i].y > _samples[idx].y:
+			idx = i
+	return idx
 
-func test_bounce_reverses_y_on_top_wall() -> void:
-	var pos := Vector2(320, RADIUS - 5)  # Past top edge
-	var vel := Vector2(0, -200)
-	var res  := _step(pos, vel, 0.016)
-	var new_vel : Vector2 = res[1]
-	expect(new_vel.y > 0, "y velocity flipped positive after top wall hit")
+func _test_the_ball_falls() -> void:
+	print("gravity")
+	expect(_samples.size() > 0, "the simulation ran")
+	expect(_samples[_samples.size() - 1].y > 60.0, "the ball leaves its starting height")
+	expect(_samples[_lowest_index()].y > 300.0, "and gets most of the way down the screen")
 
-func test_bounce_reverses_y_on_bottom_wall() -> void:
-	var pos := Vector2(320, H - RADIUS + 5)  # Past bottom edge
-	var vel := Vector2(0, 200)
-	var res  := _step(pos, vel, 0.016)
-	var new_vel : Vector2 = res[1]
-	expect(new_vel.y < 0, "y velocity flipped negative after bottom wall hit")
+func _test_it_never_leaves_the_box(start: Vector2) -> void:
+	print("containment")
+	# Measured against the ball's centre, not its edge. A fast body overlaps a
+	# surface by up to one step of travel before the solver pushes it out —
+	# around 13 px here — but the centre crossing a wall means it tunnelled.
+	var contained := true
+	for p in _samples:
+		if p.y > FLOOR_TOP or p.x < LEFT_WALL or p.x > RIGHT_WALL:
+			contained = false
+	expect(contained, "the ball never passes through a wall")
+	expect(start.y < FLOOR_TOP, "which it started inside of")
 
-func test_no_bounce_in_open_space() -> void:
-	var pos := Vector2(320, 240)
-	var vel := Vector2(100, 80)
-	var res  := _step(pos, vel, 0.016)
-	var new_vel : Vector2 = res[1]
-	expect(is_equal_approx(new_vel.x, 100.0), "no x flip in open space")
-	expect(is_equal_approx(new_vel.y, 80.0),  "no y flip in open space")
+func _test_it_bounces_back_up() -> void:
+	print("the bounce")
+	var low := _lowest_index()
+	var rebound := 0.0
+	for i in range(low, _samples.size()):
+		rebound = maxf(rebound, _samples[low].y - _samples[i].y)
+	expect(low < _samples.size() - 1, "the ball reaches the floor before the run ends")
+	expect(rebound > 20.0, "and comes back up afterwards rather than resting on it")
+
+func _test_the_bounce_loses_energy() -> void:
+	print("restitution")
+	var low := _lowest_index()
+	var apex := _samples[low].y
+	for i in range(low, _samples.size()):
+		apex = minf(apex, _samples[i].y)
+	expect(apex > _samples[0].y, "the rebound falls short of the drop height — the bounce is lossy")
+
+func _test_the_material_is_what_makes_it_bounce() -> void:
+	print("scene setup")
+	# The demo's whole point: bounce lives on the PhysicsMaterial, not in code.
+	var mat := _ball.physics_material_override
+	expect(mat != null, "the ball has a physics material override")
+	expect(mat != null and mat.bounce > 0.5, "with a high restitution")
+	expect(mat != null and mat.bounce < 1.0, "but short of perfectly elastic")

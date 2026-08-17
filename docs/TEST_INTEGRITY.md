@@ -130,6 +130,32 @@ read with them in mind:
 
 A demo scoring 50% with the other 50% in those three categories is done.
 
+And a fourth case, where the score is not just capped but undefined:
+
+- **Demos whose subject is the scene, not a script.** `bouncing-ball` is a
+  `RigidBody2D` with a bouncy `PhysicsMaterial` between four static walls; its
+  only script draws a circle. There is nothing in a `.gd` file to mutate, so the
+  tool reports `no-mutations`. The suite is still worth writing — it just has to
+  run the real scene and watch the ball, because the alternative is a suite that
+  reimplements a bounce the demo does not contain.
+
+## Watching a scene play out
+
+Suites run with `--quit-after 5` frames, which is enough for `_ready` and a
+physics step but not for a body to fall and land. A demo that needs longer puts
+a frame count in `tests/frames`:
+
+```
+$ cat bouncing-ball/tests/frames
+200
+```
+
+Both `run-tests.sh` and `tools/mutate.py` read it. It is per-demo on purpose:
+the budget is paid on every run, and a mutation run pays it once per mutant, so
+raising it for everyone would make the slow tool slower still. Note that
+headless runs uncapped, so the count is *process* frames — roughly 0.4 physics
+frames each. 200 buys about 80 physics steps, or 1.3 simulated seconds.
+
 ## Current state
 
 The work is deliberately incremental. Converting all 111 remaining zero-scoring
