@@ -12,24 +12,38 @@ var _buffer := 0.0
 @onready var _label: Label = $InfoLabel
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
+	tick_jump(delta, Input.is_action_just_pressed("ui_up"), is_on_floor())
+	velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED
+	move_and_slide()
+	queue_redraw()
+	_update_label()
+
+## Gravity, coyote time and jump buffering for one frame.
+##
+## The two forgiveness windows are what separate a controller that feels good
+## from one that feels broken: coyote time lets a jump land just after walking
+## off a ledge, and the buffer lets one pressed just before landing still fire.
+func tick_jump(delta: float, jump_pressed: bool, on_floor: bool) -> void:
+	if not on_floor:
 		velocity.y += GRAVITY * delta
 
-	_coyote = COYOTE_TIME if is_on_floor() else maxf(_coyote - delta, 0.0)
+	_coyote = COYOTE_TIME if on_floor else maxf(_coyote - delta, 0.0)
 
-	if Input.is_action_just_pressed("ui_up"):
+	if jump_pressed:
 		_buffer = JUMP_BUFFER
 	_buffer = maxf(_buffer - delta, 0.0)
 
 	if _buffer > 0.0 and _coyote > 0.0:
 		velocity.y = JUMP_VEL
+		# Both windows are spent, so one press cannot buy a second jump.
 		_coyote    = 0.0
 		_buffer    = 0.0
 
-	velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED
-	move_and_slide()
-	queue_redraw()
-	_update_label()
+func coyote_left() -> float:
+	return _coyote
+
+func buffer_left() -> float:
+	return _buffer
 
 func _draw() -> void:
 	var col := Color.DODGER_BLUE if is_on_floor() else Color.ORANGE
@@ -38,6 +52,8 @@ func _draw() -> void:
 	draw_rect(Rect2( 2, -24, 6, 6), Color.WHITE)
 
 func _update_label() -> void:
+	if _label == null:
+		return
 	var parts: Array[String] = []
 	if is_on_floor():
 		parts.append("GROUNDED")
