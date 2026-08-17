@@ -1,14 +1,20 @@
 extends Node
 
-const N := 24
-const SEG_LEN := 12.0
-const GRAVITY := 600.0
-const ITERS := 10
-const _ANCHOR_IDX := 0
-const _ANCHOR_POS := Vector2(320.0, 30.0)
+# Drives the real simulation from scripts/main.gd — see docs/TEST_INTEGRITY.md.
 
 var _pass := 0
 var _fail := 0
+
+func _ready() -> void:
+	_test_the_rope_starts_straight_and_still()
+	_test_the_anchor_stays_put()
+	_test_the_rope_falls_and_holds_together()
+	_test_damping_takes_energy_out()
+	_test_grabbing_a_point_moves_it()
+	_test_a_held_point_is_not_dragged_by_the_rope()
+	_test_releasing_lets_go()
+	_test_r_resets_the_rope()
+	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -24,89 +30,137 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-func _ready() -> void:
-	print("=== Rope Physics Tests ===")
-	_test_constraint_shortens()
-	_test_constraint_lengthens()
-	_test_constraint_anchor_fixed()
-	_test_verlet_gravity()
-	_test_rope_length_preserved()
-	_report()
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/main.gd")
 
-func _apply_constraint(p0: Vector2, p1: Vector2, anchor_idx: int, drag_idx: int, i: int) -> Array:
-	var diff := p1 - p0
-	var dist := diff.length()
-	if dist < 0.001:
-		return [p0, p1]
-	var correction := diff * (1.0 - SEG_LEN / dist) * 0.5
-	if i != anchor_idx:
-		p0 = p0 + correction
-	if (i + 1) != drag_idx:
-		p1 = p1 - correction
-	return [p0, p1]
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
 
-func _test_constraint_shortens() -> void:
-	print("_test_constraint_shortens")
-	# Two points too far apart: dist = 30, SEG_LEN = 12 → should move closer
-	var p0 := Vector2(0.0, 0.0)
-	var p1 := Vector2(30.0, 0.0)
-	var result := _apply_constraint(p0, p1, -1, -1, 5)
-	var new_dist: float = result[0].distance_to(result[1])
-	expect(new_dist < 30.0, "constraint shortens distance when too far (30 → closer to 12)")
-	expect(is_equal_approx(new_dist, SEG_LEN), "constraint reaches exact segment length")
+func _run(m: Node2D, frames: int) -> void:
+	for i in frames:
+		m._physics_process(STEP)
 
-func _test_constraint_lengthens() -> void:
-	print("_test_constraint_lengthens")
-	# Two points too close together: dist = 2, SEG_LEN = 12 → should push apart
-	var p0 := Vector2(0.0, 0.0)
-	var p1 := Vector2(2.0, 0.0)
-	var result := _apply_constraint(p0, p1, -1, -1, 5)
-	var new_dist: float = result[0].distance_to(result[1])
-	expect(new_dist > 2.0, "constraint lengthens distance when too close (2 → closer to 12)")
+func _click(m: Node2D, at: Vector2, pressed: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = pressed
+	e.position = at
+	m._input(e)
 
-func _test_constraint_anchor_fixed() -> void:
-	print("_test_constraint_anchor_fixed")
-	# Anchor point (i=0) should not move during constraint
-	var anchor := Vector2(320.0, 30.0)
-	var p1 := Vector2(400.0, 30.0)
-	var result := _apply_constraint(anchor, p1, _ANCHOR_IDX, -1, _ANCHOR_IDX)
-	expect(result[0].is_equal_approx(anchor), "anchor point stays fixed after constraint")
+func _move_mouse(m: Node2D, to: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = to
+	m._input(e)
 
-func _test_verlet_gravity() -> void:
-	print("_test_verlet_gravity")
-	# Single free point: start at rest, apply one verlet step with gravity
-	var pos := Vector2(100.0, 100.0)
-	var prev := Vector2(100.0, 100.0)
-	var delta := 0.016  # ~60fps
-	var vel := (pos - prev) * 0.985
-	prev = pos
-	pos = pos + vel + Vector2(0.0, GRAVITY) * delta * delta
-	expect(pos.y > 100.0, "free point falls down under gravity after one Verlet step")
+func _worst_segment_error(m: Node2D) -> float:
+	var worst := 0.0
+	for i in m.N - 1:
+		worst = maxf(worst, absf(m._pos[i].distance_to(m._pos[i + 1]) - m.SEG_LEN))
+	return worst
 
-func _test_rope_length_preserved() -> void:
-	print("_test_rope_length_preserved")
-	# Initialize a straight rope, run many constraint iterations, check total length is ~(N-1)*SEG_LEN
-	var pos: PackedVector2Array = PackedVector2Array()
-	pos.resize(N)
-	for i in N:
-		pos[i] = _ANCHOR_POS + Vector2(float(i) * SEG_LEN, 0.0)
+func _test_the_rope_starts_straight_and_still() -> void:
+	print("initial state")
+	var m := _make()
+	expect(m._pos.size() == m.N, "every point has a position")
+	expect(_worst_segment_error(m) < 0.001, "laid out straight, one segment length apart")
+	var still := true
+	for i in m.N:
+		if m._pos[i] != m._prev[i]:
+			still = false
+	expect(still, "and at rest")
 
-	# Run constraints many times (simulate settling)
-	for _iter in 50:
-		pos[_ANCHOR_IDX] = _ANCHOR_POS
-		for i in N - 1:
-			var diff := pos[i + 1] - pos[i]
-			var dist := diff.length()
-			if dist < 0.001:
-				continue
-			var correction := diff * (1.0 - SEG_LEN / dist) * 0.5
-			if i != _ANCHOR_IDX:
-				pos[i] = pos[i] + correction
-			pos[i + 1] = pos[i + 1] - correction
+func _test_the_anchor_stays_put() -> void:
+	print("the anchor")
+	var m := _make()
+	_run(m, 120)
+	expect(m._pos[m._ANCHOR_IDX] == m._ANCHOR_POS, "the anchored end never moves")
 
-	var total := 0.0
-	for i in N - 1:
-		total += pos[i].distance_to(pos[i + 1])
+func _test_the_rope_falls_and_holds_together() -> void:
+	print("swinging")
+	var m := _make()
+	var tip_before: float = m._pos[m.N - 1].y
+	_run(m, 90)
+	expect(m._pos[m.N - 1].y > tip_before, "the free end swings down")
+	expect(_worst_segment_error(m) < 1.0,
+		"and the segments keep their length (worst %.2f)" % _worst_segment_error(m))
 
-	var expected := float(N - 1) * SEG_LEN
-	expect(absf(total - expected) < 1.0, "rope total length ≈ (N-1)*SEG_LEN after many constraint iters")
+func _test_damping_takes_energy_out() -> void:
+	print("damping")
+	var m := _make()
+	# A rope with no damping swings forever; this one has to settle.
+	_run(m, 120)
+	var early := 0.0
+	for i in m.N:
+		early = maxf(early, m._pos[i].distance_to(m._prev[i]))
+	_run(m, 900)
+	var late := 0.0
+	for i in m.N:
+		late = maxf(late, m._pos[i].distance_to(m._prev[i]))
+	expect(late < early, "the rope loses speed over time rather than swinging forever")
+	expect(m.DAMPING < 1.0, "which is what DAMPING below 1 buys")
+
+func _test_grabbing_a_point_moves_it() -> void:
+	print("dragging")
+	var m := _make()
+	var click_at: Vector2 = m._pos[7]
+	_click(m, click_at, true)
+	# The search takes the first point within 20 px, and the points start 12 px
+	# apart, so the one picked up is a neighbour of the one clicked as often as
+	# not. What matters is that it grabbed something under the cursor.
+	expect(m._drag >= 0, "clicking near the rope picks up a point")
+	expect(m._pos[m._drag].distance_to(click_at) < 20.0, "one that is under the cursor")
+
+	var target := Vector2(500.0, 300.0)
+	var held: int = m._drag
+	_move_mouse(m, target)
+	expect(m._pos[held] == target, "and the mouse carries it")
+
+	var missed := _make()
+	_click(missed, Vector2(10.0, 470.0), true)
+	expect(missed._drag == -1, "clicking empty space picks up nothing")
+
+	var anchor := _make()
+	_click(anchor, anchor._ANCHOR_POS, true)
+	expect(anchor._drag != anchor._ANCHOR_IDX, "and the anchor itself is never the held point")
+
+func _test_a_held_point_is_not_dragged_by_the_rope() -> void:
+	print("holding")
+	var m := _make()
+	_click(m, m._pos[7], true)
+	var held: int = m._drag
+	var target := Vector2(500.0, 300.0)
+	_move_mouse(m, target)
+	_run(m, 30)
+	expect(m._pos[held] == target, "the rope's own weight cannot pull a held point away")
+	expect(m._pos[m.N - 1].y > m._ANCHOR_POS.y, "while the rest of the rope hangs from it")
+
+func _test_releasing_lets_go() -> void:
+	print("releasing")
+	var m := _make()
+	_click(m, m._pos[7], true)
+	var held: int = m._drag
+	_move_mouse(m, Vector2(500.0, 300.0))
+	_click(m, Vector2(500.0, 300.0), false)
+	expect(m._drag == -1, "letting go clears the held point")
+	_run(m, 30)
+	expect(m._pos[held] != Vector2(500.0, 300.0), "after which the rope moves it again")
+
+func _test_r_resets_the_rope() -> void:
+	print("reset")
+	var m := _make()
+	_run(m, 120)
+	expect(_worst_segment_error(m) < 1.0, "the rope has swung out")
+	expect(m._pos[m.N - 1].y > m._ANCHOR_POS.y + 10.0, "and hangs below the anchor")
+
+	var key := InputEventKey.new()
+	key.keycode = KEY_R
+	key.pressed = true
+	m._input(key)
+	expect(_worst_segment_error(m) < 0.001, "R lays the rope out straight again")
+	var still := true
+	for i in m.N:
+		if m._pos[i] != m._prev[i]:
+			still = false
+	expect(still, "and at rest")

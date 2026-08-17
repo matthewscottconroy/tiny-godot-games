@@ -61,7 +61,10 @@ func _physics_process(delta: float) -> void:
 			if dist < 0.001:
 				continue
 			var correction := diff * (1.0 - SEG_LEN / dist) * 0.5
-			if i != _ANCHOR_IDX:
+			# A pinned point is pinned in both roles. Skipping it only as the
+			# right-hand end of a segment left the rope able to drag it away by
+			# its left-hand end, so a held point wandered off the mouse.
+			if i != _ANCHOR_IDX and i != _drag:
 				_pos[i] = _pos[i] + correction
 			if (i + 1) != _drag:
 				_pos[i + 1] = _pos[i + 1] - correction
