@@ -140,6 +140,7 @@ func _test_an_expired_leaf_is_recycled() -> void:
 
 func _test_a_leaf_blown_off_screen_is_recycled() -> void:
 	print("leaving the screen")
+	begin_quiet()
 	for corner in [Vector2(900.0, 240.0), Vector2(-200.0, 240.0),
 			Vector2(320.0, 900.0), Vector2(320.0, -200.0)]:
 		var m := _make()
@@ -189,6 +190,11 @@ func _test_key_releases_change_nothing() -> void:
 	expect(is_equal_approx(m._wind_angle, angle), "in strength or direction")
 
 var _quiet_failures := 0
+
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:

@@ -163,6 +163,7 @@ func _test_the_fragments_fly_outwards() -> void:
 
 func _test_the_fragments_are_physical() -> void:
 	print("the pieces")
+	begin_quiet()
 	var m := _make()
 	var crate := _crates(m)[0]
 	for i in crate.hp:
@@ -192,6 +193,11 @@ func _test_the_hit_flash_fades() -> void:
 	expect(crate._flash_timer <= 0.0, "and is gone shortly after")
 
 var _quiet_failures := 0
+
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:

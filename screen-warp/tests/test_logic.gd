@@ -157,6 +157,7 @@ func _test_the_world_is_rendered_into_the_viewport() -> void:
 
 func _test_the_balls_bounce_inside_the_world() -> void:
 	print("the world's own motion")
+	begin_quiet()
 	var m := _make()
 	var world: Node2D = m.get_node("WarpContainer/WorldViewport").get_child(0)
 	var ball: Array = world._balls[0]
@@ -196,6 +197,11 @@ func _test_the_balls_bounce_inside_the_world() -> void:
 	expect(free_ball[1].y > 0.0, "a ball in open space keeps going rather than bouncing off nothing")
 
 var _quiet_failures := 0
+
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:

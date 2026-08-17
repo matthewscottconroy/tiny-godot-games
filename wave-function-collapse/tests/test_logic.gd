@@ -159,6 +159,7 @@ func _test_the_least_undecided_cell_is_chosen_first() -> void:
 
 func _test_a_weighted_choice_only_picks_what_is_possible() -> void:
 	print("picking a tile")
+	begin_quiet()
 	var m := _make()
 	for i in 40:
 		expect_quiet(m._weighted_choice([false, true, true, false]) in [1, 2],
@@ -196,6 +197,10 @@ func _test_space_generates_a_new_map() -> void:
 	expect(m._collapsed != before, "space lays out a different map")
 
 var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 ## Assert without printing a line per call — for the loops that check hundreds
 ## of draws, where one line each would bury the report.

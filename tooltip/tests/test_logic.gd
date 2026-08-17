@@ -55,6 +55,7 @@ func _empty_space() -> Vector2:
 
 func _test_the_items_are_laid_out() -> void:
 	print("the items")
+	begin_quiet()
 	var m := _make()
 	expect(m._items.size() > 2, "there are several items to hover")
 	for item in m._items:
@@ -90,6 +91,7 @@ func _test_the_cursor_between_items_picks_nothing() -> void:
 
 func _test_a_tooltip_waits_before_appearing() -> void:
 	print("the delay")
+	begin_quiet()
 	var m := _make()
 	# A tooltip that appears instantly flashes up whenever the cursor crosses
 	# an item on its way somewhere else.
@@ -144,6 +146,11 @@ func _test_the_tooltip_never_over_or_under_shoots() -> void:
 
 var _quiet_failures := 0
 
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:
 		_quiet_failures += 1
@@ -151,6 +158,7 @@ func expect_quiet(cond: bool, label: String) -> void:
 
 func _test_the_tooltip_stays_on_screen() -> void:
 	print("placement")
+	begin_quiet()
 	var m := _make()
 	var size := Vector2(220.0, 90.0)
 	var box := Rect2(4.0, 4.0, 632.0, 472.0)

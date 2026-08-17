@@ -51,6 +51,7 @@ func _label(m: Control, path: String) -> Label:
 
 func _test_every_language_has_every_key() -> void:
 	print("coverage")
+	begin_quiet()
 	var m := _make()
 	expect(m.TRANSLATIONS.size() > 1, "there is more than one language")
 	for locale in m.TRANSLATIONS:
@@ -64,6 +65,7 @@ func _test_every_language_has_every_key() -> void:
 
 func _test_the_languages_are_actually_different() -> void:
 	print("distinct languages")
+	begin_quiet()
 	var m := _make()
 	var locales: Array = m.TRANSLATIONS.keys()
 	for key in m.KEYS:
@@ -112,6 +114,7 @@ func _test_the_language_buttons_switch() -> void:
 
 func _test_the_key_list_is_shown_with_its_translations() -> void:
 	print("the table")
+	begin_quiet()
 	var m := _make()
 	var grid: GridContainer = m.get_node("VBox/Grid")
 	var children := grid.get_children()
@@ -141,6 +144,11 @@ func _test_an_unknown_key_comes_back_as_itself() -> void:
 		"an untranslated key falls back to itself rather than an empty string")
 
 var _quiet_failures := 0
+
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:

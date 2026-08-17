@@ -75,6 +75,7 @@ func _test_the_pendulum_hangs_from_a_fixed_anchor() -> void:
 
 func _test_the_links_are_pinned_to_each_other() -> void:
 	print("the pins")
+	begin_quiet()
 	var m := _make()
 	var pins := _joints(m, "PinJoint2D")
 	expect(pins.size() == m.LINK_COUNT, "there is a pin per link")
@@ -85,6 +86,7 @@ func _test_the_links_are_pinned_to_each_other() -> void:
 
 func _test_the_first_link_is_offset_so_it_swings() -> void:
 	print("the starting nudge")
+	begin_quiet()
 	var m := _make()
 	# Hung dead straight, a pendulum sits there forever. The demo starts it
 	# leaning so it has somewhere to fall.
@@ -112,6 +114,7 @@ func _test_the_spring_is_slung_between_two_anchors() -> void:
 
 func _test_the_spring_is_stretched_at_rest() -> void:
 	print("rest length")
+	begin_quiet()
 	var m := _make()
 	for joint in _joints(m, "DampedSpringJoint2D"):
 		var spring := joint as DampedSpringJoint2D
@@ -191,6 +194,11 @@ func _test_right_clicking_kicks_the_weight() -> void:
 		"and leaves the pendulum swinging as it was")
 
 var _quiet_failures := 0
+
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:

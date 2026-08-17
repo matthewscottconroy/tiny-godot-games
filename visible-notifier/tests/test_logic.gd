@@ -55,6 +55,7 @@ func _count_text(m: Node2D) -> String:
 
 func _test_the_grid_is_laid_out() -> void:
 	print("the field")
+	begin_quiet()
 	var m := _make()
 	expect(_objects(m).size() == m.OBJECT_COUNT, "there is an object per grid cell")
 	expect(m.OBJECT_COUNT > 50, "enough of them that culling is worth doing")
@@ -67,6 +68,7 @@ func _test_the_grid_is_laid_out() -> void:
 
 func _test_every_object_has_a_notifier() -> void:
 	print("the notifiers")
+	begin_quiet()
 	var m := _make()
 	for obj in _objects(m):
 		expect_quiet(_notifier(obj) != null, "an object without a notifier is never culled")
@@ -77,6 +79,7 @@ func _test_every_object_has_a_notifier() -> void:
 
 func _test_objects_start_active() -> void:
 	print("before culling")
+	begin_quiet()
 	var m := _make()
 	for obj in _objects(m):
 		expect_quiet(obj.get_meta("active"), "an object starts active")
@@ -141,6 +144,11 @@ func _test_the_camera_pans_with_the_keys() -> void:
 	expect(camera.position == start, "the camera stays put while nothing is pressed")
 
 var _quiet_failures := 0
+
+## Counted rather than printed, for checks that run once per item. Each test
+## zeroes the tally first, so one failure cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
 
 func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:
