@@ -1,13 +1,19 @@
 extends Node
 
+# Drives the real players from scripts/player.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_player_key_assignment()
-	_test_jump_velocity()
-	_test_camera_follows_player()
-	_test_viewport_sizes()
+	_test_each_player_owns_its_keys()
+	_test_the_two_players_share_no_key()
+	_test_gravity_only_applies_in_the_air()
+	_test_jumping_from_the_floor()
+	_test_jumping_in_mid_air_does_nothing()
+	_test_a_missed_jump_is_not_queued()
+	_test_horizontal_speed_follows_input()
+	_test_only_this_players_jump_key_latches()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -21,90 +27,118 @@ func expect(cond: bool, label: String) -> void:
 func expect_approx(a: float, b: float, label: String, tol: float = 0.001) -> void:
 	expect(absf(a - b) < tol, label)
 
-# ---- minimal simulation structs ----
-
-class FakePlayer:
-	var use_wasd: bool
-	var body_color: Color
-	const SPEED    := 160.0
-	const JUMP_VEL := -360.0
-	const GRAVITY  := 800.0
-	var velocity := Vector2.ZERO
-
-	func _init(wasd: bool, color: Color) -> void:
-		use_wasd = wasd
-		body_color = color
-
-	func jump_key() -> int:
-		return KEY_W if use_wasd else KEY_UP
-
-	func apply_gravity(delta: float) -> void:
-		velocity.y += GRAVITY * delta
-
-	func jump() -> void:
-		velocity.y = JUMP_VEL
-
-class FakeCamera:
-	var position := Vector2.ZERO
-
-	func follow(player_pos: Vector2) -> void:
-		position = player_pos
-
-# ---- tests ----
-
-func _test_player_key_assignment() -> void:
-	print("player key assignment by use_wasd flag")
-	var p1 := FakePlayer.new(true,  Color.CORNFLOWER_BLUE)
-	var p2 := FakePlayer.new(false, Color.TOMATO)
-
-	expect(p1.use_wasd == true,  "player 1 uses WASD")
-	expect(p2.use_wasd == false, "player 2 uses arrow keys")
-	expect(p1.jump_key() == KEY_W,  "player 1 jump key is W")
-	expect(p2.jump_key() == KEY_UP, "player 2 jump key is UP")
-
-func _test_jump_velocity() -> void:
-	print("jump velocity and gravity")
-	var p := FakePlayer.new(true, Color.WHITE)
-	expect_approx(p.velocity.y, 0.0, "initial y velocity is zero")
-
-	p.apply_gravity(1.0)
-	expect_approx(p.velocity.y, 800.0, "gravity adds 800 per second")
-
-	p.jump()
-	expect_approx(p.velocity.y, FakePlayer.JUMP_VEL, "jump sets velocity to JUMP_VEL")
-	expect(FakePlayer.JUMP_VEL < 0.0, "jump velocity is negative (upward)")
-
-func _test_camera_follows_player() -> void:
-	print("camera follows player global position")
-	var cam := FakeCamera.new()
-	var player_pos := Vector2(100.0, 200.0)
-
-	cam.follow(player_pos)
-	expect(cam.position == player_pos, "camera position matches player position")
-
-	player_pos = Vector2(250.0, 180.0)
-	cam.follow(player_pos)
-	expect(cam.position == player_pos, "camera updates when player moves")
-
-func _test_viewport_sizes() -> void:
-	print("viewport dimensions")
-	# Each half of a 640x480 window
-	const FULL_W := 640
-	const FULL_H := 480
-	const HALF_W := FULL_W / 2
-	expect(HALF_W == 320, "half-width is 320")
-	expect(FULL_H == 480, "full height is 480")
-
-	# Verify the two viewports together tile the full window
-	expect(HALF_W + HALF_W == FULL_W, "two 320-wide viewports equal 640")
-
-	# SubViewport size matches expectations
-	var vp_size := Vector2i(320, 480)
-	expect(vp_size.x == HALF_W, "SubViewport width is 320")
-	expect(vp_size.y == FULL_H, "SubViewport height is 480")
-
 func _report() -> void:
 	var summary := "[split-screen] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/player.gd")
+
+func _make(wasd: bool) -> CharacterBody2D:
+	var p := CharacterBody2D.new()
+	p.set_script(_script)
+	p.use_wasd = wasd
+	add_child(p)
+	return p
+
+func _test_each_player_owns_its_keys() -> void:
+	print("key assignment")
+	var one := _make(true)
+	var two := _make(false)
+	expect(one.jump_key() == KEY_W and one.left_key() == KEY_A and one.right_key() == KEY_D,
+		"the WASD player gets W/A/D")
+	expect(two.jump_key() == KEY_UP and two.left_key() == KEY_LEFT and two.right_key() == KEY_RIGHT,
+		"the other gets the arrow keys")
+
+func _test_the_two_players_share_no_key() -> void:
+	print("no overlap")
+	# Sharing even one key would make split-screen unplayable on one keyboard.
+	var one := _make(true)
+	var two := _make(false)
+	var mine := [one.jump_key(), one.left_key(), one.right_key()]
+	var theirs := [two.jump_key(), two.left_key(), two.right_key()]
+	var overlap := false
+	for k in mine:
+		if theirs.has(k):
+			overlap = true
+	expect(not overlap, "the two players' key sets are disjoint")
+
+func _test_gravity_only_applies_in_the_air() -> void:
+	print("gravity")
+	var p := _make(true)
+	p.tick_velocity(1.0, 0.0, false)
+	expect_approx(p.velocity.y, p.GRAVITY, "airborne, a second of falling adds a second of gravity")
+
+	var grounded := _make(true)
+	grounded.tick_velocity(1.0, 0.0, true)
+	expect_approx(grounded.velocity.y, 0.0, "standing on the floor, it does not accumulate")
+
+func _test_jumping_from_the_floor() -> void:
+	print("jumping")
+	var p := _make(true)
+	p.request_jump()
+	p.tick_velocity(STEP, 0.0, true)
+	expect_approx(p.velocity.y, p.JUMP_VEL, "a jump from the floor sets the jump velocity")
+	expect(p.JUMP_VEL < 0.0, "which is upward")
+	expect(not p.jump_requested(), "and the request is consumed")
+
+	# One press, one jump — holding the key must not re-trigger. Zeroing the
+	# velocity first makes a second jump visible; without it the frame is a no-op
+	# either way.
+	p.velocity.y = 0.0
+	p.tick_velocity(STEP, 0.0, true)
+	expect_approx(p.velocity.y, 0.0, "the next frame does not jump again")
+
+func _test_jumping_in_mid_air_does_nothing() -> void:
+	print("mid-air jump")
+	var p := _make(true)
+	p.request_jump()
+	p.tick_velocity(STEP, 0.0, false)
+	expect(p.velocity.y > 0.0, "pressing jump while falling does not launch the player")
+
+func _test_a_missed_jump_is_not_queued() -> void:
+	print("no jump buffering here")
+	var p := _make(true)
+	p.request_jump()
+	p.tick_velocity(STEP, 0.0, false)   # pressed in the air — dropped
+	expect(not p.jump_requested(), "the request is spent even though it did not land")
+	p.tick_velocity(STEP, 0.0, true)    # now touching down
+	expect(p.velocity.y != p.JUMP_VEL, "so touching the floor does not fire a stored jump")
+
+func _test_horizontal_speed_follows_input() -> void:
+	print("horizontal movement")
+	var p := _make(true)
+	p.tick_velocity(STEP, 1.0, true)
+	expect_approx(p.velocity.x, p.SPEED, "full right input moves at full speed")
+	p.tick_velocity(STEP, -1.0, true)
+	expect_approx(p.velocity.x, -p.SPEED, "and left is the mirror of it")
+	p.tick_velocity(STEP, 0.0, true)
+	expect_approx(p.velocity.x, 0.0, "no input stops immediately — no momentum in this demo")
+
+func _key(code: Key, pressed: bool, echo: bool = false) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = pressed
+	e.echo = echo
+	return e
+
+func _test_only_this_players_jump_key_latches() -> void:
+	print("the jump latch")
+	var p := _make(true)
+	p._unhandled_key_input(_key(p.jump_key(), true))
+	expect(p.jump_requested(), "pressing this player's jump key latches a request")
+
+	var other := _make(true)
+	other._unhandled_key_input(_key(KEY_UP, true))
+	expect(not other.jump_requested(), "the other player's jump key does not")
+
+	var released := _make(true)
+	released._unhandled_key_input(_key(released.jump_key(), false))
+	expect(not released.jump_requested(), "releasing the key does not latch one either")
+
+	# Held keys repeat as echo events; each would be a fresh jump.
+	var repeated := _make(true)
+	repeated._unhandled_key_input(_key(repeated.jump_key(), true, true))
+	expect(not repeated.jump_requested(), "and neither does an auto-repeat echo")

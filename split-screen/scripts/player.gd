@@ -14,31 +14,47 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if not key.pressed or key.echo:
 		return
-	if key.keycode == (KEY_W if use_wasd else KEY_UP):
-		_jump_requested = true
+	if key.keycode == jump_key():
+		request_jump()
 
-func _physics_process(delta: float) -> void:
-	# Gravity
-	if not is_on_floor():
+# Each player owns its own keys rather than sharing ui_left/ui_right — two
+# players on one keyboard cannot both use the same action.
+func jump_key() -> Key:
+	return KEY_W if use_wasd else KEY_UP
+
+func left_key() -> Key:
+	return KEY_A if use_wasd else KEY_LEFT
+
+func right_key() -> Key:
+	return KEY_D if use_wasd else KEY_RIGHT
+
+func request_jump() -> void:
+	_jump_requested = true
+
+func input_axis() -> float:
+	return (1.0 if Input.is_key_pressed(right_key()) else 0.0) \
+		- (1.0 if Input.is_key_pressed(left_key()) else 0.0)
+
+## One step of movement, given this frame's input and floor contact.
+##
+## A jump request is consumed whether or not it lands: pressing jump in mid-air
+## must not queue a jump that fires the moment the player touches down.
+func tick_velocity(delta: float, h: float, on_floor: bool) -> void:
+	if not on_floor:
 		velocity.y += GRAVITY * delta
-
-	# Horizontal input — split by player type to avoid sharing ui_left/ui_right
-	var h := 0.0
-	if use_wasd:
-		h = (1.0 if Input.is_key_pressed(KEY_D) else 0.0) \
-			- (1.0 if Input.is_key_pressed(KEY_A) else 0.0)
-	else:
-		h = (1.0 if Input.is_key_pressed(KEY_RIGHT) else 0.0) \
-			- (1.0 if Input.is_key_pressed(KEY_LEFT) else 0.0)
 
 	velocity.x = h * SPEED
 
-	# Jump
 	if _jump_requested:
 		_jump_requested = false
-		if is_on_floor():
+		if on_floor:
 			velocity.y = JUMP_VEL
 
+func jump_requested() -> bool:
+	return _jump_requested
+
+func _physics_process(delta: float) -> void:
+	tick_velocity(delta, input_axis(), is_on_floor())
 	move_and_slide()
 	queue_redraw()
 
