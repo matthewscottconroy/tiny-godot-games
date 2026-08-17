@@ -44,12 +44,7 @@ func _draw_contour(cx: int, cy: int) -> void:
 	var br: float = _field[cy + 1][cx + 1]
 	var bl: float = _field[cy + 1][cx]
 
-	var idx := (
-		(1 if tl >= THRESHOLD else 0) |
-		(2 if tr >= THRESHOLD else 0) |
-		(4 if br >= THRESHOLD else 0) |
-		(8 if bl >= THRESHOLD else 0)
-	)
+	var idx := contour_index(tl, tr, br, bl)
 	if idx == 0 or idx == 15:
 		return
 
@@ -73,6 +68,19 @@ func _draw_contour(cx: int, cy: int) -> void:
 			draw_line(top, right, col, 1.5)
 			draw_line(bottom, left, col, 1.5)
 
+## Which of the sixteen corner patterns a cell matches.
+##
+## One bit per corner, set when that corner is inside the surface. 0 and 15 are
+## the cells wholly outside and wholly inside, which the contour passes over.
+func contour_index(tl: float, tr: float, br: float, bl: float) -> int:
+	return (
+		(1 if tl >= THRESHOLD else 0) |
+		(2 if tr >= THRESHOLD else 0) |
+		(4 if br >= THRESHOLD else 0) |
+		(8 if bl >= THRESHOLD else 0)
+	)
+
+## Where along an edge the surface crosses, as a fraction from a to b.
 func _t(a: float, b: float) -> float:
 	if absf(b - a) < 0.00001:
 		return 0.5
