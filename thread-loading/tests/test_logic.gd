@@ -8,6 +8,7 @@ var _fail := 0
 
 func _ready() -> void:
 	_test_the_demo_writes_the_resources_it_will_load()
+	_test_the_written_resources_are_usable()
 	_test_it_starts_idle()
 	_test_pressing_load_queues_every_resource()
 	_test_the_button_is_locked_while_loading()
@@ -58,12 +59,44 @@ func _load_and_wait(m: Control) -> void:
 func _test_the_demo_writes_the_resources_it_will_load() -> void:
 	print("the resources")
 	var m := _make()
+	begin_quiet()
 	# The demo makes its own files so it has something real to load — without
 	# them every load would fail and the demo would show only errors.
 	for i in m.RESOURCE_COUNT:
 		var path: String = m.SAVE_DIR + "resource_%02d.tres" % i
 		expect_quiet(FileAccess.file_exists(path), "resource %d was not written" % i)
 	expect(_quiet_failures == 0, "there is a resource on disk for every one it will load")
+
+## Delete the demo's saved resources, so _setup_resources writes them fresh.
+## Otherwise a run only ever sees the files an earlier run left behind.
+func _forget_resources() -> void:
+	var dir := DirAccess.open("user://thread_loading_demo/")
+	if dir == null:
+		return
+	for file in dir.get_files():
+		dir.remove(file)
+
+func _test_the_written_resources_are_usable() -> void:
+	print("what it wrote")
+	_forget_resources()
+	var m := _make()
+	begin_quiet()
+	var colours := {}
+	for i in m.RESOURCE_COUNT:
+		var path: String = m.SAVE_DIR + "resource_%02d.tres" % i
+		var res: Variant = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
+		expect_quiet(res is StyleBoxFlat, "resource %d did not load back" % i)
+		if res is StyleBoxFlat:
+			var style := res as StyleBoxFlat
+			colours[style.bg_color] = true
+			# A channel outside 0..1 is not a colour anything can display.
+			expect_quiet(style.bg_color.r >= 0.0 and style.bg_color.r <= 1.0,
+				"resource %d has a red channel of %.2f" % [i, style.bg_color.r])
+			expect_quiet(style.bg_color.b >= 0.0 and style.bg_color.b <= 1.0,
+				"resource %d has a blue channel of %.2f" % [i, style.bg_color.b])
+			expect_quiet(style.resource_name != "", "resource %d has no name" % i)
+	expect(_quiet_failures == 0, "every written resource is a usable style box")
+	expect(colours.size() == m.RESOURCE_COUNT, "each written in its own colour")
 
 func _test_it_starts_idle() -> void:
 	print("before loading")
@@ -128,6 +161,17 @@ func _test_a_result_row_per_resource() -> void:
 	await _load_and_wait(m)
 	expect(m._result_list.get_child_count() == m.RESOURCE_COUNT,
 		"there is a row per resource loaded")
+
+	# And each row says what came back, not just that something did.
+	begin_quiet()
+	for row in m._result_list.get_children():
+		var text := ""
+		for label in row.get_children():
+			text += (label as Label).text
+		expect_quiet(text.contains("StyleBoxFlat"), "a row does not name the type it loaded")
+		expect_quiet(text.contains("DemoStyle"), "a row does not name the resource it loaded")
+		expect_quiet(not text.contains("FAILED"), "a row reports a failure")
+	expect(_quiet_failures == 0, "every row names the resource and the type that came back")
 
 func _test_reset_clears_up() -> void:
 	print("reset")
