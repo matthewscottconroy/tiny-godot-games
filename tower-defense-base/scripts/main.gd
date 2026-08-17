@@ -115,7 +115,10 @@ func _process(delta: float) -> void:
 		t["cd"] -= delta
 		if t["cd"] <= 0.0:
 			var tgt := _best_target(t["pos"])
-			if tgt != null:
+			# _best_target returns an empty dictionary when nothing is in range,
+			# and an empty dictionary is not null — checking for null instead
+			# let a tower fire at nothing and reset its cooldown doing it.
+			if not tgt.is_empty():
 				t["cd"] = 1.0 / FIRE_RATE
 				_bullets.append({"pos": t["pos"], "tgt": tgt, "vel": Vector2.ZERO})
 
