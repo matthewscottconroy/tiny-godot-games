@@ -1,14 +1,22 @@
 extends Node
 
+# Drives the real player from scripts/player.gd. The previous suite recomputed
+# the cut inline, so the rule the demo exists to teach could be inverted in the
+# real script without an assertion failing — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_jump_cut_constant()
-	_test_cut_reduces_velocity()
-	_test_cut_only_on_release_while_rising()
-	_test_full_jump_velocity()
-	_test_cut_jump_velocity()
+	_test_gravity_pulls_down()
+	_test_jump_from_floor()
+	_test_no_jump_in_midair()
+	_test_release_while_rising_cuts()
+	_test_hold_reaches_higher_than_tap()
+	_test_release_while_falling_does_nothing()
+	_test_cut_applies_once_per_jump()
+	_test_landing_clears_the_flag()
+	_test_fresh_player_is_not_mid_jump()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -19,47 +27,102 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_near(a: float, b: float, label: String, tol: float = 0.01) -> void:
-	expect(absf(a - b) <= tol, label)
-
-func _test_jump_cut_constant() -> void:
-	print("jump cut constant")
-	const JUMP_CUT := 0.4
-	expect(JUMP_CUT > 0.0 and JUMP_CUT < 1.0, "JUMP_CUT is between 0 and 1")
-	expect(JUMP_CUT == 0.4, "JUMP_CUT is 0.4")
-
-func _test_cut_reduces_velocity() -> void:
-	print("early release multiplies vy by JUMP_CUT")
-	const JUMP_VEL := -520.0
-	const JUMP_CUT := 0.4
-	var vy := JUMP_VEL
-	vy *= JUMP_CUT
-	expect_near(vy, JUMP_VEL * JUMP_CUT, "cut velocity equals JUMP_VEL * JUMP_CUT")
-	expect(absf(vy) < absf(JUMP_VEL), "cut velocity magnitude is smaller")
-
-func _test_cut_only_on_release_while_rising() -> void:
-	print("cut only triggers while still rising (vy < 0)")
-	var vy_rising := -300.0
-	var vy_falling := 200.0
-	expect(vy_rising < 0.0, "rising vy is negative — cut applies")
-	expect(not (vy_falling < 0.0), "falling vy is positive — cut does not apply")
-
-func _test_full_jump_velocity() -> void:
-	print("full hold jump reaches JUMP_VEL")
-	const JUMP_VEL := -520.0
-	var vy := JUMP_VEL
-	expect_near(vy, -520.0, "full jump starts at JUMP_VEL")
-
-func _test_cut_jump_velocity() -> void:
-	print("cut jump velocity after early release")
-	const JUMP_VEL := -520.0
-	const JUMP_CUT := 0.4
-	var vy_cut := JUMP_VEL * JUMP_CUT
-	expect_near(vy_cut, -208.0, "cut jump vy is JUMP_VEL * 0.4 = -208")
-	expect(absf(vy_cut) < absf(JUMP_VEL), "cut jump is weaker than full jump")
-
 func _report() -> void:
 	var summary := "[variable-jump-height] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/player.gd")
+
+func _make() -> CharacterBody2D:
+	var p := CharacterBody2D.new()
+	p.set_script(_script)
+	add_child(p)
+	return p
+
+func _test_gravity_pulls_down() -> void:
+	print("gravity")
+	var p := _make()
+	var vy: float = p.tick_vertical(0.0, STEP, false, false, false)
+	expect(vy > 0.0, "an airborne player accelerates downward")
+
+func _test_jump_from_floor() -> void:
+	print("jumping")
+	var p := _make()
+	var vy: float = p.tick_vertical(0.0, STEP, true, true, false)
+	expect(vy == p.JUMP_VEL, "a grounded press sets exactly JUMP_VEL")
+	expect(p.is_jumping(), "and marks the jump as in progress")
+
+func _test_no_jump_in_midair() -> void:
+	print("no mid-air jump")
+	var p := _make()
+	var vy: float = p.tick_vertical(0.0, STEP, false, true, false)
+	expect(vy > 0.0, "pressing in mid-air does not launch")
+
+func _test_release_while_rising_cuts() -> void:
+	print("the cut")
+	var p := _make()
+	var vy: float = p.tick_vertical(0.0, STEP, true, true, false)   # jump
+	var before := vy
+	vy = p.tick_vertical(vy, STEP, false, false, true)               # release
+	expect(vy > before, "releasing early reduces the upward speed")
+	expect(is_equal_approx(vy, (before + p.GRAVITY * STEP) * p.JUMP_CUT),
+		"the remaining rise is scaled by JUMP_CUT")
+
+func _test_hold_reaches_higher_than_tap() -> void:
+	print("hold beats tap")
+	# The whole point of the mechanic, measured as apex height rather than as an
+	# implementation detail.
+	var tap := _apex(true)
+	var hold := _apex(false)
+	expect(hold > tap, "holding reaches a higher apex than tapping")
+
+## Simulate a jump to its apex, returning the height gained.
+func _apex(release_early: bool) -> float:
+	var p := _make()
+	var vy: float = p.tick_vertical(0.0, STEP, true, true, false)
+	var height := 0.0
+	var frames := 0
+	while vy < 0.0 and frames < 600:
+		var released := release_early and frames == 3
+		vy = p.tick_vertical(vy, STEP, false, false, released)
+		height -= vy * STEP          # vy is negative while rising
+		frames += 1
+	return height
+
+func _test_release_while_falling_does_nothing() -> void:
+	print("releasing on the way down")
+	var p := _make()
+	p.tick_vertical(0.0, STEP, true, true, false)     # jump, sets _jumping
+	var falling := 200.0                              # already descending
+	var vy: float = p.tick_vertical(falling, STEP, false, false, true)
+	expect(vy > falling, "a release while falling only adds gravity — no scaling")
+
+func _test_cut_applies_once_per_jump() -> void:
+	print("one cut per jump")
+	var p := _make()
+	var vy: float = p.tick_vertical(0.0, STEP, true, true, false)
+	vy = p.tick_vertical(vy, STEP, false, false, true)   # first release cuts
+	expect(not p.is_jumping(), "the jump is no longer cuttable")
+	var before := vy
+	vy = p.tick_vertical(vy, STEP, false, false, true)   # second release
+	expect(vy > before, "a second release does not cut again")
+
+func _test_fresh_player_is_not_mid_jump() -> void:
+	print("initial state")
+	# A player that started life flagged as jumping would have its very first
+	# fall cut by a stray release, before it had ever jumped.
+	var p := _make()
+	expect(not p.is_jumping(), "a fresh player is not mid-jump")
+	var vy: float = p.tick_vertical(-100.0, STEP, false, false, true)
+	expect(vy > -100.0 and not is_equal_approx(vy, (-100.0 + p.GRAVITY * STEP) * p.JUMP_CUT),
+		"and a release before any jump cuts nothing")
+
+func _test_landing_clears_the_flag() -> void:
+	print("landing")
+	var p := _make()
+	p.tick_vertical(0.0, STEP, true, true, false)
+	p.tick_vertical(-100.0, STEP, true, false, false)    # touched down
+	expect(not p.is_jumping(), "landing clears the jump flag")

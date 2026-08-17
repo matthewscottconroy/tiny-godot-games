@@ -9,22 +9,42 @@ var _jumping := false
 
 @onready var _label: Label = $InfoLabel
 
-func _physics_process(delta: float) -> void:
-	if is_on_floor():
+## Apply gravity, the jump, and the release cut, returning the new vertical
+## velocity.
+##
+## Taking its inputs as parameters rather than reading Input and is_on_floor()
+## directly is what lets the rule the demo exists to teach be driven from a
+## test — and it is the whole rule, in order.
+func tick_vertical(vy: float, delta: float, on_floor: bool,
+		jump_pressed: bool, jump_released: bool) -> float:
+	# Landing clears the flag, so a release after touching down cuts nothing.
+	if on_floor:
 		_jumping = false
 
-	velocity.y += GRAVITY * delta
+	vy += GRAVITY * delta
 
-	var h := Input.get_axis("ui_left", "ui_right")
-	velocity.x = h * SPEED
-
-	if is_on_floor() and Input.is_action_just_pressed("ui_up"):
-		velocity.y = JUMP_VEL
+	if on_floor and jump_pressed:
+		vy = JUMP_VEL
 		_jumping = true
 
-	if _jumping and Input.is_action_just_released("ui_up") and velocity.y < 0.0:
-		velocity.y *= JUMP_CUT
+	# The cut only applies while still RISING. Without that check, releasing on
+	# the way down would scale the fall and the player would float.
+	if _jumping and jump_released and vy < 0.0:
+		vy *= JUMP_CUT
 		_jumping = false
+
+	return vy
+
+func is_jumping() -> bool:
+	return _jumping
+
+func _physics_process(delta: float) -> void:
+	velocity.y = tick_vertical(
+		velocity.y, delta, is_on_floor(),
+		Input.is_action_just_pressed("ui_up"),
+		Input.is_action_just_released("ui_up"))
+
+	velocity.x = Input.get_axis("ui_left", "ui_right") * SPEED
 
 	move_and_slide()
 	queue_redraw()
