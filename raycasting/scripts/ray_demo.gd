@@ -9,8 +9,20 @@ var _hit_point := Vector2.ZERO
 var _is_hitting := false
 
 func _process(_delta: float) -> void:
-	var mouse_local := to_local(get_global_mouse_position())
-	var direction := mouse_local.normalized()
+	aim_at(to_local(get_global_mouse_position()))
+	queue_redraw()
+
+## Point the ray at a spot, in this node's own coordinates, and cast it.
+##
+## force_raycast_update() is what makes this usable outside the physics step:
+## a RayCast2D otherwise only refreshes once per physics frame, so the result
+## would lag a frame behind the cursor.
+func aim_at(target_local: Vector2) -> void:
+	# Measured from the ray's own position, not from this node's origin: the
+	# ray sits in the middle of the room, so normalising the raw target aimed
+	# it as if the cursor were an offset from the top-left corner.
+	var origin := ray.position
+	var direction := (target_local - origin).normalized()
 	ray.target_position = direction * RAY_LENGTH
 	ray.force_raycast_update()
 
@@ -20,9 +32,13 @@ func _process(_delta: float) -> void:
 		line.set_point_position(1, _hit_point)
 	else:
 		_is_hitting = false
-		line.set_point_position(1, direction * RAY_LENGTH)
+		line.set_point_position(1, origin + direction * RAY_LENGTH)
 
-	queue_redraw()
+func is_hitting() -> bool:
+	return _is_hitting
+
+func hit_point() -> Vector2:
+	return _hit_point
 
 func _draw() -> void:
 	# Walls (StaticBody2D has no built-in visual)
