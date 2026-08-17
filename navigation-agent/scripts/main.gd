@@ -28,33 +28,39 @@ func _ready() -> void:
 	# Set initial target after one frame so NavigationServer has time to register
 	call_deferred("_set_target", _target_marker.position)
 
+const HOLE_MARGIN := 6.0
+
 func _build_navmesh() -> void:
 	var poly := NavigationPolygon.new()
 
+	# make_polygons_from_outlines() is deprecated; baking goes through
+	# NavigationServer2D now, which is what the editor's Bake button calls. The
+	# two kinds of outline are not interchangeable: the room is traversable and
+	# the obstacles are obstructions. Handing the holes over as traversable
+	# bakes one big walkable rectangle and the agent walks through the blocks.
+	var source := NavigationMeshSourceGeometryData2D.new()
+
 	# Outer walkable boundary (margin inside the viewport)
-	poly.add_outline(PackedVector2Array([
+	var room := PackedVector2Array([
 		Vector2(30, 40),
 		Vector2(610, 40),
 		Vector2(610, 440),
 		Vector2(30, 440),
-	]))
+	])
+	poly.add_outline(room)
+	source.add_traversable_outline(room)
 
 	# Obstacle holes (inner outlines create non-walkable regions)
 	for obs in OBSTACLES:
-		var margin := 6.0
-		poly.add_outline(PackedVector2Array([
-			Vector2(obs.position.x - margin, obs.position.y - margin),
-			Vector2(obs.end.x + margin,      obs.position.y - margin),
-			Vector2(obs.end.x + margin,      obs.end.y + margin),
-			Vector2(obs.position.x - margin, obs.end.y + margin),
-		]))
+		var hole := PackedVector2Array([
+			Vector2(obs.position.x - HOLE_MARGIN, obs.position.y - HOLE_MARGIN),
+			Vector2(obs.end.x + HOLE_MARGIN,      obs.position.y - HOLE_MARGIN),
+			Vector2(obs.end.x + HOLE_MARGIN,      obs.end.y + HOLE_MARGIN),
+			Vector2(obs.position.x - HOLE_MARGIN, obs.end.y + HOLE_MARGIN),
+		])
+		poly.add_outline(hole)
+		source.add_obstruction_outline(hole)
 
-	# make_polygons_from_outlines() is deprecated; the source geometry is baked
-	# through NavigationServer2D now, which is what the editor's Bake button
-	# calls.
-	var source := NavigationMeshSourceGeometryData2D.new()
-	for i in poly.get_outline_count():
-		source.add_traversable_outline(poly.get_outline(i))
 	NavigationServer2D.bake_from_source_geometry_data(poly, source)
 	$NavigationRegion2D.navigation_polygon = poly
 

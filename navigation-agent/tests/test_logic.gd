@@ -15,6 +15,8 @@ func _ready() -> void:
 	_test_the_navmesh_is_built()
 	_test_the_obstacles_are_holes_in_it()
 	_test_the_obstacles_do_not_touch()
+	_test_each_hole_is_the_block_inflated_on_all_four_sides()
+	_test_no_part_of_an_obstacle_is_walkable()
 	await _test_the_agent_is_given_a_target()
 	await _test_clicking_sets_a_new_target()
 	await _test_a_path_goes_around_an_obstacle()
@@ -79,7 +81,7 @@ func _test_the_obstacles_do_not_touch() -> void:
 	var m := _make()
 	# The demo's own comment says overlapping hole outlines break the partition
 	# step, and each rect is inflated before being cut out.
-	var margin := 6.0
+	var margin: float = m.HOLE_MARGIN
 	begin_quiet()
 	for i in m.OBSTACLES.size():
 		for j in range(i + 1, m.OBSTACLES.size()):
@@ -120,15 +122,24 @@ func _test_a_path_goes_around_an_obstacle() -> void:
 	await _settle()
 
 	var path: PackedVector2Array = m._nav_agent.get_current_navigation_path()
-	expect(path.size() > 1, "the agent has a path to follow")
+	expect(path.size() > 2,
+		"the path bends round the blocks rather than running straight at the goal (%d points)"
+		% path.size())
 
-	# No leg of the path may cut through a block — that is what the holes buy.
+	# Not merely outside the blocks: the holes are cut with a margin so the
+	# agent clears its own width. A hole cut smaller than the block it covers
+	# routes the agent along the wall and scrapes it through the corner.
+	var margin: float = m.HOLE_MARGIN
+	var closest := 999.0
 	begin_quiet()
 	for point in path:
 		for obstacle in m.OBSTACLES:
-			expect_quiet(not (obstacle as Rect2).has_point(point),
-				"a path point sits inside an obstacle at %s" % point)
-	expect(_quiet_failures == 0, "no point on the path stands inside an obstacle")
+			var gap: float = _distance_to_rect(point, obstacle)
+			closest = minf(closest, gap)
+			expect_quiet(gap >= margin - 0.5,
+				"a path point comes within %.1f px of an obstacle at %s" % [gap, point])
+	expect(_quiet_failures == 0,
+		"the path keeps its margin from every obstacle (closest %.1f px)" % closest)
 
 func _test_the_agent_walks_the_path() -> void:
 	print("walking")
@@ -152,6 +163,82 @@ func _test_the_agent_stops_when_it_arrives() -> void:
 	expect(m._agent.velocity == Vector2.ZERO, "an agent at its destination stops")
 	expect((m.get_node("HUD/StatusLabel") as Label).text.contains("Arrived"),
 		"and says it has arrived")
+
+## Every walkable polygon in the baked mesh, in world coordinates.
+func _walkable_polygons(mesh: NavigationPolygon) -> Array:
+	var vertices := mesh.get_vertices()
+	var polygons := []
+	for i in mesh.get_polygon_count():
+		var shape := PackedVector2Array()
+		for index in mesh.get_polygon(i):
+			shape.append(vertices[index])
+		polygons.append(shape)
+	return polygons
+
+func _test_each_hole_is_the_block_inflated_on_all_four_sides() -> void:
+	print("the hole outlines")
+	var m := _make()
+	var mesh := _navmesh(m)
+	var margin: float = m.HOLE_MARGIN
+	expect(margin > 0.0, "the holes are cut wider than the blocks, to clear the agent")
+
+	# Outline 0 is the room; the rest are the obstacle holes, in order. A corner
+	# left un-inflated leaves a wedge of the block walkable, which shows up only
+	# for a path that happens to cross that corner.
+	begin_quiet()
+	for i in m.OBSTACLES.size():
+		var rect: Rect2 = m.OBSTACLES[i]
+		var expected := Rect2(rect.position - Vector2(margin, margin),
+			rect.size + Vector2(margin, margin) * 2.0)
+		var outline: PackedVector2Array = mesh.get_outline(i + 1)
+		expect_quiet(outline.size() == 4, "hole %d is not a quadrilateral" % i)
+		# Corner by corner, not by bounding box: pulling one corner inward
+		# leaves the other three defining the same extents, so a box comparison
+		# sees nothing wrong.
+		var corners := [
+			expected.position,
+			Vector2(expected.end.x, expected.position.y),
+			expected.end,
+			Vector2(expected.position.x, expected.end.y),
+		]
+		for corner in corners:
+			var found := false
+			for point in outline:
+				if (point as Vector2).is_equal_approx(corner):
+					found = true
+			expect_quiet(found, "hole %d has no corner at %s" % [i, corner])
+	expect(_quiet_failures == 0, "every hole is its block inflated by the margin on all four sides")
+
+func _test_no_part_of_an_obstacle_is_walkable() -> void:
+	print("the holes in the mesh")
+	var m := _make()
+	var mesh := _navmesh(m)
+	var polygons := _walkable_polygons(mesh)
+	expect(polygons.size() > 1, "the mesh is cut into several polygons")
+
+	# Checked against the baked mesh rather than against one route: a hole with
+	# a single corner in the wrong place still routes most paths correctly, and
+	# leaves a wedge of the block walkable for anything crossing that corner.
+	begin_quiet()
+	var samples := 6
+	for obstacle in m.OBSTACLES:
+		var rect: Rect2 = obstacle
+		for ix in samples:
+			for iy in samples:
+				var point := Vector2(
+					lerpf(rect.position.x, rect.end.x, float(ix) / float(samples - 1)),
+					lerpf(rect.position.y, rect.end.y, float(iy) / float(samples - 1)))
+				for shape in polygons:
+					expect_quiet(not Geometry2D.is_point_in_polygon(point, shape),
+						"%s is inside an obstacle yet walkable" % point)
+	expect(_quiet_failures == 0, "no part of any obstacle is left walkable")
+
+## How far a point sits outside a rectangle, or zero if it is inside.
+func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
+	var nearest := Vector2(
+		clampf(point.x, rect.position.x, rect.end.x),
+		clampf(point.y, rect.position.y, rect.end.y))
+	return point.distance_to(nearest)
 
 var _quiet_failures := 0
 
