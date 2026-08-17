@@ -36,12 +36,18 @@ First full run, four mutations per demo:
 10 suites caught everything, 115 caught nothing, 23 partial
 ```
 
-After converting fourteen suites and correcting the measurement, the recorded
-floor is:
+After converting fourteen suites and correcting the measurement, the floor was:
 
 ```
 86/423 mutations caught (20.3%)
 15 suites caught everything, 105 caught nothing
+```
+
+Another thirty conversions later, the recorded floor is:
+
+```
+258/643 mutations caught (40.1%)
+29 suites caught everything, 72 caught nothing
 ```
 
 The sample is smaller because the sweep now uses three mutations per demo rather
@@ -174,11 +180,11 @@ frames each. 200 buys about 80 physics steps, or 1.3 simulated seconds.
 
 ## Current state
 
-The work is deliberately incremental. Converting all 111 remaining zero-scoring
-suites at once would be a rewrite of most of the collection's tests; the ratchet
+The work is deliberately incremental. Converting every remaining zero-scoring
+suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
-Fourteen are done. Some needed only a rewritten suite because the component
+Forty-four are done, and 72 suites still catch nothing. Some needed only a rewritten suite because the component
 already existed (`experience-leveling`, `drop-table`, `autoload-score`,
 `boid-flocking`, `groups`); the rest needed their logic lifting into a method
 first (`coyote-time`, `double-jump`, `variable-jump-height`, `wall-slide`,
@@ -199,6 +205,13 @@ rest:
   flag set such that the mechanic could fire before it had been triggered.
 - `quadtree` recursed infinitely on a one-character error, and its suite
   reported only a hang rather than a failure.
+- `rope-physics` pinned a dragged point as a segment's right-hand end but not
+  its left, so the rope could pull a held point a hundred pixels off the mouse.
+- `tower-defense-base` compared an empty dictionary against `null`, so a tower
+  with nothing in range still "fired" and reset its cooldown doing it; an enemy
+  walking into range waited up to two thirds of a second for its first shot.
+- `cellular-automata`'s own water test asserted the wrong row and passed about
+  half the time, depending on which way a coin-flip sent the drop.
 
 `docs/GAPS.md` lists demo-shaped gaps; this is the test-shaped one, and it is
 the larger pile of work.
