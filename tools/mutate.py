@@ -33,6 +33,7 @@ import re
 import resource
 import subprocess
 import sys
+import threading
 
 GODOT = os.environ.get("GODOT", "godot")
 
@@ -264,14 +265,20 @@ def run_suite(demo, timeout=90):
              "--quit-after", _frame_budget(demo)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             preexec_fn=_limit_address_space)
+        # The deadline has to cover the read, not just the wait. A mutation can
+        # leave a demo spinning in a loop that prints nothing — read() then
+        # blocks until EOF that never comes, and the run hangs forever. Two of
+        # these outlived their parent by an hour before this was added.
+        watchdog = threading.Timer(timeout, proc.kill)
+        watchdog.start()
         try:
             captured = proc.stdout.read(limit)
             proc.stdout.close()
-            proc.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            proc.kill()
             proc.wait()
-            return False
+        finally:
+            watchdog.cancel()
+        if proc.returncode is not None and proc.returncode < 0:
+            return False      # killed: a mutant that hangs is a mutant caught
     except OSError:
         return False
     summary = re.findall(r"(\d+)/(\d+) passed", captured)
