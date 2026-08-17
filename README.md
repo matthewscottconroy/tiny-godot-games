@@ -46,7 +46,12 @@ Both checks run against a specific demo too, and either can be run on its own:
 ./run-tests.sh state-machine        # one demo (or several)
 ./run-tests.sh --smoke-only         # just boot every demo
 ./run-tests.sh --tests-only         # just the logic suites
+JOBS=4 ./run-tests.sh               # cap concurrency
 ```
+
+Each job is a full Godot process, so the default concurrency is bounded by
+available memory as well as core count — a many-core machine would otherwise
+run out of RAM long before it saturated the CPU. Set `JOBS=` to override.
 
 ...or invoke one demo's suite directly:
 

@@ -1,5 +1,7 @@
 extends Node2D
 
+# size-exempt: the tree's node types, the enemy's leaf callables, and a live tree visualisation are one lesson — split apart, neither half shows how a BT actually runs
+
 const PATROL_MIN := 80.0
 const PATROL_MAX := 200.0
 const CHASE_SPEED := 80.0

@@ -1,5 +1,7 @@
 extends Node2D
 
+# size-exempt: the prerequisite graph needs enough nodes to have interesting shape, plus the tooltip renderer
+
 const NODE_RADIUS := 28.0
 const HOVER_RADIUS := 32.0
 

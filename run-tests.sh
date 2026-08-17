@@ -5,7 +5,7 @@
 #   ./run-tests.sh                 # check all demos
 #   ./run-tests.sh state-machine   # check one or more specific demos
 #   GODOT=/path/to/godot ./run-tests.sh
-#   JOBS=4 ./run-tests.sh          # limit concurrency (default: CPU count)
+#   JOBS=4 ./run-tests.sh          # limit concurrency (see the default below)
 #   ./run-tests.sh --smoke-only    # skip the logic suites
 #   ./run-tests.sh --tests-only    # skip the smoke check
 #   ./run-tests.sh --reimport      # force a re-import even if nothing changed
@@ -157,7 +157,29 @@ done
 demos=("${valid[@]}")
 [ "${#demos[@]}" -eq 0 ] && { echo "nothing to check"; exit 0; }
 
-JOBS="${JOBS:-$( (command -v nproc >/dev/null && nproc) || echo 4 )}"
+# Concurrency default. Each job is a full Godot process holding a rendering
+# server and an imported project — call it ~400MB resident — so scaling purely
+# on core count will exhaust memory on a many-core machine long before it
+# saturates the CPU. Bound by BOTH: half the cores, and roughly 1 job per GB of
+# available memory, capped at 8. Override with JOBS= when you know better.
+default_jobs() {
+  local cores mem_gb limit
+  cores="$( (command -v nproc >/dev/null && nproc) || echo 4 )"
+  limit=$(( cores / 2 ))
+  [ "$limit" -lt 1 ] && limit=1
+
+  if [ -r /proc/meminfo ]; then
+    mem_gb="$(awk '/MemAvailable/ {print int($2 / 1048576)}' /proc/meminfo)"
+    if [ -n "$mem_gb" ] && [ "$mem_gb" -ge 1 ] && [ "$mem_gb" -lt "$limit" ]; then
+      limit="$mem_gb"
+    fi
+  fi
+
+  [ "$limit" -gt 8 ] && limit=8
+  echo "$limit"
+}
+
+JOBS="${JOBS:-$(default_jobs)}"
 [ "$JOBS" -gt "${#demos[@]}" ] && JOBS="${#demos[@]}"
 
 RESULT_DIR="$(mktemp -d)"
@@ -165,6 +187,7 @@ trap 'rm -rf "$RESULT_DIR"' EXIT
 export GODOT ERROR_RE RUN_SMOKE RUN_LOGIC FORCE_IMPORT RESULT_DIR
 
 echo "Checking ${#demos[@]} demo(s) with $JOBS parallel job(s)…"
+echo "  (each job is a Godot process; set JOBS= to change)"
 
 # Import first (demos that need it), then check. Both fan out; the import phase
 # is a barrier because the checks below depend on its output.

@@ -84,3 +84,11 @@ func _draw() -> void:
 	# In-progress stroke (lighter color)
 	for i in range(_current_stroke.size() - 1):
 		draw_line(_current_stroke[i], _current_stroke[i + 1], Color(0.5, 0.5, 0.9), 3.0, true)
+
+
+func _exit_tree() -> void:
+	# UndoRedo extends Object, not RefCounted — nothing reference-counts it, so
+	# it is never collected and must be freed by hand. This is the usual trap
+	# with the handful of Object-derived helper types in Godot.
+	if is_instance_valid(_undo_redo):
+		_undo_redo.free()

@@ -1,5 +1,7 @@
 extends Node2D
 
+# size-exempt: showing type safety needs several distinct event types and their listeners side by side
+
 const ENEMY_COUNT := 8
 
 var _bus: EventBus

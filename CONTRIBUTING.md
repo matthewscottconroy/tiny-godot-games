@@ -62,7 +62,12 @@ A suite that needs a physics step should do its work in `_physics_process` —
 ./run-tests.sh my-demo        # one demo
 ./run-tests.sh                # all of them, in parallel
 ./run-tests.sh --smoke-only   # just boot everything
+JOBS=4 ./run-tests.sh         # cap concurrency if memory is tight
 ```
+
+Each parallel job is a Godot process holding a rendering server and an imported
+project. The default concurrency is bounded by available memory as well as core
+count for that reason; `JOBS=` overrides it.
 
 ## Checks that run in CI
 

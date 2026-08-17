@@ -53,9 +53,16 @@ def parse_index(readme):
     return [c for c in categories if c[1]]
 
 
-def cell(demo, description, has_image):
-    """One gallery cell: image (or placeholder), name, description."""
-    if has_image:
+def cell(demo, description, has_image, has_motion=False):
+    """One gallery cell: image (or placeholder), name, description.
+
+    A large part of this collection is motion — a still of boid-flocking or
+    wind-effect says almost nothing — so an animation is preferred when
+    tools/screenshots.sh was run with MOTION=1.
+    """
+    if has_motion:
+        image = "[![%s](img/%s.webp)](../%s)" % (demo, demo, demo)
+    elif has_image:
         image = "[![%s](img/%s.png)](../%s)" % (demo, demo, demo)
     else:
         image = "_(no screenshot yet)_"
@@ -74,6 +81,7 @@ def main():
         return 2
 
     available = {os.path.basename(p)[:-4] for p in glob.glob(IMG_DIR + "/*.png")}
+    animated = {os.path.basename(p)[:-5] for p in glob.glob(IMG_DIR + "/*.webp")}
 
     out = [HEADER]
     total = 0
@@ -87,7 +95,7 @@ def main():
             total += 1
             if demo in available:
                 shown += 1
-            row.append(cell(demo, description, demo in available))
+            row.append(cell(demo, description, demo in available, demo in animated))
             if len(row) == COLUMNS:
                 out.append("| " + " | ".join(row) + " |")
                 row = []
@@ -97,7 +105,7 @@ def main():
         out.append("")
 
     out.append("---\n")
-    out.append("_%d demos, %d with screenshots._" % (total, shown))
+    out.append("_%d demos, %d with screenshots, %d animated._" % (total, shown, len(animated)))
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as handle:

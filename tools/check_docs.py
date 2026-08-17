@@ -43,6 +43,28 @@ WASD_KEYS = re.compile(r"\bKEY_[ADWS]\b")
 SPACE_KEYS = re.compile(r"KEY_SPACE|ui_accept")
 CONTROLS_SECTION = re.compile(r"^## Controls.*?(?=^## |\Z)", re.S | re.M)
 
+# "Tiny" is the premise. Past this many lines of demo script, ask whether it
+# should be two demos — a warning, not a failure, since some concepts genuinely
+# need the space. Opt out with a `# size-exempt: <reason>` comment in main.gd.
+SIZE_WARN_LINES = 250
+SIZE_EXEMPT = re.compile(r"^#\s*size-exempt:\s*(.+)$", re.M)
+
+# APIs Godot has deprecated. This collection lost 63 demos to API drift once;
+# catching a rename while it is still only deprecated is much cheaper than
+# catching it after it becomes an error.
+DEPRECATED = {
+    r"\bTileMap\b(?!Layer)": "use TileMapLayer (one node per layer)",
+    r"\.get_stylebox\(": "renamed to get_theme_stylebox()",
+    r"\.get_font\(": "renamed to get_theme_font()",
+    r"\byield\(": "removed in Godot 4 — use await",
+    r"\bOS\.get_ticks_msec\b": "moved to Time.get_ticks_msec()",
+    r"\bEngine\.get_target_fps\b": "renamed to Engine.max_fps",
+    r"\.instance\(\)": "renamed to instantiate()",
+    r"\bconnect\(\"": "Godot 4 uses signal.connect(callable), not connect(\"name\", ...)",
+    r"\bempty\(\)": "renamed to is_empty()",
+    r"\bPoolStringArray\b": "renamed to PackedStringArray",
+}
+
 # Demos allowed to mention WASD without binding it, with the reason.
 WASD_EXEMPT = {
     "input-remapping": "its WASD prose is about remapping, not a default binding",
@@ -121,6 +143,41 @@ def check_stale_version_prose(demo):
                        % (match.group(0), match.group(1)))
 
 
+def check_size(demo):
+    """Warn when a demo drifts past 'tiny'."""
+    scripts = sorted(glob.glob(os.path.join(demo, "scripts", "*.gd")))
+    if not scripts:
+        return
+    total = sum(len(read(p).split("\n")) for p in scripts)
+    if total <= SIZE_WARN_LINES:
+        return
+    exemption = None
+    for path in scripts:
+        match = SIZE_EXEMPT.search(read(path))
+        if match:
+            exemption = match.group(1).strip()
+            break
+    if exemption:
+        return
+    fail(demo, "%d lines of demo script (over %d) — consider splitting it, or add "
+               "`# size-exempt: <reason>` if the concept genuinely needs the space"
+               % (total, SIZE_WARN_LINES))
+
+
+def check_deprecated_apis(demo):
+    """Flag APIs Godot has deprecated, before they become errors."""
+    for path in sorted(glob.glob(os.path.join(demo, "scripts", "*.gd"))):
+        source = read(path)
+        for i, line in enumerate(source.split("\n"), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            for pattern, advice in DEPRECATED.items():
+                match = re.search(pattern, line)
+                if match:
+                    fail(demo, "%s:%d uses a deprecated API (%s) — %s"
+                         % (os.path.basename(path), i, match.group(0).strip(), advice))
+
+
 def check_index():
     root = read("README.md")
     listed = re.findall(r"^\| \[([a-z0-9-]+)\]\(([a-z0-9-]+)\)", root, re.M)
@@ -167,6 +224,8 @@ def main():
 
     for demo in demos:
         check_required_files(demo)
+        check_size(demo)
+        check_deprecated_apis(demo)
         if os.path.exists(demo + "/README.md"):
             check_sections(demo)
             check_control_claims(demo)

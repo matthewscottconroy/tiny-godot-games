@@ -1,5 +1,7 @@
 extends Node2D
 
+# size-exempt: most of the bulk is the branching-graph visualisation, which is what makes the traversal legible
+
 const PLAYER_SPEED := 100.0
 const INTERACT_RANGE := 100.0
 

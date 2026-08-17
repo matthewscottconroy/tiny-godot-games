@@ -36,6 +36,13 @@ First full run, four mutations per demo:
 10 suites caught everything, 115 caught nothing, 23 partial
 ```
 
+After converting four suites to drive real code, the recorded floor is:
+
+```
+97/544 mutations caught (18%)
+16 suites caught everything, 111 caught nothing
+```
+
 The split is exactly what the design predicts. Suites that drive the demo's real
 type score well:
 
@@ -98,6 +105,15 @@ script instead of a copy of it.**
 
 ## Current state
 
-The work is deliberately incremental. Converting all 115 zero-scoring suites at
-once would be a rewrite of most of the collection's tests; the ratchet exists so
-it can happen a few demos at a time without anything sliding backwards.
+The work is deliberately incremental. Converting all 111 remaining zero-scoring
+suites at once would be a rewrite of most of the collection's tests; the ratchet
+exists so it can happen a few demos at a time without anything sliding backwards.
+
+Four are done, each 0% -> 100%: `experience-leveling` and `drop-table` needed
+only a rewritten suite because the component already existed, while
+`coyote-time` and `double-jump` needed their logic lifting into a method first.
+That refactor is worth doing for its own sake — it is the same change that makes
+a demo reusable — so the two goals point the same way.
+
+`docs/GAPS.md` lists demo-shaped gaps; this is the test-shaped one, and it is
+the larger pile of work.

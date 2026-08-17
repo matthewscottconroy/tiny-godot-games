@@ -1,5 +1,7 @@
 extends Node2D
 
+# size-exempt: three objective types are the lesson — one type would not show that the system is type-agnostic
+
 const PLAYER_SPEED := 120.0
 const ATTACK_RANGE := 30.0
 const COIN_RANGE := 15.0

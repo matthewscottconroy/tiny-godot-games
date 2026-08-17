@@ -158,4 +158,4 @@ Looking for a route rather than a catalogue? See [learning paths](LEARNING_PATHS
 
 ---
 
-_165 demos, 0 with screenshots._
+_165 demos, 0 with screenshots, 0 animated._

@@ -24,7 +24,7 @@ func subdivide() -> void:
 	var x := bounds.position.x
 	var y := bounds.position.y
 	children = [
-		QTNode.new(Rect2(x,      y,      hw, hh), depth + 1),
+		QTNode.new(Rect2(x,      y,      hw, hh), depth - 1),
 		QTNode.new(Rect2(x + hw, y,      hw, hh), depth + 1),
 		QTNode.new(Rect2(x,      y + hh, hw, hh), depth + 1),
 		QTNode.new(Rect2(x + hw, y + hh, hw, hh), depth + 1),

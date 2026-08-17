@@ -24,6 +24,11 @@
 # Movie Maker writes a numbered PNG per frame; we keep one from partway in — by
 # then a demo has drawn its first real frame, and anything that animates on
 # entry has settled.
+#
+# MOTION=1 additionally writes a short looping animation. A large part of this
+# collection IS motion — boid-flocking, wind-effect, tween-juice, trail-effect,
+# verlet-integration — and a still frame of those communicates almost nothing.
+# Needs ffmpeg; without it the still is still produced and the animation skipped.
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -33,7 +38,20 @@ OUT="${OUT:-docs/img}"
 # Which frame to keep. Early enough to be quick, late enough that _ready() work,
 # procedural generation, and intro tweens have all happened.
 FRAME="${FRAME:-45}"
-TOTAL_FRAMES=$((FRAME + 5))
+# With MOTION, keep capturing past the still so there is a loop to assemble.
+MOTION="${MOTION:-0}"
+MOTION_FRAMES="${MOTION_FRAMES:-120}"
+if [ "$MOTION" = "1" ]; then
+  TOTAL_FRAMES=$((FRAME + MOTION_FRAMES))
+else
+  TOTAL_FRAMES=$((FRAME + 5))
+fi
+
+have_ffmpeg=1
+if [ "$MOTION" = "1" ] && ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "note: ffmpeg not found — capturing stills only, skipping animations" >&2
+  have_ffmpeg=0
+fi
 
 if ! command -v "$GODOT" >/dev/null 2>&1; then
   echo "error: Godot not found. Set GODOT=/path/to/godot or add it to PATH." >&2
@@ -98,6 +116,16 @@ for demo in "${demos[@]}"; do
   fi
 
   cp "$shot" "$OUT/$demo.png"
+
+  # Assemble the frames after the still into a small looping WebP. WebP rather
+  # than GIF: far smaller at this frame count, and every browser renders it.
+  if [ "$MOTION" = "1" ] && [ "$have_ffmpeg" -eq 1 ]; then
+    ffmpeg -y -loglevel error -framerate 30 \
+        -start_number "$FRAME" -i "$frames/frame%08d.png" \
+        -frames:v "$MOTION_FRAMES" -loop 0 -q:v 60 -vf "scale=480:-1" \
+        "$OUT/$demo.webp" 2>/dev/null || echo "      (animation failed for $demo)"
+  fi
+
   echo "OK    $demo -> $OUT/$demo.png"
   captured=$((captured + 1))
 done

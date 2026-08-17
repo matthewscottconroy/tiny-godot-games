@@ -1,5 +1,7 @@
 extends Control
 
+# size-exempt: the point is a settings screen wired end to end; a partial one would not demonstrate persistence
+
 const CONFIG_PATH := "user://settings.cfg"
 
 const DEFAULTS := {

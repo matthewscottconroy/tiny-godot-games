@@ -1,5 +1,7 @@
 extends Node2D
 
+# size-exempt: the rollout plan keeps this as one file deliberately: the lesson is a hierarchical FSM read top to bottom
+
 var _hfsm: HFSMState  # root
 
 var _alive: HFSMState
