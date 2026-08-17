@@ -53,6 +53,7 @@ func _wall(m: Node2D, name: String) -> StaticBody2D:
 func _test_a_ray_into_open_space_hits_nothing() -> void:
 	print("empty space")
 	var m := _make()
+	expect(not m.is_hitting(), "a ray that has not been aimed yet reports no hit")
 	# Straight up from the middle of the room: nothing in the way.
 	_aim_world(m, Vector2(320.0, 0.0))
 	expect(not m.is_hitting(), "a ray with nothing in its path reports no hit")
@@ -93,9 +94,13 @@ func _test_the_ray_is_long_enough_to_cross_the_room() -> void:
 	expect(m.RAY_LENGTH > 640.0, "the ray reaches across the whole window")
 	_aim_world(m, Vector2(320.0, 0.0))
 	var line: Line2D = m.get_node("Line2D")
-	var reach: float = line.get_point_position(0).distance_to(line.get_point_position(1))
-	expect(is_equal_approx(reach, m.RAY_LENGTH),
+	var start: Vector2 = line.get_point_position(0)
+	var far_end: Vector2 = line.get_point_position(1)
+	expect(is_equal_approx(start.distance_to(far_end), m.RAY_LENGTH),
 		"and a ray that hits nothing is drawn at its full length from its origin")
+	# Aimed at the top of the window, so it has to be drawn upwards — the same
+	# length in the opposite direction would look identical to a length check.
+	expect(far_end.y < start.y, "in the direction it was aimed, not behind it")
 
 func _test_the_drawn_line_ends_where_the_ray_does() -> void:
 	print("the drawn line")
