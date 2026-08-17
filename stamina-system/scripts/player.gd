@@ -16,14 +16,14 @@ var _regen_wait:    float = 0.0
 @onready var _bar:   ProgressBar = $StaminaBar
 @onready var _label: Label       = $InfoLabel
 
-func _physics_process(delta: float) -> void:
-	if not is_on_floor():
-		velocity.y += GRAVITY * delta
-
-	var h   := Input.get_axis("ui_left", "ui_right")
-	var want_sprint := Input.is_key_pressed(KEY_SHIFT) and h != 0.0
-
-	_sprinting = want_sprint and _stamina > 0.0
+## Drain while sprinting, regenerate otherwise — but only after a delay.
+##
+## The delay is what stops stamina from being a free resource: releasing sprint
+## for a single frame must not start it refilling, or tapping the key
+## indefinitely costs nothing. Every sprinting frame re-arms it.
+func tick_stamina(delta: float, wants_to_sprint: bool) -> void:
+	# Wanting to sprint is not enough — an empty bar refuses.
+	_sprinting = wants_to_sprint and _stamina > 0.0
 
 	if _sprinting:
 		_stamina    = maxf(_stamina - DRAIN_RATE * delta, 0.0)
@@ -33,15 +33,32 @@ func _physics_process(delta: float) -> void:
 		if _regen_wait <= 0.0:
 			_stamina = minf(_stamina + REGEN_RATE * delta, STAMINA_MAX)
 
-	velocity.x = h * (SPRINT_SPEED if _sprinting else SPEED)
+func current_speed() -> float:
+	return SPRINT_SPEED if _sprinting else SPEED
+
+func stamina() -> float:
+	return _stamina
+
+func is_sprinting() -> bool:
+	return _sprinting
+
+func _physics_process(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y += GRAVITY * delta
+
+	var h := Input.get_axis("ui_left", "ui_right")
+	tick_stamina(delta, Input.is_key_pressed(KEY_SHIFT) and h != 0.0)
+	velocity.x = h * current_speed()
 	if Input.is_action_just_pressed("ui_up") and is_on_floor():
 		velocity.y = JUMP_VEL
 	move_and_slide()
 	queue_redraw()
 
-	_bar.value  = _stamina
-	_bar.modulate = Color.GREEN if _stamina > 30.0 else Color.ORANGE_RED
-	_label.text = "SPRINTING" if _sprinting else ("DEPLETED" if _stamina <= 0.0 else "READY")
+	if _bar:
+		_bar.value  = _stamina
+		_bar.modulate = Color.GREEN if _stamina > 30.0 else Color.ORANGE_RED
+	if _label:
+		_label.text = "SPRINTING" if _sprinting else ("DEPLETED" if _stamina <= 0.0 else "READY")
 
 func _draw() -> void:
 	var col := Color.GOLD if _sprinting else Color.DODGER_BLUE
