@@ -1,15 +1,19 @@
 extends Node
 
+# Drives the real button from scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_squish_target_scale()
-	_test_squish_duration()
-	_test_recover_scale()
-	_test_recover_duration()
-	_test_pop_label_rise()
-	_test_pop_label_duration()
+	_test_the_button_scales_about_its_middle()
+	_test_it_starts_unsquished()
+	await _test_pressing_squishes_and_springs_back()
+	_test_pressing_pops_a_score_label()
+	_test_the_pops_are_scattered()
+	_test_each_press_pops_again()
+	await _test_a_pop_rises_and_fades()
+	await _test_a_pop_cleans_itself_up()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -20,43 +24,114 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_near(a: float, b: float, label: String, tol: float = 0.001) -> void:
-	expect(absf(a - b) <= tol, label)
-
-func _test_squish_target_scale() -> void:
-	print("button squish target scale")
-	var squish_scale := Vector2(1.25, 0.7)
-	expect_near(squish_scale.x, 1.25, "squish x scale is 1.25 (wider)")
-	expect_near(squish_scale.y, 0.7, "squish y scale is 0.7 (shorter)")
-
-func _test_squish_duration() -> void:
-	print("squish animation duration")
-	var squish_time := 0.07
-	expect_near(squish_time, 0.07, "squish tween duration is 0.07s")
-
-func _test_recover_scale() -> void:
-	print("button recovery target scale")
-	var recover_scale := Vector2(1.0, 1.0)
-	expect_near(recover_scale.x, 1.0, "recover x scale returns to 1.0")
-	expect_near(recover_scale.y, 1.0, "recover y scale returns to 1.0")
-
-func _test_recover_duration() -> void:
-	print("recovery animation duration")
-	var recover_time := 0.3
-	expect_near(recover_time, 0.3, "recovery tween duration is 0.3s")
-
-func _test_pop_label_rise() -> void:
-	print("pop label floats up by 70 pixels")
-	var rise_amount := 70.0
-	expect(rise_amount == 70.0, "pop label rises 70px")
-
-func _test_pop_label_duration() -> void:
-	print("pop label animation duration")
-	var pop_time := 0.7
-	expect_near(pop_time, 0.7, "pop label tween duration is 0.7s")
-
 func _report() -> void:
 	var summary := "[tween-juice] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+var _scene: Node
+
+func _make() -> Node:
+	if is_instance_valid(_scene):
+		remove_child(_scene)
+		_scene.free()
+	_scene = load("res://scenes/main.tscn").instantiate()
+	add_child(_scene)
+	return _scene
+
+## The juiced button, wherever it sits in the scene.
+func _button(m: Node) -> Button:
+	for node in m.find_children("*", "Button", true, false):
+		if node.get_script() != null:
+			return node
+	return null
+
+func _pops(m: Node) -> Array[Label]:
+	var found: Array[Label] = []
+	for node in _button(m).get_parent().get_children():
+		# Exact text: the demo's own hint label mentions "+10 labels", so a
+		# contains() check would count the instructions as a score pop.
+		if node is Label and (node as Label).text == "+10":
+			found.append(node)
+	return found
+
+func _test_the_button_scales_about_its_middle() -> void:
+	print("the pivot")
+	var m := _make()
+	var button := _button(m)
+	# Without a centred pivot the squish would swing the button off its corner
+	# rather than squashing it in place.
+	expect(button.pivot_offset.is_equal_approx(button.size / 2.0),
+		"the button scales about its own centre")
+
+func _test_it_starts_unsquished() -> void:
+	print("at rest")
+	var m := _make()
+	expect(_button(m).scale.is_equal_approx(Vector2.ONE), "the button starts at its normal size")
+	expect(_pops(m).is_empty(), "with nothing popped yet")
+
+func _test_pressing_squishes_and_springs_back() -> void:
+	print("the squish")
+	var m := _make()
+	var button := _button(m)
+	button.pressed.emit()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	expect(not button.scale.is_equal_approx(Vector2.ONE), "pressing squashes the button")
+	expect(button.scale.x > button.scale.y, "wider than it is tall, as a squash should be")
+
+	for i in 200:
+		await get_tree().process_frame
+		if button.scale.is_equal_approx(Vector2.ONE):
+			break
+	expect(button.scale.is_equal_approx(Vector2.ONE), "and it springs back to its normal size")
+
+func _test_pressing_pops_a_score_label() -> void:
+	print("the pop")
+	var m := _make()
+	_button(m).pressed.emit()
+	expect(_pops(m).size() == 1, "a press pops one score label")
+	expect(_pops(m)[0].text.contains("10"), "showing what was scored")
+
+func _test_the_pops_are_scattered() -> void:
+	print("scatter")
+	var m := _make()
+	var xs := {}
+	for i in 12:
+		_button(m).pressed.emit()
+	for pop in _pops(m):
+		xs[roundi(pop.position.x)] = true
+	# Popping every label at the same spot would read as one label flickering.
+	expect(xs.size() > 1, "consecutive pops are jittered apart")
+
+func _test_each_press_pops_again() -> void:
+	print("repeat presses")
+	var m := _make()
+	for i in 3:
+		_button(m).pressed.emit()
+	expect(_pops(m).size() == 3, "three presses pop three labels")
+
+func _test_a_pop_rises_and_fades() -> void:
+	print("rising")
+	var m := _make()
+	_button(m).pressed.emit()
+	var pop: Label = _pops(m)[0]
+	var start_y: float = pop.position.y
+	for i in 20:
+		await get_tree().process_frame
+	expect(pop.position.y < start_y, "the label drifts upwards")
+	expect(pop.modulate.a < 1.0, "and fades as it goes")
+
+func _test_a_pop_cleans_itself_up() -> void:
+	print("cleaning up")
+	var m := _make()
+	_button(m).pressed.emit()
+	var pop: Label = _pops(m)[0]
+	# Left behind, every press would add a permanent invisible label to the
+	# scene — the sort of leak that only shows up after a long session.
+	for i in 300:
+		await get_tree().process_frame
+		if not is_instance_valid(pop):
+			break
+	expect(not is_instance_valid(pop), "the label frees itself once it has faded")
