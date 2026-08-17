@@ -18,6 +18,7 @@ func _ready() -> void:
 	_test_the_language_buttons_switch()
 	_test_the_key_list_is_shown_with_its_translations()
 	_test_an_unknown_key_comes_back_as_itself()
+	_test_a_short_grid_is_left_alone()
 	_report()
 	TranslationServer.set_locale("en")
 
@@ -123,6 +124,16 @@ func _test_the_key_list_is_shown_with_its_translations() -> void:
 			"row %d shows the translation beside it" % i)
 	expect(_quiet_failures == 0, "each row pairs a key with its translation")
 
+	# And the values follow the language, rather than being whatever the scene
+	# file happened to be saved with.
+	m._set_locale("es")
+	for i in m.KEYS.size():
+		var value_label := grid.get_children()[i * 2 + 1] as Label
+		expect_quiet(value_label.text == m.TRANSLATIONS["es"][m.KEYS[i]],
+			"row %d is not in Spanish" % i)
+	expect(_quiet_failures == 0, "and the whole table switches language together")
+	m._set_locale("en")
+
 func _test_an_unknown_key_comes_back_as_itself() -> void:
 	print("missing keys")
 	_make()
@@ -135,3 +146,18 @@ func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:
 		_quiet_failures += 1
 		print("  (", label, ")")
+
+func _test_a_short_grid_is_left_alone() -> void:
+	print("a grid with a missing cell")
+	var m := _make()
+	var grid: GridContainer = m.get_node("VBox/Grid")
+	# One cell short of a full pair. The fill loop has to stop rather than
+	# write half a row and run off the end of the list.
+	var last: Node = grid.get_children()[grid.get_child_count() - 1]
+	grid.remove_child(last)
+	last.free()
+
+	var final_key := grid.get_children()[grid.get_child_count() - 1] as Label
+	final_key.text = "UNTOUCHED"
+	m._refresh_ui()
+	expect(final_key.text == "UNTOUCHED", "the incomplete row is skipped, not half-written")
