@@ -1,20 +1,25 @@
 extends Node
 
-# Pure GDScript tests — no scene tree dependencies.
+# Drives the real simulation from scripts/main.gd — see docs/TEST_INTEGRITY.md.
 
 var _pass := 0
 var _fail := 0
-var _results: Array = []
 
 func _ready() -> void:
-	_test_velocity_transform_same_normal()
-	_test_velocity_transform_opposite()
-	_test_portal_entry_detection()
-	_test_portal_no_entry_moving_away()
-	_test_surface_projection()
+	_test_it_starts_with_a_ball_and_no_portals()
+	_test_space_spawns_another_ball()
+	_test_r_clears_everything()
+	_test_a_click_puts_a_portal_on_the_nearest_surface()
+	_test_the_two_mouse_buttons_place_different_portals()
+	_test_a_ball_falls_and_bounces()
+	_test_the_ball_stays_in_the_room()
+	_test_a_ball_entering_a_portal_comes_out_the_other()
+	_test_a_ball_leaving_a_portal_is_left_alone()
+	_test_teleporting_keeps_the_ball_s_speed()
+	_test_the_exit_velocity_follows_the_exit_portal()
+	_test_one_portal_on_its_own_does_nothing()
+	_test_key_releases_are_not_key_presses()
 	_report()
-
-# --------------- helpers ---------------
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -24,94 +29,187 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func _transform_velocity(vel: Vector2, from_normal: Vector2, to_normal: Vector2) -> Vector2:
-	var along := vel.dot(-from_normal)
-	var perp_vec := vel - (-from_normal) * vel.dot(-from_normal)
-	var angle_a := (-from_normal).angle()
-	var angle_b := to_normal.angle()
-	var rotation := angle_b - angle_a
-	var perp_rotated := perp_vec.rotated(rotation)
-	return to_normal * along + perp_rotated
-
-func _ball_enters_portal(ball_pos: Vector2, ball_vel: Vector2, portal_pos: Vector2, portal_normal: Vector2) -> bool:
-	var dist := ball_pos.distance_to(portal_pos)
-	if dist > 18.0:
-		return false
-	var toward := ball_vel.dot(-portal_normal)
-	return toward > 0.0
-
-const SURFACES: Array = [
-	{"rect": Rect2(0, 440, 640, 40),   "normal": Vector2(0, -1)},
-	{"rect": Rect2(0, 0, 20, 480),     "normal": Vector2(1, 0)},
-	{"rect": Rect2(620, 0, 20, 480),   "normal": Vector2(-1, 0)},
-	{"rect": Rect2(200, 280, 240, 20), "normal": Vector2(0, -1)},
-]
-
-func _place_portal_normal(click_pos: Vector2) -> Vector2:
-	var best_dist := INF
-	var best_normal := Vector2(0, -1)
-	for surf in SURFACES:
-		var r: Rect2 = surf["rect"]
-		var proj := Vector2(
-			clamp(click_pos.x, r.position.x, r.position.x + r.size.x),
-			clamp(click_pos.y, r.position.y, r.position.y + r.size.y)
-		)
-		var d := click_pos.distance_to(proj)
-		if d < best_dist:
-			best_dist = d
-			best_normal = surf["normal"]
-	return best_normal
-
-# --------------- tests ---------------
-
-func _test_velocity_transform_same_normal() -> void:
-	# Both portals face the same direction (both floor, normal up)
-	var vel := Vector2(100.0, 200.0)   # falling into a floor portal
-	var from_n := Vector2(0, -1)
-	var to_n := Vector2(0, -1)
-	var result := _transform_velocity(vel, from_n, to_n)
-	# Two portals facing the same way turn the ball around: it goes into the
-	# floor and comes back out of the floor, so the velocity is reversed.
-	expect(result.distance_to(-vel) < 0.01, "Same normal: velocity is reversed")
-
-func _test_velocity_transform_opposite() -> void:
-	# Portal A on floor (normal = up = Vector2(0,-1))
-	# Portal B on ceiling (normal = down = Vector2(0,1))
-	var vel := Vector2(50.0, 300.0)  # falling downward into the floor portal
-	var from_n := Vector2(0, -1)
-	var to_n := Vector2(0, 1)
-	var result := _transform_velocity(vel, from_n, to_n)
-	# The along component (into floor portal = downward into floor) should exit upward from ceiling
-	# from_normal = up, so -from_normal = down. vel.dot(down) = 300 (positive, entering)
-	# Result should have positive y component (moving down from ceiling) and x should be negated
-	expect(result.y > 0.0, "Opposite portals: y component exits downward from ceiling")
-
-func _test_portal_entry_detection() -> void:
-	# Ball within 18px, moving toward portal (floor portal, normal up = Vector2(0,-1))
-	var portal_pos := Vector2(320.0, 440.0)
-	var portal_normal := Vector2(0.0, -1.0)
-	var ball_pos := Vector2(320.0, 430.0)  # 10px above portal, within range
-	var ball_vel := Vector2(0.0, 200.0)    # moving downward = toward floor = into portal
-	expect(_ball_enters_portal(ball_pos, ball_vel, portal_pos, portal_normal), "Ball within range moving toward portal: enters")
-
-func _test_portal_no_entry_moving_away() -> void:
-	# Ball within 18px but moving away from portal
-	var portal_pos := Vector2(320.0, 440.0)
-	var portal_normal := Vector2(0.0, -1.0)
-	var ball_pos := Vector2(320.0, 430.0)
-	var ball_vel := Vector2(0.0, -200.0)   # moving upward = away from floor
-	expect(not _ball_enters_portal(ball_pos, ball_vel, portal_pos, portal_normal), "Ball moving away from portal: does not enter")
-
-func _test_surface_projection() -> void:
-	# Click near the floor (y ~455) → nearest surface should be the floor with normal (0,-1)
-	var click := Vector2(300.0, 455.0)
-	var normal := _place_portal_normal(click)
-	expect(normal == Vector2(0, -1), "Click near floor: portal placed on floor surface")
-
-# --------------- report ---------------
-
 func _report() -> void:
 	var summary := "[portal] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/main.gd")
+
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
+
+func _only_ball(m: Node2D, pos: Vector2, vel: Vector2) -> Dictionary:
+	m._balls.clear()
+	m._balls.append({"pos": pos, "vel": vel})
+	return m._balls[0]
+
+func _click(m: Node2D, at: Vector2, button: int) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = button
+	e.pressed = true
+	e.position = at
+	m._input(e)
+
+func _key(m: Node2D, code: Key) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = true
+	m._input(e)
+
+## Place both portals directly, bypassing the mouse.
+func _portals(m: Node2D, a_pos: Vector2, a_normal: Vector2, b_pos: Vector2, b_normal: Vector2) -> void:
+	m._portal_a = {"pos": a_pos, "normal": a_normal, "active": true}
+	m._portal_b = {"pos": b_pos, "normal": b_normal, "active": true}
+
+func _test_it_starts_with_a_ball_and_no_portals() -> void:
+	print("opening state")
+	var m := _make()
+	expect(m._balls.size() == 1, "one ball to start with")
+	expect(m._balls[0]["pos"].y < 200.0, "dropped in from the top")
+	expect(not m._portal_a["active"] and not m._portal_b["active"], "and no portals placed yet")
+
+func _test_space_spawns_another_ball() -> void:
+	print("spawning")
+	var m := _make()
+	_key(m, KEY_SPACE)
+	expect(m._balls.size() == 2, "space drops in another ball")
+	expect(m._balls[0]["pos"] != m._balls[1]["pos"], "not in exactly the same place as the first")
+
+func _test_r_clears_everything() -> void:
+	print("reset")
+	var m := _make()
+	_click(m, Vector2(320.0, 435.0), MOUSE_BUTTON_LEFT)
+	_key(m, KEY_SPACE)
+	_key(m, KEY_R)
+	expect(m._balls.is_empty(), "R takes the balls away")
+	expect(not m._portal_a["active"], "and the portals with them")
+
+func _test_a_click_puts_a_portal_on_the_nearest_surface() -> void:
+	print("placing portals")
+	var floor_click := _make()
+	_click(floor_click, Vector2(320.0, 430.0), MOUSE_BUTTON_LEFT)
+	expect(floor_click._portal_a["active"], "clicking near the floor places a portal")
+	expect(floor_click._portal_a["normal"] == Vector2(0, -1), "facing up out of the floor")
+
+	var wall_click := _make()
+	_click(wall_click, Vector2(25.0, 240.0), MOUSE_BUTTON_LEFT)
+	expect(wall_click._portal_a["normal"] == Vector2(1, 0), "and one near the left wall faces right")
+
+	var far_click := _make()
+	_click(far_click, Vector2(330.0, 290.0), MOUSE_BUTTON_LEFT)
+	expect(far_click._portal_a["active"], "a click over the middle platform lands on it")
+	expect(far_click._portal_a["pos"].y < 300.0, "on its top face, not the floor far below")
+
+func _test_the_two_mouse_buttons_place_different_portals() -> void:
+	print("two portals")
+	var m := _make()
+	_click(m, Vector2(320.0, 430.0), MOUSE_BUTTON_LEFT)
+	expect(m._portal_a["active"] and not m._portal_b["active"], "left click places the first")
+	_click(m, Vector2(25.0, 240.0), MOUSE_BUTTON_RIGHT)
+	expect(m._portal_b["active"], "right click places the second")
+	expect(m._portal_a["pos"] != m._portal_b["pos"], "in a different place")
+
+func _test_a_ball_falls_and_bounces() -> void:
+	print("bouncing")
+	var m := _make()
+	var ball := _only_ball(m, Vector2(320.0, 200.0), Vector2.ZERO)
+	for i in 120:
+		m._process(STEP)
+	expect(ball["pos"].y > 200.0, "the ball falls")
+	expect(ball["pos"].y + m.BALL_R <= 441.0, "and does not sink through the floor")
+
+	var dropped := _make()
+	var fast := _only_ball(dropped, Vector2(320.0, 435.0), Vector2(0.0, 300.0))
+	dropped._process(STEP)
+	expect(fast["vel"].y < 0.0, "hitting the floor sends it back up")
+	expect(absf(fast["vel"].y) < 300.0, "having lost most of its speed on the way")
+
+func _test_the_ball_stays_in_the_room() -> void:
+	print("the walls")
+	var m := _make()
+	# Fired sideways, not upward: the room has walls and a floor but no ceiling,
+	# so a ball thrown hard enough upwards leaves over the top and never comes
+	# back — which is the demo's geometry, not a bug in the collision code.
+	var ball := _only_ball(m, Vector2(320.0, 400.0), Vector2(900.0, 0.0))
+	var escaped := false
+	for i in 300:
+		m._process(STEP)
+		if ball["pos"].x < 0.0 or ball["pos"].x > 640.0 or ball["pos"].y > 480.0:
+			escaped = true
+	expect(not escaped, "a fast ball bounces between the walls rather than passing through one")
+
+func _test_a_ball_entering_a_portal_comes_out_the_other() -> void:
+	print("teleporting")
+	var m := _make()
+	# Floor portal in, left-wall portal out.
+	_portals(m, Vector2(320.0, 439.0), Vector2(0, -1), Vector2(21.0, 240.0), Vector2(1, 0))
+	# Started just above the portal's reach: any closer to the floor and the
+	# floor's own collision band bounces the ball before the portal sees it.
+	var ball := _only_ball(m, Vector2(320.0, 418.0), Vector2(0.0, 200.0))
+	m._process(STEP)
+	expect(ball["pos"].x < 100.0, "the ball comes out at the other portal")
+	expect(ball["pos"].x > 21.0, "clear of the surface it is set into")
+
+func _test_a_ball_leaving_a_portal_is_left_alone() -> void:
+	print("one-way")
+	var m := _make()
+	_portals(m, Vector2(320.0, 439.0), Vector2(0, -1), Vector2(21.0, 240.0), Vector2(1, 0))
+	# Sitting right on the portal but travelling away from it — this is the ball
+	# that has just come out, and teleporting it again would trap it in a loop.
+	var ball := _only_ball(m, Vector2(320.0, 432.0), Vector2(0.0, -200.0))
+	m._process(STEP)
+	expect(ball["pos"].x > 300.0, "a ball moving out of a portal is not pulled back in")
+
+func _test_teleporting_keeps_the_ball_s_speed() -> void:
+	print("conservation")
+	var m := _make()
+	_portals(m, Vector2(320.0, 439.0), Vector2(0, -1), Vector2(21.0, 240.0), Vector2(1, 0))
+	var ball := _only_ball(m, Vector2(320.0, 418.0), Vector2(0.0, 200.0))
+	var before: float = ball["vel"].length()
+	m._process(STEP)
+	expect(absf(ball["vel"].length() - before) < 20.0,
+		"a portal moves the ball without speeding it up or slowing it down")
+
+func _test_the_exit_velocity_follows_the_exit_portal() -> void:
+	print("turning the corner")
+	var m := _make()
+	# Straight down into a floor portal, out of a wall portal facing right.
+	var out: Vector2 = m._transform_velocity(Vector2(0.0, 300.0), Vector2(0, -1), Vector2(1, 0))
+	expect(out.x > 0.0, "falling into the floor comes out heading right")
+	expect(absf(out.y) < 1.0, "with nothing left of the downward motion")
+	expect(is_equal_approx(out.length(), 300.0), "and the same speed as it went in")
+
+	var straight: Vector2 = m._transform_velocity(Vector2(0.0, 300.0), Vector2(0, -1), Vector2(0, -1))
+	expect(straight.y < 0.0, "two floor portals send it back up")
+
+func _test_one_portal_on_its_own_does_nothing() -> void:
+	print("half a pair")
+	var m := _make()
+	# A portal with nowhere to go must be inert. Firing it anyway would drop the
+	# ball at the unplaced portal's default position, in the corner of the room.
+	m._portal_a = {"pos": Vector2(320.0, 439.0), "normal": Vector2(0, -1), "active": true}
+	var ball := _only_ball(m, Vector2(320.0, 418.0), Vector2(0.0, 200.0))
+	m._process(STEP)
+	expect(ball["pos"].x > 300.0, "a ball falling into a lone portal is not teleported")
+	expect(ball["pos"].y > 418.0, "it just keeps falling")
+
+func _test_key_releases_are_not_key_presses() -> void:
+	print("key releases")
+	var m := _make()
+	var before: int = m._balls.size()
+	var release := InputEventKey.new()
+	release.keycode = KEY_SPACE
+	release.pressed = false
+	m._input(release)
+	expect(m._balls.size() == before, "letting go of space does not spawn a second ball")
+
+	var reset := InputEventKey.new()
+	reset.keycode = KEY_R
+	reset.pressed = false
+	m._input(reset)
+	expect(m._balls.size() == before, "and letting go of R does not clear the room")
