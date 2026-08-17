@@ -59,6 +59,12 @@ func _test_the_grid_is_laid_out() -> void:
 	expect(_objects(m).size() == m.OBJECT_COUNT, "there is an object per grid cell")
 	expect(m.OBJECT_COUNT > 50, "enough of them that culling is worth doing")
 
+	# Laid out inside the drawn field, not off its left edge.
+	var field := Rect2(40.0, 90.0, m.COLS * m.SPACING + 40, m.ROWS * m.SPACING + 40)
+	for obj in _objects(m):
+		expect_quiet(field.has_point(obj.position), "an object sits outside the field at %s" % obj.position)
+	expect(_quiet_failures == 0, "every object is laid out inside the field that is drawn for them")
+
 func _test_every_object_has_a_notifier() -> void:
 	print("the notifiers")
 	var m := _make()
@@ -102,6 +108,14 @@ func _test_the_count_follows() -> void:
 	expect(_count_text(m).contains(str(total - 10)),
 		"and how many are still being processed")
 
+	# Something in the container that is not one of the culled objects has no
+	# "active" flag at all, and must not be counted as if it were on screen.
+	var stray := Node2D.new()
+	m.get_node("Objects").add_child(stray)
+	m._refresh_count()
+	expect(_count_text(m).contains(str(total - 10)),
+		"a child with no active flag is not counted as active")
+
 func _test_only_active_objects_are_animated() -> void:
 	print("the saving")
 	var m := _make()
@@ -113,7 +127,7 @@ func _test_only_active_objects_are_animated() -> void:
 	var asleep_before: float = asleep.get_meta("angle")
 	m._process(STEP)
 	# The point of the demo: work skipped for what nobody can see.
-	expect(awake.get_meta("angle") != awake_before, "an on-screen object keeps turning")
+	expect(awake.get_meta("angle") > awake_before, "an on-screen object keeps turning, one way")
 	expect(asleep.get_meta("angle") == asleep_before, "an off-screen one is left alone")
 
 func _test_the_camera_pans_with_the_keys() -> void:
