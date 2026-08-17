@@ -51,8 +51,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _listening_for.is_empty():
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		_remap(_listening_for, event.keycode)
+		var action := _listening_for
+		# Cleared before the remap, not after: _refresh_all() skips whichever
+		# row is still listening, so the row just rebound would otherwise keep
+		# showing the "press a key" prompt until something else refreshed it.
 		_listening_for = ""
+		_remap(action, event.keycode)
 
 func _remap(action: String, keycode: Key) -> void:
 	InputMap.action_erase_events(action)
