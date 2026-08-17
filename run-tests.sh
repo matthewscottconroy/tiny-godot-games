@@ -71,7 +71,7 @@ do_check() {
       failed=1
     else
       local smoke_out smoke_status smoke_errors
-      smoke_out="$(mem_run_godot "$GODOT" --headless --path "$demo" "$main_scene" --quit-after 90 2>&1)"
+      smoke_out="$(mem_capture mem_run_godot "$GODOT" --headless --path "$demo" "$main_scene" --quit-after 90)"
       smoke_status=$?
       smoke_errors="$(printf '%s\n' "$smoke_out" | grep -E "$ERROR_RE")"
       if [ "$smoke_status" -ne 0 ] || [ -n "$smoke_errors" ]; then
@@ -92,7 +92,7 @@ do_check() {
       # _physics_process — would otherwise never run. Suites that finish in
       # _ready are unaffected.
       local output status n m
-      output="$(mem_run_godot "$GODOT" --headless --path "$demo" res://tests/test.tscn --quit-after 5 2>&1)"
+      output="$(mem_capture mem_run_godot "$GODOT" --headless --path "$demo" res://tests/test.tscn --quit-after 5)"
       status=$?
       summary="$(printf '%s\n' "$output" | grep -oE '[0-9]+/[0-9]+ passed' | tail -1)"
       n="${summary%%/*}"

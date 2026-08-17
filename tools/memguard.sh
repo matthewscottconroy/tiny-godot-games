@@ -120,6 +120,38 @@ mem_guard_ok() {
 	return 0
 }
 
+# Hard cap on how much subprocess output a shell variable may hold. This is the
+# one that actually mattered: the OOM kills were two *bash* processes at 40GB
+# each, not Godot at 110MB. A command substitution buffers everything its child
+# writes, so a demo that errors once per frame — or any run that does not
+# terminate when expected — grows the shell itself without limit.
+MEM_MAX_CAPTURE_KB="${MEM_MAX_CAPTURE_KB:-2048}"
+
+# Where this file lives, so mem_capture can re-source it in the subshell it uses
+# to apply `timeout` to a shell function.
+MEMGUARD_PATH="${BASH_SOURCE[0]}"
+
+# Wall-clock ceiling on a single Godot invocation. A process that never exits is
+# how output becomes unbounded in the first place.
+MEM_RUN_TIMEOUT="${MEM_RUN_TIMEOUT:-120}"
+
+## Capture a command's output with both a time limit and a size limit.
+##
+## Use this instead of `out="$(cmd)"` anywhere the child could be chatty.
+## Truncation is announced in the captured text so a caller never silently
+## analyses a partial log.
+mem_capture() {
+	local out
+	out="$(timeout "$MEM_RUN_TIMEOUT" bash -c 'source "$0"; "$@"' "$MEMGUARD_PATH" "$@" 2>&1 | head -c $(( MEM_MAX_CAPTURE_KB * 1024 )))"
+	local size=${#out}
+	if [ "$size" -ge $(( MEM_MAX_CAPTURE_KB * 1024 )) ]; then
+		printf '%s\n[output truncated at %sKB by memguard — the child was too chatty]\n' \
+			"$out" "$MEM_MAX_CAPTURE_KB"
+	else
+		printf '%s' "$out"
+	fi
+}
+
 ## Run Godot with an address-space cap, so a runaway child dies alone.
 mem_run_godot() {
 	( ulimit -v $(( MEM_ULIMIT_MB * 1024 )) 2>/dev/null || true

@@ -87,10 +87,39 @@ Rather than allowlist it, the checker confirms every hit by running a second
 time and only reports if it reproduces. That is more robust than a growing list
 of exceptions and catches future flakiness for free.
 
+## What actually caused the OOM crashes
+
+Worth recording, because the first two guesses were both wrong. The kernel log
+named the victims:
+
+```
+Out of memory: Killed process (bash) anon-rss:41926808kB   # 40.4 GB
+Out of memory: Killed process (bash) anon-rss:41926808kB   # 40.0 GB
+```
+
+**Two bash processes at 40GB each.** Not Godot, which measures ~107MB. The cause
+is that `out="$(cmd)"` buffers everything the child writes into a shell
+variable — and `run-tests.sh` captured a whole demo run that way with no cap. A
+demo that errors once per frame, or any run that does not terminate when
+expected, grows the *shell* without limit. `subprocess.run(capture_output=True)`
+in Python has exactly the same property.
+
+The fix is `mem_capture`, which applies both a time limit and a size limit to
+every capture, and announces truncation in the captured text so nothing silently
+analyses a partial log. `tools/mutate.py` streams and truncates for the same
+reason. Verified against `yes` as an infinite producer.
+
+Two earlier theories that the evidence did not support:
+
+- *"Too many parallel Godot processes."* 24 jobs is ~2.6GB on a 55GB machine.
+  Capping concurrency is still right, but it was never the cause.
+- *"A leaking demo."* The full scan finds 165 clean; the leaks that did exist
+  were a few objects at shutdown, not gigabytes.
+
 ## Safeguards in the tooling
 
-Repeated OOM crashes prompted `tools/memguard.sh`, which every Godot-spawning
-tool now sources. Four protections, because any one alone leaves a hole:
+`tools/memguard.sh` is sourced by every Godot-spawning tool. Six protections,
+because any one alone leaves a hole:
 
 | Guard | What it does | Override |
 |-------|--------------|----------|
@@ -98,6 +127,8 @@ tool now sources. Four protections, because any one alone leaves a hole:
 | Bounded jobs | Concurrency from free memory, not just cores; halved again if another Godot is already running; hard cap 8 | `JOBS`, `MEM_MAX_JOBS` |
 | Live floor | Aborts mid-run below 1GB, checked between chunks | `MEM_FLOOR_MB` |
 | Reaping | Kills our own children on exit or interrupt | — |
+| **Bounded capture** | **Caps captured output at 2MB — the guard that addresses the actual cause** | `MEM_MAX_CAPTURE_KB` |
+| Run timeout | Kills a single Godot invocation that will not exit | `MEM_RUN_TIMEOUT` |
 
 Every Godot spawn also runs under an address-space `ulimit` (`MEM_ULIMIT_MB`,
 4GB) so a runaway child is killed alone rather than taking the machine with it.

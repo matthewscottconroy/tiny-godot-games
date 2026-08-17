@@ -46,6 +46,12 @@ MEM_MIN_START_MB = int(os.environ.get("MEM_MIN_START_MB", "2048"))
 MEM_FLOOR_MB = int(os.environ.get("MEM_FLOOR_MB", "1024"))
 MEM_ULIMIT_MB = int(os.environ.get("MEM_ULIMIT_MB", "4096"))
 
+# Cap on captured subprocess output. subprocess.run(capture_output=True) buffers
+# everything the child writes, exactly like a shell command substitution — which
+# is what produced two 40GB bash processes and the OOM kills. A mutated script
+# can easily error once per frame, so this is not a hypothetical.
+MEM_MAX_CAPTURE_KB = int(os.environ.get("MEM_MAX_CAPTURE_KB", "2048"))
+
 
 def available_mb():
     """Available memory, or a large number on platforms without /proc."""
@@ -146,14 +152,25 @@ def run_suite(demo, timeout=90):
     """Run only the logic suite. True if it passed."""
     if not os.path.exists(os.path.join(demo, "tests", "test.tscn")):
         return None
+    limit = MEM_MAX_CAPTURE_KB * 1024
     try:
-        proc = subprocess.run(
+        # Stream and truncate rather than buffer: a mutation that makes a demo
+        # error every frame would otherwise grow this process without bound.
+        proc = subprocess.Popen(
             [GODOT, "--headless", "--path", demo, "res://tests/test.tscn", "--quit-after", "5"],
-            capture_output=True, text=True, timeout=timeout,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             preexec_fn=_limit_address_space)
-    except subprocess.TimeoutExpired:
+        try:
+            captured = proc.stdout.read(limit)
+            proc.stdout.close()
+            proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+            return False
+    except OSError:
         return False
-    summary = re.findall(r"(\d+)/(\d+) passed", proc.stdout)
+    summary = re.findall(r"(\d+)/(\d+) passed", captured)
     if not summary:
         return False          # no summary at all: the suite did not complete
     passed, total = summary[-1]
