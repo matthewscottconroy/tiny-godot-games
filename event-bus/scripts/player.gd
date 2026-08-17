@@ -13,7 +13,10 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_just_pressed("ui_accept"):
+	# is_action_pressed, not is_action_just_pressed: the "just" variants live on
+	# the Input singleton, not on an InputEvent. Calling one here raised an
+	# error that aborted the handler, so neither key did anything.
+	if event.is_action_pressed("ui_accept"):
 		EventBus.player_hurt.emit(10)
 		_flash(Color.TOMATO)
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_SHIFT:

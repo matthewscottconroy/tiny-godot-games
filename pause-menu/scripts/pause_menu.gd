@@ -6,7 +6,10 @@ func _ready() -> void:
 	$Panel/VBox/QuitBtn.pressed.connect(get_tree().quit)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_just_pressed("ui_cancel"):
+	# is_action_pressed, not is_action_just_pressed: the "just" variants are on
+	# the Input singleton. An InputEvent has no such method, and calling it
+	# raised an error that aborted this handler — so Esc did nothing at all.
+	if event.is_action_pressed("ui_cancel"):
 		if get_tree().paused:
 			_resume()
 		else:

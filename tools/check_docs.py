@@ -63,6 +63,9 @@ DEPRECATED = {
     r"\bconnect\(\"": "Godot 4 uses signal.connect(callable), not connect(\"name\", ...)",
     r"\bempty\(\)": "renamed to is_empty()",
     r"\bPoolStringArray\b": "renamed to PackedStringArray",
+    r"(?<!Input)(?<!Input\b)\bevent\.is_action_just_(pressed|released)\(":
+        "InputEvent has no is_action_just_* — those are on the Input singleton; "
+        "calling one raises an error that aborts the handler",
 }
 
 # Demos allowed to mention WASD without binding it, with the reason.
