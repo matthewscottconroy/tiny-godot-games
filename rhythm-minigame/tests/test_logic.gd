@@ -18,6 +18,7 @@ func _ready() -> void:
 	_test_the_combo_builds_and_breaks()
 	_test_a_longer_combo_is_worth_more()
 	_test_notes_spawn_on_the_beat()
+	_test_the_feedback_fades()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -165,3 +166,21 @@ func _test_notes_spawn_on_the_beat() -> void:
 		m._process(STEP)
 	expect(m._notes.size() > 0, "notes appear as the beats go by")
 	expect(m._notes.size() <= 8, "at most one per beat")
+	var playable := 0
+	for note in m._notes:
+		if not note["hit"]:
+			playable += 1
+	expect(playable == m._notes.size(), "and every one of them is still there to be hit")
+
+func _test_the_feedback_fades() -> void:
+	print("the feedback flash")
+	var m := _make()
+	_note_at(m, m.TARGET_Y)
+	_press_space(m)
+	expect(m._feedback_t > 0.0, "a judgement puts a word on screen")
+	var first: float = m._feedback_t
+	m._process(STEP)
+	expect(m._feedback_t < first, "which starts fading immediately")
+	for i in 120:
+		m._process(STEP)
+	expect(is_zero_approx(m._feedback_t), "and is gone a second later")
