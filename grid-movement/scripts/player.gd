@@ -17,11 +17,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action("ui_right"): dir = Vector2i( 1, 0)
 	if dir == Vector2i.ZERO:
 		return
-	var next := grid_pos + dir
-	if not main.is_wall(next):
-		grid_pos = next
+	if try_move(dir):
 		var tween := create_tween()
 		tween.tween_property(self, "position", main.cell_to_world(grid_pos), 0.1)
+
+## Attempt one step. Returns true if the move happened.
+##
+## The grid position is the source of truth and updates instantly; the tween
+## only animates the sprite catching up. Doing it the other way round — moving
+## the sprite and deriving the cell from it — is what makes grid movement drift.
+func try_move(dir: Vector2i) -> bool:
+	var next := grid_pos + dir
+	if main.is_wall(next):
+		return false
+	grid_pos = next
+	return true
 
 func _draw() -> void:
 	draw_rect(Rect2(-14, -14, 28, 28), Color.CORNFLOWER_BLUE)

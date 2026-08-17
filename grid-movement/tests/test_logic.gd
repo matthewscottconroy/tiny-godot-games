@@ -1,19 +1,20 @@
 extends Node
 
-# Run: open test.tscn in Godot and check the Output panel.
+# Drives the real player and grid from scripts/, including the demo's own wall
+# layout — see docs/TEST_INTEGRITY.md.
 
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	test_border_cells_are_walls()
-	test_interior_cells_passable()
-	test_interior_walls_blocked()
-	test_cell_to_world_origin()
-	test_cell_to_world_center()
+	_test_open_move_succeeds()
+	_test_wall_blocks_the_move()
+	_test_blocked_move_leaves_position_untouched()
+	_test_every_direction_moves_one_cell()
+	_test_cell_to_world_centres_the_sprite()
+	_test_walls_exist_in_the_demo_grid()
+	_test_repeated_moves_accumulate()
 	_report()
-
-# --- helpers ---
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -29,56 +30,117 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# Replicate the wall-building logic from main.gd so tests are self-contained.
-func _build_walls() -> Dictionary:
-	const COLS := 16
-	const ROWS := 12
-	var walls : Dictionary = {}
-	for x in COLS:
-		walls[Vector2i(x, 0)]        = true
-		walls[Vector2i(x, ROWS - 1)] = true
-	for y in ROWS:
-		walls[Vector2i(0, y)]        = true
-		walls[Vector2i(COLS - 1, y)] = true
-	for w in [Vector2i(4,2),Vector2i(4,3),Vector2i(4,4),Vector2i(4,5),
-				Vector2i(8,3),Vector2i(8,4),Vector2i(8,5),Vector2i(8,6),Vector2i(8,7),
-				Vector2i(11,2),Vector2i(11,3),Vector2i(12,3),Vector2i(12,4),
-				Vector2i(6,8),Vector2i(7,8),Vector2i(8,8),Vector2i(9,8),
-				Vector2i(3,9),Vector2i(3,10),Vector2i(13,7),Vector2i(14,7)]:
-		walls[w] = true
-	return walls
+# The player reads its grid from its parent, so the demo scene is the fixture.
+func _scene() -> Node2D:
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	return scene
 
-func _cell_to_world(cell: Vector2i) -> Vector2:
-	const CELL := 40
-	return Vector2(cell.x * CELL + CELL * 0.5, cell.y * CELL + CELL * 0.5)
+func _player(scene: Node2D) -> Node2D:
+	for child in scene.get_children():
+		if child.has_method("try_move"):
+			return child
+	return null
 
-# --- tests ---
+func _open_cell(scene: Node2D, from: Vector2i) -> Vector2i:
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if not scene.is_wall(from + d):
+			return d
+	return Vector2i.ZERO
 
-func test_border_cells_are_walls() -> void:
-	var walls := _build_walls()
-	expect(walls.has(Vector2i(0, 0)),   "top-left corner is wall")
-	expect(walls.has(Vector2i(15, 0)),  "top-right corner is wall")
-	expect(walls.has(Vector2i(0, 11)),  "bottom-left corner is wall")
-	expect(walls.has(Vector2i(15, 11)), "bottom-right corner is wall")
-	expect(walls.has(Vector2i(7, 0)),   "top border mid-cell is wall")
-	expect(walls.has(Vector2i(7, 11)),  "bottom border mid-cell is wall")
+func _test_open_move_succeeds() -> void:
+	print("moving into open space")
+	var scene := _scene()
+	var p := _player(scene)
+	var start: Vector2i = p.grid_pos
+	var d := _open_cell(scene, start)
+	expect(d != Vector2i.ZERO, "the starting cell has at least one open neighbour")
+	expect(p.try_move(d), "the move is allowed")
+	expect(p.grid_pos == start + d, "and the grid position advances by exactly one cell")
 
-func test_interior_cells_passable() -> void:
-	var walls := _build_walls()
-	expect(not walls.has(Vector2i(2, 6)),  "player start (2,6) is passable")
-	expect(not walls.has(Vector2i(5, 5)),  "open interior (5,5) is passable")
-	expect(not walls.has(Vector2i(10, 9)), "open interior (10,9) is passable")
+func _test_wall_blocks_the_move() -> void:
+	print("walls block")
+	var scene := _scene()
+	var p := _player(scene)
+	# Find a wall adjacent to somewhere the player can stand, and try to enter it.
+	var blocked := false
+	for y in range(1, scene.ROWS - 1):
+		for x in range(1, scene.COLS - 1):
+			var cell := Vector2i(x, y)
+			if scene.is_wall(cell) or blocked:
+				continue
+			for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+				if scene.is_wall(cell + d):
+					p.grid_pos = cell
+					expect(not p.try_move(d), "moving into a wall is refused")
+					blocked = true
+					break
+	expect(blocked, "the demo grid contains a wall to test against")
 
-func test_interior_walls_blocked() -> void:
-	var walls := _build_walls()
-	expect(walls.has(Vector2i(4, 3)), "interior wall (4,3) is blocked")
-	expect(walls.has(Vector2i(8, 5)), "interior wall (8,5) is blocked")
-	expect(walls.has(Vector2i(6, 8)), "interior wall (6,8) is blocked")
+func _test_blocked_move_leaves_position_untouched() -> void:
+	print("a refused move changes nothing")
+	var scene := _scene()
+	var p := _player(scene)
+	for y in range(1, scene.ROWS - 1):
+		for x in range(1, scene.COLS - 1):
+			var cell := Vector2i(x, y)
+			if scene.is_wall(cell):
+				continue
+			for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+				if scene.is_wall(cell + d):
+					p.grid_pos = cell
+					p.try_move(d)
+					expect(p.grid_pos == cell, "the player stays where it was")
+					return
 
-func test_cell_to_world_origin() -> void:
-	var pos := _cell_to_world(Vector2i(0, 0))
-	expect(pos == Vector2(20, 20), "cell (0,0) maps to world (20,20)")
+func _test_every_direction_moves_one_cell() -> void:
+	print("one cell per press")
+	var scene := _scene()
+	var p := _player(scene)
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		# Park somewhere with room in this direction.
+		var placed := false
+		for y in range(2, scene.ROWS - 2):
+			for x in range(2, scene.COLS - 2):
+				var cell := Vector2i(x, y)
+				if not scene.is_wall(cell) and not scene.is_wall(cell + d):
+					p.grid_pos = cell
+					p.try_move(d)
+					expect(p.grid_pos == cell + d, "step %s moves exactly one cell" % d)
+					placed = true
+					break
+			if placed:
+				break
 
-func test_cell_to_world_center() -> void:
-	var pos := _cell_to_world(Vector2i(8, 6))
-	expect(pos == Vector2(340, 260), "cell (8,6) maps to world center (340,260)")
+func _test_cell_to_world_centres_the_sprite() -> void:
+	print("cell to world")
+	var scene := _scene()
+	var world: Vector2 = scene.cell_to_world(Vector2i(0, 0))
+	expect(is_equal_approx(world.x, scene.CELL * 0.5), "cell 0 maps to half a cell in")
+	var next: Vector2 = scene.cell_to_world(Vector2i(1, 0))
+	expect(is_equal_approx(next.x - world.x, scene.CELL), "adjacent cells are one CELL apart")
+
+func _test_walls_exist_in_the_demo_grid() -> void:
+	print("the grid has walls")
+	var scene := _scene()
+	var walls := 0
+	for y in scene.ROWS:
+		for x in scene.COLS:
+			if scene.is_wall(Vector2i(x, y)):
+				walls += 1
+	expect(walls > 0, "the demo builds a maze rather than an empty field")
+
+func _test_repeated_moves_accumulate() -> void:
+	print("successive moves")
+	var scene := _scene()
+	var p := _player(scene)
+	var start: Vector2i = p.grid_pos
+	var d := _open_cell(scene, start)
+	# try_move has a side effect, so it must not sit in a loop condition that can
+	# short-circuit after it has already moved the player.
+	var steps := 0
+	for i in 3:
+		if not p.try_move(d):
+			break
+		steps += 1
+	expect(p.grid_pos == start + d * steps, "each accepted move advances one more cell")
