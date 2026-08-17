@@ -27,6 +27,9 @@ const OBSTACLE_COLORS: Array = [
 ]
 
 func _process(delta: float) -> void:
+	tick(delta, input_direction())
+
+func input_direction() -> Vector2:
 	var move := Vector2.ZERO
 	if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
 		move.x -= 1.0
@@ -36,7 +39,13 @@ func _process(delta: float) -> void:
 		move.y -= 1.0
 	if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S):
 		move.y += 1.0
+	return move
 
+## Move the player, wrapping at the edges of the little world.
+##
+## The direction is normalised, so holding two keys does not travel a diagonal
+## faster than a straight line — at this resolution that difference is visible.
+func tick(delta: float, move: Vector2) -> void:
 	if move != Vector2.ZERO:
 		move = move.normalized()
 	_player_pos += move * PLAYER_SPEED * delta
