@@ -215,7 +215,19 @@ def candidates(demo, include_driver=False):
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
         drawing = False
+        in_text_block = False
         for i, line in enumerate(lines):
+            # Triple-quoted blocks are content, not code. strip_strings() only
+            # masks single-line literals, so without this the tool mutates the
+            # English inside a demo's help text and scores suites on prose.
+            fences = line.count('"""')
+            if in_text_block:
+                if fences:
+                    in_text_block = False
+                continue
+            if fences % 2 == 1:
+                in_text_block = True
+                continue
             if FUNC_LINE.match(line):
                 # A _draw() body is pixels, not logic: mutating a colour or a
                 # fill flag produces a demo that still behaves identically and a
