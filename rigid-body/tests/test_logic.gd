@@ -8,6 +8,8 @@ var _fail := 0
 func _ready() -> void:
 	_test_it_starts_empty()
 	_test_clicking_spawns_a_body()
+	_test_a_mouse_release_spawns_nothing()
+	_test_a_body_defaults_to_a_box()
 	_test_bodies_spawn_where_they_were_clicked()
 	_test_shapes_alternate()
 	_test_every_body_has_a_collision_shape()
@@ -76,6 +78,28 @@ func _test_clicking_spawns_a_body() -> void:
 	expect(m.count == 1, "and counts it")
 	expect(_bodies(m)[0].gravity_scale > 0.0, "which falls under gravity")
 
+func _test_a_mouse_release_spawns_nothing() -> void:
+	print("releases")
+	var m := _make()
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = Vector2(200.0, 100.0)
+	m._unhandled_input(release)
+	# Otherwise every click spawns twice: once going down and once coming up.
+	expect(_bodies(m).is_empty(), "letting go of the button spawns nothing")
+
+	var motion := InputEventMouseMotion.new()
+	motion.position = Vector2(200.0, 100.0)
+	m._unhandled_input(motion)
+	expect(_bodies(m).is_empty(), "and neither does moving the mouse across the window")
+
+func _test_a_body_defaults_to_a_box() -> void:
+	print("the body script")
+	var body: RigidBody2D = load("res://scripts/physics_body.gd").new()
+	expect(not body.is_circle, "a body drawn before it is configured is a box, not a circle")
+	body.free()
+
 func _test_bodies_spawn_where_they_were_clicked() -> void:
 	print("placement")
 	var m := _make()
@@ -91,8 +115,9 @@ func _test_shapes_alternate() -> void:
 		_click(m, Vector2(100.0 + i * 60.0, 100.0))
 	var bodies := _bodies(m)
 	# Alternating gives a mix on screen without any randomness to explain.
-	expect(bodies[0].is_circle != bodies[1].is_circle, "consecutive bodies differ in shape")
-	expect(bodies[0].is_circle == bodies[2].is_circle, "and the pattern alternates")
+	expect(not bodies[0].is_circle, "the first body is a box")
+	expect(bodies[1].is_circle, "the second is round")
+	expect(bodies[0].is_circle == bodies[2].is_circle, "and the pattern alternates from there")
 
 func _test_every_body_has_a_collision_shape() -> void:
 	print("collision")
