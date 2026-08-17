@@ -23,6 +23,10 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+# Memory safeguards. This one is already serial, so the guards that matter here
+# are the pre-flight refusal, the live floor between demos, and child reaping.
+source "$(dirname "$0")/memguard.sh"
+
 GODOT="${GODOT:-godot}"
 VERBOSE="${VERBOSE:-0}"
 
@@ -46,7 +50,8 @@ declare -A ENGINE_SIDE=(
 )
 
 run_once() {
-  "$GODOT" --headless --path "$1" "$2" --quit-after 60 --verbose 2>&1 | grep -E "$LEAK_RE"
+  mem_run_godot "$GODOT" --headless --path "$1" "$2" --quit-after 60 --verbose 2>&1 \
+    | grep -E "$LEAK_RE"
 }
 
 demos=("$@")
@@ -56,11 +61,22 @@ if [ "${#demos[@]}" -eq 0 ]; then
   done
 fi
 
+mem_guard_preflight || exit 3
+mem_guard_install_trap
+
 clean=0
 leaking=0
 leaking_demos=()
+aborted=0
 
 for demo in "${demos[@]}"; do
+  # Between demos, not mid-demo: a scan of 165 projects is long enough that
+  # memory pressure can arrive partway, and stopping cleanly beats being killed.
+  if ! mem_guard_ok; then
+    aborted=1
+    break
+  fi
+
   demo="${demo%/}"
   [ -f "$demo/project.godot" ] || continue
   scene="$(sed -n 's/^run\/main_scene="\(.*\)"$/\1/p' "$demo/project.godot")"
@@ -99,6 +115,7 @@ done
 echo
 echo "======================================"
 echo "  $clean clean, $leaking leaking"
+[ "$aborted" -eq 1 ] && echo "  ABORTED early on low memory — this is a partial result"
 if [ "$leaking" -gt 0 ]; then
   printf '  leaking: %s\n' "${leaking_demos[*]}"
   echo

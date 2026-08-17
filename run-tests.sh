@@ -26,6 +26,10 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 
+# Memory safeguards: bounded concurrency, a pre-flight refusal, a live floor,
+# and child reaping on interrupt. See tools/memguard.sh and docs/MEMORY.md.
+source "$(dirname "$0")/tools/memguard.sh"
+
 GODOT="${GODOT:-godot}"
 
 # Any of these in the output means the demo is broken, even when Godot exits 0.
@@ -49,7 +53,7 @@ needs_import() {
 do_import() {
   local demo=$1
   if [ "$FORCE_IMPORT" -eq 1 ] || needs_import "$demo"; then
-    "$GODOT" --headless --path "$demo" --import --quit >/dev/null 2>&1 || true
+    mem_run_godot "$GODOT" --headless --path "$demo" --import --quit >/dev/null 2>&1 || true
   fi
 }
 
@@ -67,7 +71,7 @@ do_check() {
       failed=1
     else
       local smoke_out smoke_status smoke_errors
-      smoke_out="$("$GODOT" --headless --path "$demo" "$main_scene" --quit-after 90 2>&1)"
+      smoke_out="$(mem_run_godot "$GODOT" --headless --path "$demo" "$main_scene" --quit-after 90 2>&1)"
       smoke_status=$?
       smoke_errors="$(printf '%s\n' "$smoke_out" | grep -E "$ERROR_RE")"
       if [ "$smoke_status" -ne 0 ] || [ -n "$smoke_errors" ]; then
@@ -88,7 +92,7 @@ do_check() {
       # _physics_process — would otherwise never run. Suites that finish in
       # _ready are unaffected.
       local output status n m
-      output="$("$GODOT" --headless --path "$demo" res://tests/test.tscn --quit-after 5 2>&1)"
+      output="$(mem_run_godot "$GODOT" --headless --path "$demo" res://tests/test.tscn --quit-after 5 2>&1)"
       status=$?
       summary="$(printf '%s\n' "$output" | grep -oE '[0-9]+/[0-9]+ passed' | tail -1)"
       n="${summary%%/*}"
@@ -157,33 +161,17 @@ done
 demos=("${valid[@]}")
 [ "${#demos[@]}" -eq 0 ] && { echo "nothing to check"; exit 0; }
 
-# Concurrency default. Each job is a full Godot process holding a rendering
-# server and an imported project — call it ~400MB resident — so scaling purely
-# on core count will exhaust memory on a many-core machine long before it
-# saturates the CPU. Bound by BOTH: half the cores, and roughly 1 job per GB of
-# available memory, capped at 8. Override with JOBS= when you know better.
-default_jobs() {
-  local cores mem_gb limit
-  cores="$( (command -v nproc >/dev/null && nproc) || echo 4 )"
-  limit=$(( cores / 2 ))
-  [ "$limit" -lt 1 ] && limit=1
-
-  if [ -r /proc/meminfo ]; then
-    mem_gb="$(awk '/MemAvailable/ {print int($2 / 1048576)}' /proc/meminfo)"
-    if [ -n "$mem_gb" ] && [ "$mem_gb" -ge 1 ] && [ "$mem_gb" -lt "$limit" ]; then
-      limit="$mem_gb"
-    fi
-  fi
-
-  [ "$limit" -gt 8 ] && limit=8
-  echo "$limit"
-}
-
-JOBS="${JOBS:-$(default_jobs)}"
+# Concurrency comes from tools/memguard.sh: bounded by free memory as well as
+# cores, halved again if someone else is already running Godot, capped at 8.
+JOBS="${JOBS:-$(mem_safe_jobs)}"
 [ "$JOBS" -gt "${#demos[@]}" ] && JOBS="${#demos[@]}"
 
+# Refuse to start on a machine that is already short of memory.
+mem_guard_preflight || exit 3
+
 RESULT_DIR="$(mktemp -d)"
-trap 'rm -rf "$RESULT_DIR"' EXIT
+mem_guard_install_trap
+trap 'mem_reap_children; rm -rf "$RESULT_DIR"' EXIT
 export GODOT ERROR_RE RUN_SMOKE RUN_LOGIC FORCE_IMPORT RESULT_DIR
 
 echo "Checking ${#demos[@]} demo(s) with $JOBS parallel job(s)…"
@@ -192,7 +180,19 @@ echo "  (each job is a Godot process; set JOBS= to change)"
 # Import first (demos that need it), then check. Both fan out; the import phase
 # is a barrier because the checks below depend on its output.
 printf '%s\n' "${demos[@]}" | xargs -P "$JOBS" -I{} "$0" --worker-import {}
-printf '%s\n' "${demos[@]}" | xargs -P "$JOBS" -I{} "$0" --worker-check {}
+mem_guard_ok || exit 4
+
+# Chunked rather than one xargs over everything, so the memory floor is
+# re-checked as the run proceeds and an abort can happen partway instead of only
+# at the end.
+chunk=$(( JOBS * 4 ))
+total="${#demos[@]}"
+offset=0
+while [ "$offset" -lt "$total" ]; do
+  printf '%s\n' "${demos[@]:$offset:$chunk}" | xargs -P "$JOBS" -I{} "$0" --worker-check {}
+  offset=$(( offset + chunk ))
+  mem_guard_ok || { echo "  (checked $offset of $total before aborting)" >&2; break; }
+done
 
 pass=0
 fail=0
