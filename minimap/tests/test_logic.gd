@@ -14,6 +14,9 @@ func _ready() -> void:
 	_test_the_camera_follows_the_player()
 	_test_the_camera_stops_at_the_edges_of_the_world()
 	_test_the_minimap_is_fed_the_current_positions()
+	_test_the_player_joins_the_player_group()
+	_test_only_a_jump_key_press_latches_a_jump()
+	_test_a_latched_jump_is_spent_whether_or_not_it_fires()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -125,3 +128,48 @@ func _test_the_minimap_is_fed_the_current_positions() -> void:
 	expect(mini.player_world_pos == player.global_position, "the minimap is told where the player is")
 	expect(mini.cam_world_pos == (m.get_node("Camera2D") as Camera2D).position,
 		"and where the camera is looking")
+
+func _key(code: Key, pressed: bool = true, echo: bool = false) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = pressed
+	e.echo = echo
+	return e
+
+func _test_the_player_joins_the_player_group() -> void:
+	print("the player")
+	var m := _make()
+	var player: CharacterBody2D = m.get_node("Player")
+	expect(player.is_in_group("player"), "the player registers itself for anything looking for it")
+	expect(not player._jump_requested, "with no jump pending")
+
+func _test_only_a_jump_key_press_latches_a_jump() -> void:
+	print("the jump keys")
+	var m := _make()
+	for code in [KEY_SPACE, KEY_UP, KEY_W]:
+		var player: CharacterBody2D = _make().get_node("Player")
+		player._unhandled_key_input(_key(code))
+		expect(player._jump_requested, "any of the three jump keys latches a jump")
+
+	var other: CharacterBody2D = _make().get_node("Player")
+	other._unhandled_key_input(_key(KEY_Q))
+	expect(not other._jump_requested, "an unrelated key does not")
+
+	var released: CharacterBody2D = _make().get_node("Player")
+	released._unhandled_key_input(_key(KEY_SPACE, false))
+	expect(not released._jump_requested, "nor does releasing a jump key")
+
+	var repeated: CharacterBody2D = _make().get_node("Player")
+	repeated._unhandled_key_input(_key(KEY_SPACE, true, true))
+	expect(not repeated._jump_requested, "and holding one does not re-trigger through echoes")
+
+func _test_a_latched_jump_is_spent_whether_or_not_it_fires() -> void:
+	print("spending the jump")
+	var m := _make()
+	var player: CharacterBody2D = m.get_node("Player")
+	player._unhandled_key_input(_key(KEY_SPACE))
+	player._physics_process(1.0 / 60.0)
+	expect(not player._jump_requested, "the request is consumed by the frame that reads it")
+	# In mid-air the jump is dropped rather than stored, so it cannot fire late
+	# the moment the player lands.
+	expect(player.velocity.y > 0.0, "and a jump pressed off the floor does not launch the player")

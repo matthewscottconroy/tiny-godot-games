@@ -82,6 +82,11 @@ func _test_zones_announce_themselves() -> void:
 	for zone in m.get_node("Zones").get_children():
 		expect(zone.is_in_group("drop_zones"), "a zone joins the drop_zones group")
 		expect(not zone.has_item, "and starts empty")
+		# Without monitoring, a zone never registers as overlapping the item
+		# being dropped on it, and nothing can ever be dropped anywhere.
+		expect(zone.monitoring, "and is watching for overlaps")
+	for item in m.get_node("Items").get_children():
+		expect(item.monitoring, "each item watches for overlaps too")
 
 func _test_pressing_an_item_picks_it_up() -> void:
 	print("picking up")
@@ -96,13 +101,13 @@ func _test_a_picked_up_item_follows_the_mouse() -> void:
 	var item := _item(m, 0)
 	var home: Vector2 = item.position
 	_press(item, true)
-	# The offset is what stops the item jumping so its centre snaps to the
-	# cursor the moment it is grabbed.
-	expect(item.drag_offset == home - item.get_global_mouse_position(),
-		"the grab records where on the item the cursor was")
+	# The offset is what stops the item's centre snapping to the cursor the
+	# moment it is grabbed: picking it up must not move it at all.
 	item._process(0.0)
-	expect(item.position == item.get_global_mouse_position() + item.drag_offset,
-		"and it moves with the mouse, keeping that offset")
+	expect(item.position == home, "picking an item up does not move it")
+
+	_press(item, false)
+	expect(not item.dragging, "and releasing puts it down")
 
 func _test_other_buttons_do_not_pick_items_up() -> void:
 	print("other buttons")
