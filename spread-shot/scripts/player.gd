@@ -33,16 +33,28 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 	_label.text = "READY" if _cooldown <= 0.0 else "CD %.1fs" % _cooldown
 
-func _fire() -> void:
+## The fan of directions a single shot produces.
+##
+## The spread is split evenly across BULLET_COUNT, centred on `facing`. Dividing
+## by COUNT - 1 is what puts a bullet at each end of the arc rather than leaving
+## the last slot unused; the single-bullet case has to be handled separately
+## because that divisor would be zero.
+func spread_directions(facing: float) -> Array[Vector2]:
 	var half := deg_to_rad(SPREAD_DEG * 0.5)
-	var base := Vector2(_facing, 0.0)
+	var base := Vector2(facing, 0.0)
+	var out: Array[Vector2] = []
 	for i in BULLET_COUNT:
-		var t     := float(i) / (BULLET_COUNT - 1) if BULLET_COUNT > 1 else 0.5
-		var angle := lerpf(-half, half, t)
-		var b     := Node2D.new()
+		var t := float(i) / (BULLET_COUNT - 1) if BULLET_COUNT > 1 else 0.5
+		out.append(base.rotated(lerpf(-half, half, t)))
+	return out
+
+func _fire() -> void:
+	var base := Vector2(_facing, 0.0)
+	for dir in spread_directions(_facing):
+		var b := Node2D.new()
 		b.set_script(BulletScript)
 		get_parent().add_child(b)
-		b.init(global_position + base * 22.0, base.rotated(angle))
+		b.init(global_position + base * 22.0, dir)
 
 func _draw() -> void:
 	draw_rect(Rect2(-12, -24, 24, 48), Color.DODGER_BLUE)
