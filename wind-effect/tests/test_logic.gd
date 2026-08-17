@@ -1,7 +1,23 @@
 extends Node
 
+# Drives the real particle field from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
+
+func _ready() -> void:
+	_test_the_field_starts_full()
+	_test_leaves_start_off_the_edges()
+	_test_the_wind_blows_them_along()
+	_test_turning_the_wind_turns_the_leaves()
+	_test_gravity_pulls_them_down()
+	_test_a_leaf_fades_as_it_ages()
+	_test_an_expired_leaf_is_recycled()
+	_test_a_leaf_blown_off_screen_is_recycled()
+	_test_the_field_never_empties_or_grows()
+	_test_the_strength_keys_have_limits()
+	_test_key_releases_change_nothing()
+	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -17,65 +33,163 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# --- Logic helpers ---
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/main.gd")
 
-func _wind_vector(wind_angle: float, wind_strength: float) -> Vector2:
-	return Vector2(cos(wind_angle), sin(wind_angle)) * wind_strength
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
 
-func _particle_lifetime_alpha(lifetime: float, max_lifetime: float) -> float:
-	return lifetime / max_lifetime
+func _run(m: Node2D, seconds: float) -> void:
+	var elapsed := 0.0
+	while elapsed < seconds:
+		m._process(STEP)
+		elapsed += STEP
 
-func _particle_offscreen(pos: Vector2) -> bool:
-	return pos.x > 700.0 or pos.x < -60.0 or pos.y > 540.0 or pos.y < -60.0
+func _press(m: Node2D, code: Key, pressed: bool = true) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = pressed
+	m._input(e)
 
-func _apply_wind_to_particle(vel: Vector2, wind: Vector2, delta: float, gravity: float) -> Vector2:
-	vel += wind * delta + Vector2(0.0, gravity * delta)
-	vel *= 0.98
-	return vel
+## One leaf, placed where the test wants it, and nothing else.
+func _one_leaf(m: Node2D, at: Vector2) -> Dictionary:
+	var leaf: Dictionary = m._particles[0]
+	m._particles = [leaf]
+	leaf["pos"] = at
+	leaf["vel"] = Vector2.ZERO
+	leaf["lifetime"] = 5.0
+	leaf["max_lifetime"] = 5.0
+	return leaf
 
-# --- Tests ---
+func _test_the_field_starts_full() -> void:
+	print("the field")
+	var m := _make()
+	expect(m._particles.size() == m.PARTICLE_COUNT, "the field starts with its full complement")
+	var colours := {}
+	for p in m._particles:
+		colours[p["color"]] = true
+	expect(colours.size() > 1, "in a mix of colours rather than one")
 
-func _test_wind_vector() -> void:
-	var wv := _wind_vector(0.0, 60.0)
-	expect(abs(wv.x - 60.0) < 0.001, "wind_vector: angle=0, strength=60 → x=60")
-	expect(abs(wv.y) < 0.001, "wind_vector: angle=0, strength=60 → y=0")
+func _test_leaves_start_off_the_edges() -> void:
+	print("where they come from")
+	var m := _make()
+	# Leaves blow in from the top or the left, so they should not simply
+	# materialise in the middle of the sky.
+	var from_edge := 0
+	for p in m._particles:
+		var pos: Vector2 = p["pos"]
+		if pos.x <= 0.0 or pos.y <= 0.0:
+			from_edge += 1
+	expect(from_edge == m._particles.size(), "every leaf enters from the top or the left")
 
-func _test_wind_vector_up() -> void:
-	var wv := _wind_vector(-PI / 2.0, 60.0)
-	expect(abs(wv.x) < 0.001, "wind_vector_up: angle=-PI/2 → x≈0")
-	expect(abs(wv.y - (-60.0)) < 0.001, "wind_vector_up: angle=-PI/2, strength=60 → y=-60 (upward)")
+func _test_the_wind_blows_them_along() -> void:
+	print("the wind")
+	var m := _make()
+	m._wind_angle = 0.0
+	m._wind_strength = 100.0
+	var leaf := _one_leaf(m, Vector2(320.0, 240.0))
+	_run(m, 0.5)
+	expect(leaf["vel"].x > 0.0, "wind blowing right pushes the leaves right")
 
-func _test_particle_drift() -> void:
-	var vel := Vector2(0.0, 0.0)
-	var wind := Vector2(60.0, 0.0)
-	var delta := 1.0
-	var gravity := 40.0
-	var new_vel := _apply_wind_to_particle(vel, wind, delta, gravity)
-	# After one step: vel += (60,0)*1 + (0,40)*1 = (60,40), then *0.98 = (58.8, 39.2)
-	expect(abs(new_vel.x - 58.8) < 0.01, "particle_drift: vel.x after wind+damping ≈ 58.8")
-	expect(abs(new_vel.y - 39.2) < 0.01, "particle_drift: vel.y after gravity+damping ≈ 39.2")
+func _test_turning_the_wind_turns_the_leaves() -> void:
+	print("wind direction")
+	var m := _make()
+	m._wind_angle = PI
+	m._wind_strength = 100.0
+	var leaf := _one_leaf(m, Vector2(320.0, 240.0))
+	_run(m, 0.5)
+	expect(leaf["vel"].x < 0.0, "and wind turned about blows them the other way")
 
-func _test_lifetime_alpha() -> void:
-	var alpha := _particle_lifetime_alpha(2.0, 4.0)
-	expect(abs(alpha - 0.5) < 0.001, "lifetime_alpha: lifetime=2.0, max=4.0 → alpha=0.5")
-	var full_alpha := _particle_lifetime_alpha(4.0, 4.0)
-	expect(abs(full_alpha - 1.0) < 0.001, "lifetime_alpha: lifetime=max → alpha=1.0")
-	var zero_alpha := _particle_lifetime_alpha(0.0, 4.0)
-	expect(abs(zero_alpha) < 0.001, "lifetime_alpha: lifetime=0 → alpha=0.0")
+	var keys := _make()
+	var before: float = keys._wind_angle
+	_press(keys, KEY_RIGHT)
+	expect(keys._wind_angle > before, "the right key turns the wind one way")
+	_press(keys, KEY_LEFT)
+	expect(is_equal_approx(keys._wind_angle, before), "and the left key back again")
 
-func _test_offscreen_respawn() -> void:
-	var off1 := Vector2(-70.0, -70.0)   # past the -60 margin on both axes
-	expect(_particle_offscreen(off1) == true, "offscreen: pos (-70,-70) → offscreen → respawn")
-	var off2 := Vector2(710.0, 240.0)
-	expect(_particle_offscreen(off2) == true, "offscreen: pos (710,240) → offscreen → respawn")
-	var on_screen := Vector2(320.0, 240.0)
-	expect(_particle_offscreen(on_screen) == false, "offscreen: pos (320,240) → on screen → no respawn")
+func _test_gravity_pulls_them_down() -> void:
+	print("gravity")
+	var m := _make()
+	m._wind_strength = 0.0
+	var leaf := _one_leaf(m, Vector2(320.0, 100.0))
+	_run(m, 0.5)
+	expect(leaf["vel"].y > 0.0, "with no wind a leaf still falls")
 
-func _ready() -> void:
-	print("=== Wind Effect Tests ===")
-	_test_wind_vector()
-	_test_wind_vector_up()
-	_test_particle_drift()
-	_test_lifetime_alpha()
-	_test_offscreen_respawn()
-	_report()
+func _test_a_leaf_fades_as_it_ages() -> void:
+	print("fading")
+	var m := _make()
+	var leaf := _one_leaf(m, Vector2(320.0, 240.0))
+	m._process(STEP)
+	var early: float = leaf["alpha"]
+	_run(m, 2.0)
+	expect(leaf["alpha"] < early, "a leaf fades as its life runs down")
+	expect(leaf["alpha"] > 0.0, "and is still visible part-way through")
+
+func _test_an_expired_leaf_is_recycled() -> void:
+	print("recycling")
+	var m := _make()
+	var leaf := _one_leaf(m, Vector2(320.0, 240.0))
+	leaf["lifetime"] = STEP * 0.5
+	m._process(STEP)
+	expect(leaf["lifetime"] > 0.0, "a leaf that runs out of life is given a new one")
+	expect(is_equal_approx(leaf["alpha"], 1.0), "at full opacity again")
+	expect(leaf["pos"].x <= 0.0 or leaf["pos"].y <= 0.0, "and back at an edge to blow in from")
+
+func _test_a_leaf_blown_off_screen_is_recycled() -> void:
+	print("leaving the screen")
+	for corner in [Vector2(900.0, 240.0), Vector2(-200.0, 240.0),
+			Vector2(320.0, 900.0), Vector2(320.0, -200.0)]:
+		var m := _make()
+		var leaf := _one_leaf(m, corner)
+		m._process(STEP)
+		expect_quiet(leaf["pos"].distance_to(corner) > 1.0,
+			"a leaf at %s is brought back" % corner)
+	expect(_quiet_failures == 0, "a leaf blown off any edge is recycled rather than drifting forever")
+
+func _test_the_field_never_empties_or_grows() -> void:
+	print("the count holds")
+	var m := _make()
+	m._wind_strength = 200.0
+	_run(m, 12.0)
+	expect(m._particles.size() == m.PARTICLE_COUNT,
+		"after twelve seconds of hard wind the field still holds its count")
+	var alive := 0
+	for p in m._particles:
+		if p["lifetime"] > 0.0:
+			alive += 1
+	expect(alive == m._particles.size(), "with every leaf still alive")
+
+func _test_the_strength_keys_have_limits() -> void:
+	print("strength")
+	var m := _make()
+	var start: float = m._wind_strength
+	_press(m, KEY_UP)
+	expect(m._wind_strength > start, "up strengthens the wind")
+	_press(m, KEY_DOWN)
+	expect(is_equal_approx(m._wind_strength, start), "and down eases it")
+
+	for i in 60:
+		_press(m, KEY_UP)
+	expect(m._wind_strength <= 200.0, "the wind stops at a maximum")
+	for i in 60:
+		_press(m, KEY_DOWN)
+	expect(m._wind_strength >= 0.0, "and at a dead calm rather than blowing backwards")
+
+func _test_key_releases_change_nothing() -> void:
+	print("key releases")
+	var m := _make()
+	var strength: float = m._wind_strength
+	var angle: float = m._wind_angle
+	_press(m, KEY_UP, false)
+	_press(m, KEY_LEFT, false)
+	expect(is_equal_approx(m._wind_strength, strength), "letting go of a key does not change the wind")
+	expect(is_equal_approx(m._wind_angle, angle), "in strength or direction")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
