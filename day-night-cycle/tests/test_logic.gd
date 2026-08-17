@@ -1,15 +1,21 @@
 extends Node
 
+# Drives the real cycle from scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	test_noon_is_bright()
-	test_midnight_is_dark()
-	test_time_wraps_at_1()
-	test_time_name_noon()
-	test_time_name_midnight()
-	test_keyframe_interpolation_midpoint()
+	_test_the_keyframes_run_from_midnight_to_midnight()
+	_test_the_cycle_loops_seamlessly()
+	_test_time_advances_and_wraps()
+	_test_a_full_day_takes_the_stated_length()
+	_test_the_speed_buttons_change_the_pace()
+	_test_a_keyframe_returns_its_own_colour()
+	_test_between_keyframes_the_colour_is_blended()
+	_test_the_sky_is_darkest_at_midnight()
+	_test_the_clock_reads_the_time()
+	_test_the_canvas_is_tinted_from_the_cycle()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -26,58 +32,145 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-const KEYFRAMES: Array = [
-	[0.00, Color(0.05, 0.05, 0.20), Color(0.12, 0.14, 0.30)],
-	[0.20, Color(0.20, 0.15, 0.30), Color(0.35, 0.28, 0.55)],
-	[0.25, Color(0.70, 0.40, 0.20), Color(0.80, 0.65, 0.50)],
-	[0.35, Color(0.50, 0.70, 1.00), Color(1.00, 0.95, 0.85)],
-	[0.50, Color(0.45, 0.68, 1.00), Color(1.00, 1.00, 1.00)],
-	[0.65, Color(0.45, 0.65, 0.95), Color(1.00, 0.98, 0.90)],
-	[0.75, Color(0.80, 0.45, 0.10), Color(0.90, 0.70, 0.50)],
-	[0.85, Color(0.20, 0.10, 0.25), Color(0.40, 0.30, 0.55)],
-	[1.00, Color(0.05, 0.05, 0.20), Color(0.12, 0.14, 0.30)],
-]
+const STEP := 1.0 / 60.0
+var _scene: Node2D
 
-func _lerp_kf(t: float, col_idx: int) -> Color:
-	for i in KEYFRAMES.size() - 1:
-		var t0: float = KEYFRAMES[i][0]
-		var t1: float = KEYFRAMES[i + 1][0]
-		if t >= t0 and t <= t1:
-			var local := (t - t0) / (t1 - t0)
-			return (KEYFRAMES[i][col_idx + 1] as Color).lerp(KEYFRAMES[i + 1][col_idx + 1], local)
-	return KEYFRAMES[0][col_idx + 1]
+func _make() -> Node2D:
+	if is_instance_valid(_scene):
+		remove_child(_scene)
+		_scene.free()
+	_scene = load("res://scenes/main.tscn").instantiate()
+	add_child(_scene)
+	return _scene
 
-func _time_name(t: float) -> String:
-	var h := int(t * 24)
-	var m := int(fmod(t * 24, 1.0) * 60)
-	var period := "noon" if h == 12 else ("midnight" if h == 0 or h == 24 else ("PM" if h > 12 else "AM"))
-	var dh := h if h <= 12 else h - 12
-	if dh == 0: dh = 12
-	return "%02d:%02d %s" % [dh, m, period]
+func _run(m: Node2D, seconds: float) -> void:
+	var elapsed := 0.0
+	while elapsed < seconds:
+		m._process(STEP)
+		elapsed += STEP
 
-func test_noon_is_bright() -> void:
-	var c := _lerp_kf(0.5, 1)  # modulate color at noon
-	expect(c.get_luminance() > 0.9, "noon modulate color is near white (bright)")
+func _sky(m: Node2D, t: float) -> Color:
+	return m._lerp_keyframes(t, 0)
 
-func test_midnight_is_dark() -> void:
-	var c := _lerp_kf(0.0, 1)
-	expect(c.get_luminance() < 0.3, "midnight modulate color is dark")
+func _test_the_keyframes_run_from_midnight_to_midnight() -> void:
+	print("the keyframes")
+	var m := _make()
+	begin_quiet()
+	var previous := -1.0
+	for frame in m.KEYFRAMES:
+		expect_quiet(frame[0] > previous, "keyframe times run forwards")
+		previous = frame[0]
+	expect(_quiet_failures == 0, "the keyframes are in order")
+	expect(is_zero_approx(m.KEYFRAMES[0][0]), "starting at the top of the cycle")
+	expect(is_equal_approx(m.KEYFRAMES[m.KEYFRAMES.size() - 1][0], 1.0), "and ending at the end of it")
 
-func test_time_wraps_at_1() -> void:
-	var t := fmod(0.999 + 0.01, 1.0)
-	expect(t < 0.02, "time wraps from 1.0 back to near 0.0")
+func _test_the_cycle_loops_seamlessly() -> void:
+	print("the loop")
+	var m := _make()
+	# The last keyframe is the first one again: any difference would show as a
+	# jump in the sky at midnight.
+	expect(_sky(m, 0.0).is_equal_approx(_sky(m, 1.0)),
+		"midnight at each end of the cycle is the same colour")
+	expect(m._lerp_keyframes(0.0, 1).is_equal_approx(m._lerp_keyframes(1.0, 1)),
+		"and so is the light it casts")
 
-func test_time_name_noon() -> void:
-	expect(_time_name(0.5) == "12:00 noon", "0.5 normalized = 12:00 noon")
+func _test_time_advances_and_wraps() -> void:
+	print("time passing")
+	var m := _make()
+	m._time = 0.0
+	_run(m, 1.0)
+	expect(m._time > 0.0, "time moves on")
+	m._time = 0.999
+	_run(m, 1.0)
+	expect(m._time < 0.5, "and wraps round rather than running past the end of the day")
 
-func test_time_name_midnight() -> void:
-	var name := _time_name(0.0)
-	expect(name.contains("midnight"), "0.0 normalized contains 'midnight'")
+func _test_a_full_day_takes_the_stated_length() -> void:
+	print("day length")
+	var m := _make()
+	m._time = 0.0
+	m._speed = 1.0
+	_run(m, m.DAY_LENGTH * 0.5)
+	expect(absf(m._time - 0.5) < 0.02, "half the day length is half a day (%.3f)" % m._time)
 
-func test_keyframe_interpolation_midpoint() -> void:
-	# At t=0.125 (midway between 0.0 and 0.25 keyframes), modulate should be between midnight and dawn
-	var c := _lerp_kf(0.125, 1)
-	var dark  := _lerp_kf(0.0, 1).get_luminance()
-	var light := _lerp_kf(0.25, 1).get_luminance()
-	expect(c.get_luminance() > dark and c.get_luminance() < light,
-		"midpoint between midnight and dawn has luminance between the two")
+func _test_the_speed_buttons_change_the_pace() -> void:
+	print("the speed buttons")
+	var m := _make()
+	(m.get_node("HUD/SpeedRow/FastBtn") as Button).pressed.emit()
+	var fast: float = m._speed
+	(m.get_node("HUD/SpeedRow/SlowBtn") as Button).pressed.emit()
+	var slow: float = m._speed
+	(m.get_node("HUD/SpeedRow/NormalBtn") as Button).pressed.emit()
+	expect(fast > m._speed and m._speed > slow, "fast, normal and slow are three different paces")
+	expect(slow > 0.0, "and none of them stops time")
+
+	var quick := _make()
+	quick._time = 0.0
+	(quick.get_node("HUD/SpeedRow/FastBtn") as Button).pressed.emit()
+	_run(quick, 1.0)
+	var steady := _make()
+	steady._time = 0.0
+	_run(steady, 1.0)
+	expect(quick._time > steady._time, "and the fast one really does run the day down quicker")
+
+func _test_a_keyframe_returns_its_own_colour() -> void:
+	print("on a keyframe")
+	var m := _make()
+	begin_quiet()
+	for frame in m.KEYFRAMES:
+		expect_quiet(_sky(m, frame[0]).is_equal_approx(frame[1]),
+			"the sky at t=%.2f is that keyframe's colour" % frame[0])
+	expect(_quiet_failures == 0, "landing exactly on a keyframe gives that keyframe's colour")
+
+func _test_between_keyframes_the_colour_is_blended() -> void:
+	print("between keyframes")
+	var m := _make()
+	var before: Color = m.KEYFRAMES[2][1]
+	var after: Color = m.KEYFRAMES[3][1]
+	var midpoint: float = (m.KEYFRAMES[2][0] + m.KEYFRAMES[3][0]) * 0.5
+	var blended := _sky(m, midpoint)
+	expect(blended.is_equal_approx(before.lerp(after, 0.5)),
+		"halfway between two keyframes is halfway between their colours")
+	expect(not blended.is_equal_approx(before), "rather than holding the earlier one")
+
+func _test_the_sky_is_darkest_at_midnight() -> void:
+	print("night and day")
+	var m := _make()
+	expect(_sky(m, 0.5).get_luminance() > _sky(m, 0.0).get_luminance(),
+		"noon is brighter than midnight")
+	expect(_sky(m, 0.25).get_luminance() > _sky(m, 0.0).get_luminance(),
+		"and dawn is brighter than the night before it")
+
+func _test_the_clock_reads_the_time() -> void:
+	print("the clock")
+	var m := _make()
+	expect(m._time_name(0.5).contains("12"), "half way through the day reads twelve")
+	expect(m._time_name(0.5).contains("noon"), "and is called noon")
+	expect(m._time_name(0.0).contains("midnight"), "the start of the cycle is midnight")
+	expect(m._time_name(0.25).contains("AM"), "a quarter through is morning")
+	expect(m._time_name(0.75).contains("PM"), "and three quarters is afternoon")
+
+func _test_the_canvas_is_tinted_from_the_cycle() -> void:
+	print("the tint")
+	var m := _make()
+	var modulate: CanvasModulate = m.get_node("CanvasModulate")
+	m._time = 0.5
+	m._process(STEP)
+	var noon: Color = modulate.color
+	m._time = 0.0
+	m._process(STEP)
+	# Without the CanvasModulate following, the world would stay lit at
+	# midnight and only the painted sky would change.
+	expect(modulate.color.get_luminance() < noon.get_luminance(),
+		"the whole scene is dimmed at night, not just the sky")
+	expect((m.get_node("HUD/TimeLabel") as Label).text.length() > 0, "and the clock is on screen")
+
+var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
