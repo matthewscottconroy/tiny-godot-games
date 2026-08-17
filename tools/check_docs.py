@@ -181,6 +181,22 @@ def check_deprecated_apis(demo):
                          % (os.path.basename(path), i, match.group(0).strip(), advice))
 
 
+def check_scene_groups(demo):
+    """Catch group membership written as a property instead of on the header.
+
+    Godot reads a node's groups from its header — `[node ... groups=["room"]]`.
+    A `groups = PackedStringArray("room")` line parses fine and does nothing, so
+    get_nodes_in_group() comes back empty and whatever depended on it silently
+    never runs. camera-rooms shipped like this: its camera never moved.
+    """
+    for path in sorted(glob.glob(os.path.join(demo, "scenes", "*.tscn"))):
+        for i, line in enumerate(read(path).split("\n"), 1):
+            if re.match(r"^groups\s*=\s*PackedStringArray\(", line):
+                fail(demo, "%s:%d sets groups as a property — Godot reads them "
+                           "from the node header, so this joins no group at all"
+                     % (os.path.basename(path), i))
+
+
 def check_index():
     root = read("README.md")
     listed = re.findall(r"^\| \[([a-z0-9-]+)\]\(([a-z0-9-]+)\)", root, re.M)
@@ -229,6 +245,7 @@ def main():
         check_required_files(demo)
         check_size(demo)
         check_deprecated_apis(demo)
+        check_scene_groups(demo)
         if os.path.exists(demo + "/README.md"):
             check_sections(demo)
             check_control_claims(demo)
