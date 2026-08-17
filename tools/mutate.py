@@ -159,9 +159,23 @@ SKIP_LINE = re.compile(r"^\s*(#|##|@|class_name|extends|signal)")
 DRIVER = "main.gd"
 
 
+def _suite_drives_main(demo):
+    """Does this demo's suite deliberately exercise scripts/main.gd?
+
+    Excluding main.gd is right when it is only a driver — scene wiring, HUD,
+    _draw(). It is wrong for the demos whose actual logic lives there, because
+    then the exclusion hides the very code the suite was rewritten to cover.
+    """
+    suite = os.path.join(demo, "tests", "test_logic.gd")
+    if not os.path.exists(suite):
+        return False
+    text = open(suite, encoding="utf-8").read()
+    return "scripts/main.gd" in text
+
+
 def demo_scripts(demo, include_driver=False):
     paths = sorted(glob.glob(os.path.join(demo, "scripts", "*.gd")))
-    if include_driver:
+    if include_driver or _suite_drives_main(demo):
         return paths
     logic = [p for p in paths if os.path.basename(p) != DRIVER]
     # A demo whose only script IS main.gd has its logic there; measure it.

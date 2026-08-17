@@ -8,20 +8,35 @@ const FOLLOW_SPEED := 4.5
 @onready var _cam:    Camera2D         = $Camera2D
 @onready var _status: Label            = $CanvasLayer/StatusLabel
 
-func _process(delta: float) -> void:
-	var offset := _player.global_position - _cam.global_position
-	var target := _cam.global_position
+## Where the camera should be heading, given the player's position.
+##
+## Inside the dead zone the camera does not move at all — that stillness is the
+## whole point, and it is why a deadzone camera feels calmer than one that
+## tracks every step. Outside it, the target is pinned exactly DEAD_W/DEAD_H
+## from the player, so the camera catches up to the edge of the zone and stops.
+func camera_target(cam_pos: Vector2, player_pos: Vector2) -> Vector2:
+	var offset := player_pos - cam_pos
+	var target := cam_pos
 
 	if offset.x > DEAD_W:
-		target.x = _player.global_position.x - DEAD_W
+		target.x = player_pos.x - DEAD_W
 	elif offset.x < -DEAD_W:
-		target.x = _player.global_position.x + DEAD_W
+		target.x = player_pos.x + DEAD_W
 
 	if offset.y > DEAD_H:
-		target.y = _player.global_position.y - DEAD_H
+		target.y = player_pos.y - DEAD_H
 	elif offset.y < -DEAD_H:
-		target.y = _player.global_position.y + DEAD_H
+		target.y = player_pos.y + DEAD_H
 
+	return target
+
+## True while the player is inside the zone, so the camera should hold still.
+func in_dead_zone(cam_pos: Vector2, player_pos: Vector2) -> bool:
+	var offset := player_pos - cam_pos
+	return absf(offset.x) <= DEAD_W and absf(offset.y) <= DEAD_H
+
+func _process(delta: float) -> void:
+	var target := camera_target(_cam.global_position, _player.global_position)
 	_cam.global_position = _cam.global_position.lerp(target, FOLLOW_SPEED * delta)
 
 	var moving := not target.is_equal_approx(_cam.global_position)
