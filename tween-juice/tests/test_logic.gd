@@ -93,6 +93,10 @@ func _test_pressing_pops_a_score_label() -> void:
 	_button(m).pressed.emit()
 	expect(_pops(m).size() == 1, "a press pops one score label")
 	expect(_pops(m)[0].text.contains("10"), "showing what was scored")
+	# Above the button, not below it: the pop is meant to read as the score
+	# leaving the button and floating away.
+	expect(_pops(m)[0].position.y < _button(m).get_global_rect().get_center().y,
+		"starting above the button it came from")
 
 func _test_the_pops_are_scattered() -> void:
 	print("scatter")
