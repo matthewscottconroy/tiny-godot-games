@@ -127,8 +127,10 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-			var col := int((mb.position.x - GRID_X) / CELL_W)
-			var row := int((mb.position.y - GRID_Y) / CELL_H)
+			# floori, not int: int() truncates towards zero, so a click just
+			# left of the grid gave column 0 and toggled the edge of the pattern.
+			var col := floori((mb.position.x - GRID_X) / CELL_W)
+			var row := floori((mb.position.y - GRID_Y) / CELL_H)
 			# Grid is drawn note 0 at bottom, so invert row
 			var note := (NOTES - 1) - row
 			if col >= 0 and col < STEPS and note >= 0 and note < NOTES:
