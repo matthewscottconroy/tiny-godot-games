@@ -162,6 +162,25 @@ The same trap catches any suite whose expected value is computed the way the
 code computes it. Comparing a shoelace area against a rectangle whose area you
 know is a test; comparing it against a second shoelace implementation is not.
 
+## A test that aborts still reports a pass
+
+A runtime error inside a GDScript function — an index off the end of an array,
+a call on a null — prints an error, abandons that function, and lets the caller
+carry on. If it happens partway through a test, the assertions after it simply
+never run: the suite prints a smaller `n/n passed` and the harness, which only
+compares the two numbers, sees nothing wrong.
+
+The usual way to walk into this is a typed local:
+
+```gdscript
+var sky: Color = m._lerp_keyframes(t, 0)   # returns null on error -> aborts here
+var sky: Variant = m._lerp_keyframes(t, 0) # returns null -> `sky is Color` fails
+```
+
+Where a test exists to check that a function copes with bad input, hold the
+result as `Variant` and assert its type. Otherwise the test proves only that
+the call did not crash the engine.
+
 ## Watching a scene play out
 
 Suites run with `--quit-after 5` frames, which is enough for `_ready` and a

@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_the_sky_is_darkest_at_midnight()
 	_test_the_clock_reads_the_time()
 	_test_the_canvas_is_tinted_from_the_cycle()
+	_test_a_time_outside_the_day_falls_back()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -149,6 +150,13 @@ func _test_the_clock_reads_the_time() -> void:
 	expect(m._time_name(0.25).contains("AM"), "a quarter through is morning")
 	expect(m._time_name(0.75).contains("PM"), "and three quarters is afternoon")
 
+	# The hour itself, not just the suffix: a twelve-hour clock has to convert
+	# rather than print whatever the twenty-four hour count was.
+	expect(m._time_name(0.25).begins_with("06"), "a quarter through the day reads six o'clock")
+	expect(m._time_name(0.75).begins_with("06"), "and three quarters reads six as well")
+	expect(m._time_name(0.0).begins_with("12"), "midnight reads twelve, not zero")
+	expect(m._time_name(13.0 / 24.0).begins_with("01"), "and one in the afternoon reads one")
+
 func _test_the_canvas_is_tinted_from_the_cycle() -> void:
 	print("the tint")
 	var m := _make()
@@ -163,6 +171,25 @@ func _test_the_canvas_is_tinted_from_the_cycle() -> void:
 	expect(modulate.color.get_luminance() < noon.get_luminance(),
 		"the whole scene is dimmed at night, not just the sky")
 	expect((m.get_node("HUD/TimeLabel") as Label).text.length() > 0, "and the clock is on screen")
+
+func _test_a_time_outside_the_day_falls_back() -> void:
+	print("out of range")
+	var m := _make()
+	begin_quiet()
+	# fmod keeps _time inside the day, but the lookup is called with whatever it
+	# is given. A time no span covers has to fall back to a colour rather than
+	# running off the end of the keyframe list.
+	# Held as Variant on purpose: a lookup that runs off the end of the keyframe
+	# list returns null, and a typed local would abort this function instead of
+	# failing it.
+	for t in [-0.5, 1.5, 12.0]:
+		var sky: Variant = m._lerp_keyframes(t, 0)
+		var light: Variant = m._lerp_keyframes(t, 1)
+		expect_quiet(sky is Color and (sky as Color).is_equal_approx(m.KEYFRAMES[0][1]),
+			"t=%.1f falls back to the first keyframe's sky" % t)
+		expect_quiet(light is Color and (light as Color).is_equal_approx(m.KEYFRAMES[0][2]),
+			"t=%.1f falls back to its light too" % t)
+	expect(_quiet_failures == 0, "a time outside the day falls back to midnight")
 
 var _quiet_failures := 0
 
