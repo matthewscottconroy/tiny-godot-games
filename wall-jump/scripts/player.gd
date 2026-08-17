@@ -13,20 +13,33 @@ var _facing := 1.0
 func _ready() -> void:
 	add_to_group("player")
 
+## Pressing INTO the wall while airborne. `wall_normal_x` points away from the
+## wall, so pressing into it means the input has the opposite sign.
+func is_wall_sliding(h_input: float, on_wall: bool, on_floor: bool, wall_normal_x: float) -> bool:
+	if not on_wall or on_floor:
+		return false
+	return (h_input * wall_normal_x) < 0.0
+
+func gravity_scale(sliding: bool) -> float:
+	return WALL_SLIDE_GRAV if sliding else 1.0
+
+## The launch velocity for a wall jump.
+##
+## The horizontal component follows the wall normal, which points AWAY from the
+## wall. Negating it — as this demo did until a test was written for it — throws
+## the player back into the wall they are trying to leave.
+func wall_jump_velocity(wall_normal_x: float) -> Vector2:
+	return Vector2(wall_normal_x * WALL_JUMP_VX, JUMP_VEL)
+
 func _physics_process(delta: float) -> void:
 	# Gravity — reduced when sliding down a wall
 	var on_wall := is_on_wall()
 	var on_floor := is_on_floor()
 	var h_input := Input.get_axis("ui_left", "ui_right")
 
-	var pressing_toward_wall := false
-	if on_wall and not on_floor:
-		var wn := get_wall_normal()
-		# Pressing toward the wall means the sign of h_input is opposite to wall normal
-		pressing_toward_wall = (h_input * wn.x) < 0.0
-
-	var grav_scale := WALL_SLIDE_GRAV if (on_wall and pressing_toward_wall and not on_floor) else 1.0
-	velocity.y += GRAVITY * grav_scale * delta
+	var wall_normal_x := get_wall_normal().x if on_wall else 0.0
+	var sliding := is_wall_sliding(h_input, on_wall, on_floor, wall_normal_x)
+	velocity.y += GRAVITY * gravity_scale(sliding) * delta
 
 	# Horizontal movement
 	if h_input != 0.0:
@@ -41,8 +54,7 @@ func _physics_process(delta: float) -> void:
 
 	# Wall jump
 	if on_wall and not on_floor and Input.is_action_just_pressed("ui_up"):
-		var wn := get_wall_normal()
-		velocity = Vector2(-wn.x * WALL_JUMP_VX, JUMP_VEL)
+		velocity = wall_jump_velocity(wall_normal_x)
 
 	move_and_slide()
 	queue_redraw()
