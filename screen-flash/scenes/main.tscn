@@ -60,9 +60,8 @@ position = Vector2(470, 266)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Platform2"]
 shape = SubResource("RectangleShape2D_plat")
 
-[node name="HazardZone" type="Area2D" parent="."]
+[node name="HazardZone" type="Area2D" parent="." groups=["hazard"]]
 position = Vector2(320, 416)
-groups = PackedStringArray("hazard")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HazardZone"]
 shape = SubResource("RectangleShape2D_hazard")

@@ -51,29 +51,26 @@ offset_bottom = -38.0
 text = ""
 theme_override_font_sizes/font_size = 11
 
-[node name="Checkpoint1" type="Area2D" parent="."]
+[node name="Checkpoint1" type="Area2D" parent="." groups=["checkpoint"]]
 position = Vector2(160, 455)
 script = ExtResource("3")
 checkpoint_id = 1
-groups = PackedStringArray("checkpoint")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Checkpoint1"]
 shape = SubResource("RectangleShape2D_cp")
 
-[node name="Checkpoint2" type="Area2D" parent="."]
+[node name="Checkpoint2" type="Area2D" parent="." groups=["checkpoint"]]
 position = Vector2(360, 280)
 script = ExtResource("3")
 checkpoint_id = 2
-groups = PackedStringArray("checkpoint")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Checkpoint2"]
 shape = SubResource("RectangleShape2D_cp")
 
-[node name="Checkpoint3" type="Area2D" parent="."]
+[node name="Checkpoint3" type="Area2D" parent="." groups=["checkpoint"]]
 position = Vector2(560, 200)
 script = ExtResource("3")
 checkpoint_id = 3
-groups = PackedStringArray("checkpoint")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Checkpoint3"]
 shape = SubResource("RectangleShape2D_cp")

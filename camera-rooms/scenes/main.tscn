@@ -56,9 +56,8 @@ position = Vector2(960, 454)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
 shape = SubResource("RectangleShape2D_floor")
 
-[node name="Room1" type="Area2D" parent="."]
+[node name="Room1" type="Area2D" parent="." groups=["room"]]
 position = Vector2(320, 240)
-groups = PackedStringArray("room")
 script = ExtResource("3")
 room_name = "Room1"
 cam_target = Vector2(320, 240)
@@ -67,9 +66,8 @@ monitoring = true
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Room1"]
 shape = SubResource("RectangleShape2D_room")
 
-[node name="Room2" type="Area2D" parent="."]
+[node name="Room2" type="Area2D" parent="." groups=["room"]]
 position = Vector2(960, 240)
-groups = PackedStringArray("room")
 script = ExtResource("3")
 room_name = "Room2"
 cam_target = Vector2(960, 240)
@@ -78,9 +76,8 @@ monitoring = true
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Room2"]
 shape = SubResource("RectangleShape2D_room")
 
-[node name="Room3" type="Area2D" parent="."]
+[node name="Room3" type="Area2D" parent="." groups=["room"]]
 position = Vector2(1600, 240)
-groups = PackedStringArray("room")
 script = ExtResource("3")
 room_name = "Room3"
 cam_target = Vector2(1600, 240)
