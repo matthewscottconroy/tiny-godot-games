@@ -1,13 +1,21 @@
 extends Node
 
+# Drives the real flash from scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_flash_sets_color()
-	_test_flash_targets_alpha_zero()
-	_test_multiple_flashes()
-	_test_preset_colors()
+	_test_the_screen_starts_clear()
+	_test_a_flash_tints_the_screen()
+	await _test_a_flash_fades_out()
+	_test_the_number_keys_flash_different_colours()
+	_test_the_keys_choose_different_lengths()
+	_test_other_keys_do_not_flash()
+	_test_a_held_key_does_not_flash_again()
+	_test_walking_into_the_hazard_flashes()
+	_test_only_the_player_sets_the_hazard_off()
+	_test_the_player_jumps_only_from_the_floor()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -18,60 +26,124 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_approx(a: float, b: float, label: String, tol: float = 0.001) -> void:
-	expect(absf(a - b) < tol, label)
-
-# --- minimal flash simulation ---
-
-class FakeFlash:
-	var color: Color = Color.TRANSPARENT
-	var tween_target_alpha: float = -1.0
-	var tween_duration: float = -1.0
-
-	func flash(c: Color, duration: float) -> void:
-		color = c
-		tween_target_alpha = 0.0
-		tween_duration = duration
-
-func _test_flash_sets_color() -> void:
-	print("flash sets color")
-	var f := FakeFlash.new()
-	f.flash(Color(1, 0, 0, 0.65), 0.3)
-	expect(f.color.r == 1.0, "red channel correct")
-	expect(f.color.g == 0.0, "green channel correct")
-	expect_approx(f.color.a, 0.65, "alpha set to flash value")
-
-func _test_flash_targets_alpha_zero() -> void:
-	print("tween targets alpha 0")
-	var f := FakeFlash.new()
-	f.flash(Color(1, 1, 1, 0.9), 0.4)
-	expect(f.tween_target_alpha == 0.0, "tween ends at alpha=0 (fully transparent)")
-	expect_approx(f.tween_duration, 0.4, "tween duration matches argument")
-
-func _test_multiple_flashes() -> void:
-	print("second flash overwrites first")
-	var f := FakeFlash.new()
-	f.flash(Color(1, 0, 0, 0.6), 0.3)
-	f.flash(Color(1, 1, 0, 0.7), 0.25)
-	expect(f.color == Color(1, 1, 0, 0.7), "last flash color wins")
-	expect_approx(f.tween_duration, 0.25, "last flash duration wins")
-
-func _test_preset_colors() -> void:
-	print("preset flash types")
-	var presets := [
-		{"name": "damage",     "color": Color(1.0, 0.1, 0.1, 0.65), "dur": 0.35},
-		{"name": "pickup",     "color": Color(1.0, 0.9, 0.1, 0.70), "dur": 0.25},
-		{"name": "transition", "color": Color(0.2, 0.6, 1.0, 0.55), "dur": 0.40},
-		{"name": "respawn",    "color": Color(1.0, 1.0, 1.0, 0.90), "dur": 0.45},
-	]
-	for p in presets:
-		var f := FakeFlash.new()
-		f.flash(p["color"], p["dur"])
-		expect(f.color.a > 0.0, "%s flash has nonzero alpha" % p["name"])
-		expect(f.tween_duration > 0.0, "%s flash has positive duration" % p["name"])
-
 func _report() -> void:
 	var summary := "[screen-flash] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+var _scene: Node2D
+
+func _make() -> Node2D:
+	if is_instance_valid(_scene):
+		remove_child(_scene)
+		_scene.free()
+	_scene = load("res://scenes/main.tscn").instantiate()
+	add_child(_scene)
+	return _scene
+
+func _rect(m: Node2D) -> ColorRect:
+	return m.get_node("CanvasLayer/FlashRect")
+
+func _press(m: Node2D, code: Key, echo: bool = false) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = true
+	e.echo = echo
+	m._unhandled_key_input(e)
+
+func _hazard(m: Node2D) -> Area2D:
+	for node in m.get_tree().get_nodes_in_group("hazard"):
+		if m.is_ancestor_of(node):
+			return node
+	return null
+
+func _test_the_screen_starts_clear() -> void:
+	print("no flash")
+	var m := _make()
+	expect(is_zero_approx(_rect(m).color.a), "the overlay starts fully transparent")
+
+func _test_a_flash_tints_the_screen() -> void:
+	print("flashing")
+	var m := _make()
+	m.flash(Color(1.0, 0.0, 0.0, 0.5), 0.3)
+	expect(_rect(m).color.a > 0.0, "a flash tints the overlay")
+	expect(_rect(m).color.r > _rect(m).color.b, "in the colour it was given")
+
+func _test_a_flash_fades_out() -> void:
+	print("fading")
+	var m := _make()
+	m.flash(Color(1.0, 0.0, 0.0, 0.6), 0.2)
+	var start: float = _rect(m).color.a
+	await get_tree().process_frame
+	await get_tree().process_frame
+	expect(_rect(m).color.a < start, "the flash starts fading immediately")
+	for i in 120:
+		await get_tree().process_frame
+		if is_zero_approx(_rect(m).color.a):
+			break
+	expect(is_zero_approx(_rect(m).color.a), "and clears entirely rather than leaving a tint")
+
+func _test_the_number_keys_flash_different_colours() -> void:
+	print("the keys")
+	var seen := {}
+	for code in [KEY_1, KEY_2, KEY_3, KEY_4]:
+		var m := _make()
+		_press(m, code)
+		expect(_rect(m).color.a > 0.0, "the key flashes the screen")
+		seen[_rect(m).color] = true
+	expect(seen.size() == 4, "each key has its own colour")
+
+func _test_the_keys_choose_different_lengths() -> void:
+	print("lengths")
+	# A pickup should blink and a respawn should linger; equal durations would
+	# make the four events feel the same.
+	var quick := _make()
+	_press(quick, KEY_2)
+	var slow := _make()
+	_press(slow, KEY_4)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	# Both started at a similar alpha; the shorter flash has dropped further.
+	var quick_left: float = _rect(quick).color.a / 0.70
+	var slow_left: float = _rect(slow).color.a / 0.90
+	expect(quick_left < slow_left, "the short flash fades faster than the long one")
+
+func _test_other_keys_do_not_flash() -> void:
+	print("other keys")
+	var m := _make()
+	_press(m, KEY_9)
+	expect(is_zero_approx(_rect(m).color.a), "a key with nothing bound to it does nothing")
+
+func _test_a_held_key_does_not_flash_again() -> void:
+	print("held keys")
+	var m := _make()
+	_press(m, KEY_1, true)
+	expect(is_zero_approx(_rect(m).color.a), "an auto-repeat echo does not re-flash the screen")
+
+func _test_walking_into_the_hazard_flashes() -> void:
+	print("the hazard")
+	var m := _make()
+	var hazard := _hazard(m)
+	expect(hazard != null, "the hazard zone is in the group main.gd looks for")
+	hazard.body_entered.emit(m.get_node("Player"))
+	expect(_rect(m).color.a > 0.0, "walking into it flashes the screen")
+	expect(_rect(m).color.r > _rect(m).color.g, "in damage red")
+
+func _test_only_the_player_sets_the_hazard_off() -> void:
+	print("who trips it")
+	var m := _make()
+	var passer_by := CharacterBody2D.new()
+	add_child(passer_by)
+	_hazard(m).body_entered.emit(passer_by)
+	expect(is_zero_approx(_rect(m).color.a), "something that is not the player does not flash it")
+
+func _test_the_player_jumps_only_from_the_floor() -> void:
+	print("the player")
+	var m := _make()
+	var player: CharacterBody2D = m.get_node("Player")
+	expect(player.is_in_group("player"), "the player is in the group the hazard looks for")
+	expect(player.can_jump(true, true), "pressing jump on the floor jumps")
+	expect(not player.can_jump(true, false), "pressing it in mid-air does not")
+	expect(not player.can_jump(false, true), "and standing on the floor is not enough by itself")
