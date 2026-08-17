@@ -21,6 +21,9 @@ func _ready() -> void:
 	)
 	$HUD/BtnRow/ShorterBtn.pressed.connect(func() -> void:
 		_trail_len = maxi(_trail_len - 10, 5)
+		# Same refresh as the other button: without it the readout only ever
+		# moved one way.
+		_update_gradient()
 	)
 
 func _setup_trail() -> void:
@@ -37,9 +40,16 @@ func _update_gradient() -> void:
 	_len_label.text = "Trail length: %d points" % _trail_len
 
 func _physics_process(delta: float) -> void:
-	# Simple kinematic movement (not using CharacterBody2D to keep demo minimal)
-	var dir := Input.get_axis("ui_left", "ui_right")
-	_velocity.x = dir * SPEED
+	tick(delta, Input.get_axis("ui_left", "ui_right"), Input.is_action_just_pressed("ui_up"))
+	queue_redraw()
+
+## One step of movement, and one more point on the trail.
+##
+## Simple kinematic movement rather than a CharacterBody2D: the demo is about
+## the Line2D following the player, and a body would put a physics step between
+## the two.
+func tick(delta: float, move_axis: float, jump_pressed: bool) -> void:
+	_velocity.x = move_axis * SPEED
 
 	if not _on_floor:
 		_velocity.y += GRAVITY * delta
@@ -57,11 +67,10 @@ func _physics_process(delta: float) -> void:
 	# Clamp to screen
 	_pos.x = clampf(_pos.x, 16, 624)
 
-	if _on_floor and Input.is_action_just_pressed("ui_up"):
+	if _on_floor and jump_pressed:
 		_velocity.y = JUMP_VEL
 
 	_update_trail()
-	queue_redraw()
 
 func _update_trail() -> void:
 	_trail.add_point(_pos, 0)  # insert at front
