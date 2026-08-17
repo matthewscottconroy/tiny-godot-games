@@ -35,6 +35,16 @@ GODOT="${GODOT:-godot}"
 # Any of these in the output means the demo is broken, even when Godot exits 0.
 ERROR_RE='Parse Error|SCRIPT ERROR|SHADER ERROR|Failed to load|Failed to instantiate|^ERROR: '
 
+# Warnings count too. Godot reports a refused operation as a warning rather
+# than an error, so a feature can silently do nothing and still pass every
+# other gate: pixel-art-camera set a SubViewport size the container owned, and
+# both of its modes rendered identically for as long as the demo existed.
+WARN_RE='^WARNING: '
+
+# Except the ones we have already chased down and cannot fix from here — the
+# audio-shutdown leaks documented in docs/MEMORY.md.
+WARN_ALLOW='ObjectDB instance.*leaked at exit'
+
 # ---------------------------------------------------------------------------
 # Worker modes. The script re-invokes itself through xargs to get concurrency;
 # each worker handles one demo and writes its result to $RESULT_DIR/<demo>.
@@ -74,8 +84,10 @@ do_check() {
       smoke_out="$(mem_capture mem_run_godot "$GODOT" --headless --path "$demo" "$main_scene" --quit-after 90)"
       smoke_status=$?
       smoke_errors="$(printf '%s\n' "$smoke_out" | grep -E "$ERROR_RE")"
-      if [ "$smoke_status" -ne 0 ] || [ -n "$smoke_errors" ]; then
-        detail="smoke: $main_scene, exit $smoke_status"$'\n'"$(printf '%s\n' "$smoke_errors" | sed 's/^/      | /')"
+      local smoke_warnings
+      smoke_warnings="$(printf '%s\n' "$smoke_out" | grep -E "$WARN_RE" | grep -Ev "$WARN_ALLOW")"
+      if [ "$smoke_status" -ne 0 ] || [ -n "$smoke_errors" ] || [ -n "$smoke_warnings" ]; then
+        detail="smoke: $main_scene, exit $smoke_status"$'\n'"$(printf '%s\n' "$smoke_errors$smoke_warnings" | grep -v '^$' | sed 's/^/      | /')"
         failed=1
       fi
     fi

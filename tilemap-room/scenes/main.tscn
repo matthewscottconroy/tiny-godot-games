@@ -1,7 +1,7 @@
 [gd_scene load_steps=12 format=3 uid="uid://daeffywhi8804"]
 
-[ext_resource type="Script" uid="uid://c3k3ho311a85t" path="res://scripts/main.gd" id="1"]
-[ext_resource type="Script" uid="uid://ju6ijt6te7bd" path="res://scripts/player.gd" id="2"]
+[ext_resource type="Script" uid="uid://dm1dof4dx7jab" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" uid="uid://ce3jeq2n4wqwf" path="res://scripts/player.gd" id="2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(28, 40)

@@ -49,7 +49,13 @@ func _build_navmesh() -> void:
 			Vector2(obs.position.x - margin, obs.end.y + margin),
 		]))
 
-	poly.make_polygons_from_outlines()
+	# make_polygons_from_outlines() is deprecated; the source geometry is baked
+	# through NavigationServer2D now, which is what the editor's Bake button
+	# calls.
+	var source := NavigationMeshSourceGeometryData2D.new()
+	for i in poly.get_outline_count():
+		source.add_traversable_outline(poly.get_outline(i))
+	NavigationServer2D.bake_from_source_geometry_data(poly, source)
 	$NavigationRegion2D.navigation_polygon = poly
 
 func _set_target(pos: Vector2) -> void:

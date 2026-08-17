@@ -1,9 +1,9 @@
 [gd_scene load_steps=8 format=3 uid="uid://dxdfbhnee2wh5"]
 
-[ext_resource type="Script" uid="uid://fmhh52yb0b4h" path="res://scripts/player.gd" id="1"]
-[ext_resource type="Script" uid="uid://bn740lv44kevd" path="res://scripts/far_layer.gd" id="2"]
-[ext_resource type="Script" uid="uid://7t3q2kjkktl5" path="res://scripts/mid_layer.gd" id="3"]
-[ext_resource type="Script" uid="uid://c6333s6c2nhid" path="res://scripts/near_layer.gd" id="4"]
+[ext_resource type="Script" uid="uid://bjgopj74ur271" path="res://scripts/player.gd" id="1"]
+[ext_resource type="Script" uid="uid://cyt1837o6vknj" path="res://scripts/far_layer.gd" id="2"]
+[ext_resource type="Script" uid="uid://pupy70eedf8t" path="res://scripts/mid_layer.gd" id="3"]
+[ext_resource type="Script" uid="uid://cxiueaiwfk3b7" path="res://scripts/near_layer.gd" id="4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(4000, 20)

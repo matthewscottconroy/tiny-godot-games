@@ -162,6 +162,24 @@ The same trap catches any suite whose expected value is computed the way the
 code computes it. Comparing a shoelace area against a rectangle whose area you
 know is a test; comparing it against a second shoelace implementation is not.
 
+## Warnings are failures too
+
+Godot reports a *refused* operation as a warning, not an error. That makes the
+warning stream the place where "this line silently did nothing" shows up:
+
+```
+WARNING: Can't change the size of a `SubViewport` with a `SubViewportContainer`
+parent that has `stretch` enabled.
+```
+
+`pixel-art-camera` printed that on every toggle. Both of its modes rendered at
+full resolution, so the demo never showed the effect it exists to show, and it
+passed the smoke gate, its suite, and the doc checks for as long as it existed.
+
+The smoke gate now fails on any warning, with one allowance for the audio
+shutdown leaks in `docs/MEMORY.md` that cannot be fixed from here. Stale
+`ext_resource` UIDs and deprecated engine calls surfaced the same way.
+
 ## A test that aborts still reports a pass
 
 A runtime error inside a GDScript function — an index off the end of an array,
