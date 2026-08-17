@@ -35,8 +35,13 @@ func _process(delta: float) -> void:
 	camera.zoom  = Vector2(new_z, new_z)
 	zoom_label.text = "Zoom: %.2fx" % new_z
 
+## The zoom the camera is easing towards. Clamped here rather than after the
+## lerp, so the limits hold no matter how many times the wheel is spun.
 func _adjust(delta_zoom: float) -> void:
 	_target_zoom = clampf(_target_zoom + delta_zoom, ZOOM_MIN, ZOOM_MAX)
+
+func target_zoom() -> float:
+	return _target_zoom
 
 func _draw() -> void:
 	# Grid to make zoom obvious

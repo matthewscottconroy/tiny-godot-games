@@ -166,12 +166,30 @@ def _suite_drives_main(demo):
     Excluding main.gd is right when it is only a driver — scene wiring, HUD,
     _draw(). It is wrong for the demos whose actual logic lives there, because
     then the exclusion hides the very code the suite was rewritten to cover.
+
+    A suite reaches main.gd two ways: by loading the script, or by instantiating
+    the scene it is attached to. Both count — several demos are only testable
+    the second way, because the logic reads nodes the scene supplies.
     """
     suite = os.path.join(demo, "tests", "test_logic.gd")
     if not os.path.exists(suite):
         return False
-    text = open(suite, encoding="utf-8").read()
-    return "scripts/main.gd" in text
+    with io.open(suite, encoding="utf-8", errors="replace") as handle:
+        text = handle.read()
+    if "scripts/main.gd" in text:
+        return True
+    return _main_scene(demo) in text
+
+
+def _main_scene(demo):
+    """The res:// path of the demo's main scene, or a string nothing matches."""
+    project = os.path.join(demo, "project.godot")
+    if os.path.exists(project):
+        with io.open(project, encoding="utf-8", errors="replace") as handle:
+            match = re.search(r'^run/main_scene="([^"]+)"', handle.read(), re.M)
+        if match:
+            return match.group(1)
+    return "\0"
 
 
 def demo_scripts(demo, include_driver=False):
