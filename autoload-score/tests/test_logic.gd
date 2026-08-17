@@ -1,14 +1,21 @@
 extends Node
 
+# Drives the real ScoreManager from scripts/score_manager.gd. The previous suite
+# recomputed the arithmetic inline, so the component's own setter and signal
+# could break without a single assertion noticing — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	test_score_starts_at_zero()
-	test_add_points_increases_score()
-	test_add_multiple_times()
-	test_reset_clears_score()
-	test_high_score_tracking()
+	_test_starts_at_zero()
+	_test_add_default_amount()
+	_test_add_explicit_amount()
+	_test_add_accumulates()
+	_test_reset()
+	_test_signal_fires_with_the_new_total()
+	_test_signal_fires_on_reset()
+	_test_negative_amounts()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -25,49 +32,70 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# Replicate ScoreManager logic inline (without needing the Autoload node)
-class ScoreManagerSim:
-	var score      := 0
-	var high_score := 0
+# The demo registers this as an autoload; a test just instantiates it, which is
+# the same object with none of the global wiring.
+var _script: GDScript = load("res://scripts/score_manager.gd")
 
-	func add_points(amount: int) -> void:
-		score += amount
-		if score > high_score:
-			high_score = score
+func _make() -> Node:
+	var manager := Node.new()
+	manager.set_script(_script)
+	add_child(manager)
+	return manager
 
-	func reset() -> void:
-		score = 0
+func _test_starts_at_zero() -> void:
+	print("initial state")
+	expect(_make().score == 0, "a fresh score manager starts at zero")
 
-# --- tests ---
+func _test_add_default_amount() -> void:
+	print("default award")
+	var m := _make()
+	m.add()
+	expect(m.score == 10, "add() with no argument awards the default 10")
 
-func test_score_starts_at_zero() -> void:
-	var sm := ScoreManagerSim.new()
-	expect(sm.score == 0, "score starts at 0")
+func _test_add_explicit_amount() -> void:
+	print("explicit award")
+	var m := _make()
+	m.add(250)
+	expect(m.score == 250, "add(250) awards exactly 250")
 
-func test_add_points_increases_score() -> void:
-	var sm := ScoreManagerSim.new()
-	sm.add_points(10)
-	expect(sm.score == 10, "score is 10 after adding 10")
+func _test_add_accumulates() -> void:
+	print("accumulation")
+	var m := _make()
+	m.add(10)
+	m.add(5)
+	m.add(1)
+	expect(m.score == 16, "awards add up rather than replacing")
 
-func test_add_multiple_times() -> void:
-	var sm := ScoreManagerSim.new()
-	sm.add_points(5)
-	sm.add_points(15)
-	sm.add_points(3)
-	expect(sm.score == 23, "score is 23 after adding 5+15+3")
+func _test_reset() -> void:
+	print("reset")
+	var m := _make()
+	m.add(999)
+	m.reset()
+	expect(m.score == 0, "reset returns the score to zero")
 
-func test_reset_clears_score() -> void:
-	var sm := ScoreManagerSim.new()
-	sm.add_points(100)
-	sm.reset()
-	expect(sm.score == 0, "score is 0 after reset")
+func _test_signal_fires_with_the_new_total() -> void:
+	print("score_changed")
+	var m := _make()
+	var seen: Array[int] = []
+	m.score_changed.connect(func(new_score: int) -> void: seen.append(new_score))
+	m.add(10)
+	m.add(15)
+	# The signal must carry the running total, not the amount awarded — a UI
+	# connected to it displays the score, not the delta.
+	expect(seen == [10, 25], "score_changed reports the new total after each award")
 
-func test_high_score_tracking() -> void:
-	var sm := ScoreManagerSim.new()
-	sm.add_points(50)
-	expect(sm.high_score == 50, "high score is 50")
-	sm.reset()
-	sm.add_points(30)
-	expect(sm.high_score == 50, "high score stays 50 after reset and lower run")
-	sm.add_points(40)
-	expect(sm.high_score == 70, "high score updates to 70 on new record")
+func _test_signal_fires_on_reset() -> void:
+	print("score_changed on reset")
+	var m := _make()
+	m.add(40)
+	var seen: Array[int] = []
+	m.score_changed.connect(func(new_score: int) -> void: seen.append(new_score))
+	m.reset()
+	expect(seen == [0], "reset notifies listeners so the display clears too")
+
+func _test_negative_amounts() -> void:
+	print("penalties")
+	var m := _make()
+	m.add(100)
+	m.add(-30)
+	expect(m.score == 70, "a negative award subtracts, so penalties need no extra API")
