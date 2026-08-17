@@ -165,3 +165,39 @@ func _test_the_balls_bounce_inside_the_world() -> void:
 	world._process(STEP)
 	expect(ball[1].x > 0.0, "a ball reaching the left edge turns around")
 	expect(ball[0].x >= ball[3] - 0.001, "and is nudged back inside")
+
+	# The other three walls, each checked for the nudge landing inside rather
+	# than just outside — a sign slip there parks the ball off screen.
+	var edges := {
+		"right": [Vector2(640.0 - ball[3] - 1.0, 240.0), Vector2(200.0, 0.0)],
+		"top": [Vector2(320.0, ball[3] + 1.0), Vector2(0.0, -200.0)],
+		"bottom": [Vector2(320.0, 480.0 - ball[3] - 1.0), Vector2(0.0, 200.0)],
+	}
+	for name in edges:
+		var fresh := _make()
+		var other: Node2D = fresh.get_node("WarpContainer/WorldViewport").get_child(0)
+		var b: Array = other._balls[0]
+		b[0] = (edges[name] as Array)[0]
+		b[1] = (edges[name] as Array)[1]
+		other._process(STEP)
+		expect_quiet(b[0].x - b[3] >= -0.001 and b[0].x + b[3] <= 640.001,
+			"the %s bounce leaves the ball inside horizontally" % name)
+		expect_quiet(b[0].y - b[3] >= -0.001 and b[0].y + b[3] <= 480.001,
+			"the %s bounce leaves the ball inside vertically" % name)
+	expect(_quiet_failures == 0, "every wall puts the ball back inside the world")
+
+	# And a ball with room around it is left alone.
+	var free_scene := _make()
+	var free_world: Node2D = free_scene.get_node("WarpContainer/WorldViewport").get_child(0)
+	var free_ball: Array = free_world._balls[0]
+	free_ball[0] = Vector2(320.0, 240.0)
+	free_ball[1] = Vector2(0.0, 200.0)
+	free_world._process(STEP)
+	expect(free_ball[1].y > 0.0, "a ball in open space keeps going rather than bouncing off nothing")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
