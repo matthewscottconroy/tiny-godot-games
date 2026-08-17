@@ -52,6 +52,52 @@ MEM_ULIMIT_MB = int(os.environ.get("MEM_ULIMIT_MB", "4096"))
 # can easily error once per frame, so this is not a hypothetical.
 MEM_MAX_CAPTURE_KB = int(os.environ.get("MEM_MAX_CAPTURE_KB", "2048"))
 
+# --- Crash safety -----------------------------------------------------------
+#
+# This tool edits the demos in place and restores them afterwards. A `finally`
+# block is not enough: a SIGKILL, an OOM kill, or a terminal that goes away
+# leaves the mutation on disk. That is not hypothetical — it happened, the
+# leftover was committed by a blanket `git add -A`, and the resulting infinite
+# recursion in quadtree produced the 40GB output that caused the OOM crashes in
+# the first place.
+#
+# So every mutation is journalled to disk before it is applied. Any later run
+# restores whatever a previous run left behind before doing anything else.
+
+JOURNAL = ".mutate-journal.json"
+
+
+def _journal_write(entries):
+    """Record the pristine content of every file we are about to modify."""
+    if entries:
+        with open(JOURNAL, "w", encoding="utf-8") as handle:
+            json.dump(entries, handle)
+    elif os.path.exists(JOURNAL):
+        os.remove(JOURNAL)
+
+
+def restore_from_journal():
+    """Undo anything a previous run left behind. Returns files restored."""
+    if not os.path.exists(JOURNAL):
+        return []
+    try:
+        with open(JOURNAL, encoding="utf-8") as handle:
+            entries = json.load(handle)
+    except (ValueError, OSError):
+        os.remove(JOURNAL)
+        return []
+    restored = []
+    for path, content in entries.items():
+        try:
+            if os.path.exists(path) and open(path, encoding="utf-8").read() != content:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(content)
+                restored.append(path)
+        except OSError:
+            pass
+    os.remove(JOURNAL)
+    return restored
+
 
 def available_mb():
     """Available memory, or a large number on platforms without /proc."""
@@ -195,6 +241,11 @@ def check_demo(demo, limit, rng, include_driver=False):
 
     backups = {}
     try:
+        # Journal before the first edit, so a hard kill is recoverable.
+        for path, _, _, _ in chosen:
+            if path not in backups:
+                backups[path] = open(path, encoding="utf-8").read()
+        _journal_write(backups)
         for path, line_no, name, mutated in chosen:
             if path not in backups:
                 backups[path] = open(path, encoding="utf-8").read()
@@ -225,6 +276,7 @@ def check_demo(demo, limit, rng, include_driver=False):
         for path, content in backups.items():
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write(content)
+        _journal_write({})
 
     return {"demo": demo, "status": "ok", "killed": killed, "survived": survived, "detail": detail}
 
@@ -247,6 +299,14 @@ def main():
 
     demos = args.demos or sorted(os.path.dirname(p) for p in glob.glob("*/project.godot"))
     rng = random.Random(args.seed)
+
+    # Before anything else: undo a previous run that did not get to clean up.
+    stranded = restore_from_journal()
+    if stranded:
+        print("restored %d file(s) left mutated by an interrupted run:" % len(stranded),
+              file=sys.stderr)
+        for path in stranded:
+            print("  " + path, file=sys.stderr)
 
     if not preflight():
         return 3
