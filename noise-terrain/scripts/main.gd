@@ -21,7 +21,10 @@ func _ready() -> void:
 func _regen() -> void:
 	_heights.clear()
 	for i in COLS:
-		var h := (_noise.get_noise_1d(float(i) * _freq) + 1.0) * 0.5
+		# Sampled at the column index, not at index * _freq: the frequency is
+		# already set on the noise itself, and applying it twice squashed the
+		# default terrain to about four pixels of relief.
+		var h := (_noise.get_noise_1d(float(i)) + 1.0) * 0.5
 		_heights.append(lerpf(TERRAIN_BOTTOM, TERRAIN_TOP, h))
 	queue_redraw()
 	_refresh_labels()
@@ -45,18 +48,28 @@ func _process(_delta: float) -> void:
 		_noise.seed = randi()
 		_update_noise()
 
+	apply_controls(
+		Input.is_key_pressed(KEY_F), Input.is_key_pressed(KEY_G),
+		Input.is_key_pressed(KEY_O), Input.is_key_pressed(KEY_P))
+
+## Nudge the settings by one frame's worth of held keys.
+##
+## The terrain is only rebuilt when something actually changed: regenerating
+## 128 noise samples every frame to arrive at the same heights is wasted work,
+## and it is the kind of waste that hides in a demo this small.
+func apply_controls(freq_up: bool, freq_down: bool, oct_up: bool, oct_down: bool) -> void:
 	var changed := false
 
-	if Input.is_key_pressed(KEY_F):
+	if freq_up:
 		_freq = clampf(_freq + 0.001, 0.001, 0.2)
 		changed = true
-	if Input.is_key_pressed(KEY_G):
+	if freq_down:
 		_freq = clampf(_freq - 0.001, 0.001, 0.2)
 		changed = true
-	if Input.is_key_pressed(KEY_O):
+	if oct_up:
 		_octaves = clampi(_octaves + 1, 1, 8)
 		changed = true
-	if Input.is_key_pressed(KEY_P):
+	if oct_down:
 		_octaves = clampi(_octaves - 1, 1, 8)
 		changed = true
 

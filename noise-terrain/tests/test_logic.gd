@@ -1,23 +1,24 @@
 extends Node
 
+# Drives the real generator from scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
-const COLS := 128
-const TERRAIN_TOP := 80.0
-const TERRAIN_BOTTOM := 460.0
-
-
 func _ready() -> void:
-	_test_noise_output_range()
-	_test_height_lerp_formula()
-	_test_cols_heights_generated()
-	_test_frequency_changes_terrain()
-	_test_seed_changes_terrain()
-	_test_height_lerp_bounds()
-	_test_normalized_noise_mapping()
+	_test_the_terrain_spans_the_screen()
+	_test_every_column_is_between_the_top_and_the_bottom()
+	_test_the_terrain_is_not_flat()
+	_test_neighbouring_columns_are_close_together()
+	_test_a_new_seed_gives_new_terrain()
+	_test_the_settings_reach_the_noise()
+	_test_frequency_has_limits()
+	_test_octaves_have_limits()
+	_test_every_control_rebuilds_the_terrain()
+	_test_nothing_held_regenerates_nothing()
+	_test_a_higher_frequency_makes_rougher_ground()
+	_test_the_labels_report_the_settings()
 	_report()
-
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -27,159 +28,154 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-
-func expect_approx(a: float, b: float, label: String, tol: float = 0.001) -> void:
-	expect(absf(a - b) < tol, label)
-
-
-# --- FastNoiseLite contract ---
-
-func _test_noise_output_range() -> void:
-	print("FastNoiseLite output range [-1, 1]")
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	noise.seed = 42
-	noise.frequency = 0.02
-	var all_in_range := true
-	for i in 200:
-		var val := noise.get_noise_1d(float(i))
-		if val < -1.001 or val > 1.001:
-			all_in_range = false
-	expect(all_in_range, "all noise samples in [-1, 1]")
-
-	var has_positive := false
-	var has_negative := false
-	for i in 200:
-		var val := noise.get_noise_1d(float(i) * 0.1)
-		if val > 0.0:
-			has_positive = true
-		if val < 0.0:
-			has_negative = true
-	expect(has_positive, "noise produces positive values")
-	expect(has_negative, "noise produces negative values")
-
-
-# --- Height lerp formula ---
-
-func _test_height_lerp_formula() -> void:
-	print("height lerp maps noise correctly to screen coords")
-	# When noise = -1 → h = (-1+1)*0.5 = 0 → lerpf(BOTTOM, TOP, 0) = BOTTOM
-	var h_min := ((-1.0 + 1.0) * 0.5)  # = 0.0
-	var height_min := lerpf(TERRAIN_BOTTOM, TERRAIN_TOP, h_min)
-	expect_approx(height_min, TERRAIN_BOTTOM, "noise=-1 maps to TERRAIN_BOTTOM (lowest on screen)")
-
-	# When noise = +1 → h = (1+1)*0.5 = 1 → lerpf(BOTTOM, TOP, 1) = TOP
-	var h_max := ((1.0 + 1.0) * 0.5)  # = 1.0
-	var height_max := lerpf(TERRAIN_BOTTOM, TERRAIN_TOP, h_max)
-	expect_approx(height_max, TERRAIN_TOP, "noise=+1 maps to TERRAIN_TOP (highest on screen)")
-
-	# Midpoint: noise = 0 → h = 0.5 → lerpf(BOTTOM, TOP, 0.5) = midpoint
-	var h_mid := ((0.0 + 1.0) * 0.5)
-	var height_mid := lerpf(TERRAIN_BOTTOM, TERRAIN_TOP, h_mid)
-	var expected_mid := (TERRAIN_BOTTOM + TERRAIN_TOP) * 0.5
-	expect_approx(height_mid, expected_mid, "noise=0 maps to midpoint of terrain range")
-
-
-# --- COLS heights generated ---
-
-func _test_cols_heights_generated() -> void:
-	print("terrain generates exactly COLS heights")
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	noise.seed = 1
-	noise.frequency = 0.02
-	var heights: Array = []
-	for i in COLS:
-		var h := (noise.get_noise_1d(float(i) * 0.02) + 1.0) * 0.5
-		heights.append(lerpf(TERRAIN_BOTTOM, TERRAIN_TOP, h))
-	expect(heights.size() == COLS, "heights array has exactly COLS=%d entries" % COLS)
-	var all_in_range := true
-	for y in heights:
-		if y < TERRAIN_TOP - 0.5 or y > TERRAIN_BOTTOM + 0.5:
-			all_in_range = false
-	expect(all_in_range, "all heights within [TERRAIN_TOP, TERRAIN_BOTTOM]")
-
-
-# --- Frequency change causes different terrain ---
-
-func _test_frequency_changes_terrain() -> void:
-	print("different frequencies produce different terrain")
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	noise.seed = 99
-
-	var gen := func(freq: float) -> Array:
-		noise.frequency = freq
-		var h: Array = []
-		for i in 32:
-			h.append(noise.get_noise_1d(float(i) * freq))
-		return h
-
-	var heights_low: Array = gen.call(0.01)
-	var heights_high: Array = gen.call(0.1)
-
-	var same := true
-	for i in 32:
-		if absf(float(heights_low[i]) - float(heights_high[i])) > 0.001:
-			same = false
-			break
-	expect(not same, "frequency 0.01 and 0.1 produce different height profiles")
-
-
-# --- Seed change causes different terrain ---
-
-func _test_seed_changes_terrain() -> void:
-	print("different seeds produce different terrain")
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	noise.frequency = 0.02
-
-	var gen := func(seed_val: int) -> Array:
-		noise.seed = seed_val
-		var h: Array = []
-		for i in 32:
-			h.append(noise.get_noise_1d(float(i) * 0.02))
-		return h
-
-	var heights_a: Array = gen.call(12345)
-	var heights_b: Array = gen.call(67890)
-
-	var same := true
-	for i in 32:
-		if absf(float(heights_a[i]) - float(heights_b[i])) > 0.001:
-			same = false
-			break
-	expect(not same, "seed 12345 and seed 67890 produce different height profiles")
-
-
-# --- Terrain bounds ---
-
-func _test_height_lerp_bounds() -> void:
-	print("lerpf terrain bounds are correct")
-	expect(TERRAIN_TOP < TERRAIN_BOTTOM, "TERRAIN_TOP is above TERRAIN_BOTTOM (smaller y = higher on screen)")
-	expect_approx(TERRAIN_TOP, 80.0, "TERRAIN_TOP is 80.0")
-	expect_approx(TERRAIN_BOTTOM, 460.0, "TERRAIN_BOTTOM is 460.0")
-	var range_px := TERRAIN_BOTTOM - TERRAIN_TOP
-	expect(range_px > 0.0, "terrain has positive height range")
-	expect_approx(range_px, 380.0, "terrain height range is 380 pixels")
-
-
-# --- Normalized noise mapping [0,1] ---
-
-func _test_normalized_noise_mapping() -> void:
-	print("normalized noise formula maps to [0, 1]")
-	# (noise_val + 1.0) * 0.5 where noise_val in [-1, 1]
-	var h_from_minus1 := (-1.0 + 1.0) * 0.5
-	var h_from_zero   := (0.0 + 1.0) * 0.5
-	var h_from_plus1  := (1.0 + 1.0) * 0.5
-	expect_approx(h_from_minus1, 0.0, "noise=-1 normalizes to 0.0")
-	expect_approx(h_from_zero, 0.5, "noise=0 normalizes to 0.5")
-	expect_approx(h_from_plus1, 1.0, "noise=+1 normalizes to 1.0")
-	expect(h_from_minus1 >= 0.0 and h_from_plus1 <= 1.0, "normalized range is [0, 1]")
-
-
 func _report() -> void:
 	var summary := "[noise-terrain] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+func _make() -> Node2D:
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	return scene
+
+## How much the ground moves from one column to the next, on average.
+func _roughness(m: Node2D) -> float:
+	var total := 0.0
+	for i in m._heights.size() - 1:
+		total += absf(m._heights[i + 1] - m._heights[i])
+	return total / float(m._heights.size() - 1)
+
+func _test_the_terrain_spans_the_screen() -> void:
+	print("the terrain")
+	var m := _make()
+	expect(m._heights.size() == m.COLS, "there is a height per column")
+
+func _test_every_column_is_between_the_top_and_the_bottom() -> void:
+	print("bounds")
+	var m := _make()
+	var inside := true
+	for h in m._heights:
+		if h < m.TERRAIN_TOP - 0.001 or h > m.TERRAIN_BOTTOM + 0.001:
+			inside = false
+	expect(inside, "no column reaches above the sky or below the ground")
+
+func _test_the_terrain_is_not_flat() -> void:
+	print("relief")
+	var m := _make()
+	var lowest: float = m._heights[0]
+	var highest: float = m._heights[0]
+	for h in m._heights:
+		lowest = maxf(lowest, h)
+		highest = minf(highest, h)
+	expect(lowest - highest > 20.0, "the ground actually rises and falls")
+
+func _test_neighbouring_columns_are_close_together() -> void:
+	print("continuity")
+	var m := _make()
+	# Noise, not randomness: adjacent columns have to be related, or the result
+	# is static rather than terrain.
+	var biggest := 0.0
+	for i in m._heights.size() - 1:
+		biggest = maxf(biggest, absf(m._heights[i + 1] - m._heights[i]))
+	expect(biggest < (m.TERRAIN_BOTTOM - m.TERRAIN_TOP) * 0.5,
+		"no column jumps halfway down the screen from its neighbour")
+
+func _test_a_new_seed_gives_new_terrain() -> void:
+	print("reseeding")
+	var m := _make()
+	var before: Array = m._heights.duplicate()
+	m._noise.seed = 12345
+	m._update_noise()
+	expect(m._heights != before, "a different seed gives different ground")
+	expect(m._heights.size() == before.size(), "of the same width")
+
+func _test_the_settings_reach_the_noise() -> void:
+	print("the settings")
+	var m := _make()
+	m._freq = 0.05
+	m._octaves = 6
+	m._update_noise()
+	expect(is_equal_approx(m._noise.frequency, 0.05), "the frequency setting reaches the noise")
+	expect(m._noise.fractal_octaves == 6, "and so does the octave count")
+
+func _test_frequency_has_limits() -> void:
+	print("frequency limits")
+	var m := _make()
+	var start: float = m._freq
+	m.apply_controls(true, false, false, false)
+	expect(m._freq > start, "F raises the frequency")
+	m.apply_controls(false, true, false, false)
+	expect(is_equal_approx(m._freq, start), "and G lowers it again")
+
+	for i in 400:
+		m.apply_controls(true, false, false, false)
+	expect(m._freq <= 0.2, "the frequency has a ceiling")
+	for i in 400:
+		m.apply_controls(false, true, false, false)
+	expect(m._freq >= 0.001, "and a floor above zero — a zero frequency is a flat line")
+	expect(m._heights.size() == m.COLS, "the terrain still generates at the extremes")
+
+func _test_octaves_have_limits() -> void:
+	print("octave limits")
+	var m := _make()
+	var start: int = m._octaves
+	m.apply_controls(false, false, true, false)
+	expect(m._octaves == start + 1, "O adds an octave")
+	m.apply_controls(false, false, false, true)
+	expect(m._octaves == start, "and P takes one away")
+
+	for i in 20:
+		m.apply_controls(false, false, true, false)
+	expect(m._octaves == 8, "octaves stop at eight")
+	for i in 20:
+		m.apply_controls(false, false, false, true)
+	expect(m._octaves == 1, "and at one — zero octaves is no noise at all")
+	expect(m._noise.fractal_octaves >= 1, "the noise never runs with none")
+
+func _test_every_control_rebuilds_the_terrain() -> void:
+	print("regenerating")
+	# Changing a setting without rebuilding would leave the old terrain on
+	# screen, so the controls would look like they did nothing.
+	var controls := {
+		"F raises the frequency": [true, false, false, false],
+		"G lowers it": [false, true, false, false],
+		"O adds an octave": [false, false, true, false],
+		"P removes one": [false, false, false, true],
+	}
+	for label in controls:
+		var m := _make()
+		var keys: Array = controls[label]
+		m._heights.clear()
+		m.apply_controls(keys[0], keys[1], keys[2], keys[3])
+		expect(m._heights.size() == m.COLS, "%s, and the terrain is rebuilt" % label)
+
+func _test_nothing_held_regenerates_nothing() -> void:
+	print("idle frames")
+	var m := _make()
+	m._heights.clear()
+	m.apply_controls(false, false, false, false)
+	expect(m._heights.is_empty(), "a frame with no keys held does not rebuild the terrain")
+
+func _test_a_higher_frequency_makes_rougher_ground() -> void:
+	print("frequency")
+	var smooth := _make()
+	smooth._freq = 0.005
+	smooth._update_noise()
+
+	var rough := _make()
+	rough._freq = 0.15
+	rough._update_noise()
+
+	expect(_roughness(rough) > _roughness(smooth),
+		"a higher frequency makes the ground change faster (%.1f vs %.1f)" %
+		[_roughness(rough), _roughness(smooth)])
+
+func _test_the_labels_report_the_settings() -> void:
+	print("the readout")
+	var m := _make()
+	m._freq = 0.05
+	m._octaves = 6
+	m._update_noise()
+	expect((m.get_node("HUD/FreqLabel") as Label).text.contains("0.05"), "the frequency is on screen")
+	expect((m.get_node("HUD/OctLabel") as Label).text.contains("6"), "and so is the octave count")
