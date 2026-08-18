@@ -199,6 +199,18 @@ Where a test exists to check that a function copes with bad input, hold the
 result as `Variant` and assert its type. Otherwise the test proves only that
 the call did not crash the engine.
 
+`run-tests.sh` now fails a suite whose output contains an abort-class error —
+a freed instance, a missing property, an assignment to null, an index out of
+bounds. It deliberately tolerates the `Node not found` an `@onready` logs when
+a script is driven outside its scene, which is noise rather than a failure.
+
+Two ways to walk into it that the check caught straight away:
+
+- **Reading from a scene a later `_make()` has freed.** Copy the value out
+  before building the next one.
+- **Calling an awaiting test without `await`.** The caller carries on, the next
+  test frees the scene, and the first test then resumes into the wreckage.
+
 ## Watching a scene play out
 
 Suites run with `--quit-after 5` frames, which is enough for `_ready` and a
