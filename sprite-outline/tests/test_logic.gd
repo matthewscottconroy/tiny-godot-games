@@ -1,7 +1,22 @@
 extends Node
 
+# Drives the real picking from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
+
+func _ready() -> void:
+	_test_the_shapes_are_laid_out()
+	_test_nothing_is_picked_to_start_with()
+	_test_hovering_a_shape_highlights_it()
+	_test_hovering_the_gap_highlights_nothing()
+	_test_overlapping_shapes_pick_the_nearest_centre()
+	_test_clicking_selects()
+	_test_clicking_the_same_shape_again_deselects()
+	_test_clicking_another_shape_moves_the_selection()
+	_test_clicking_empty_space_clears_the_selection()
+	_test_escape_clears_the_selection()
+	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -17,70 +32,140 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# --- Helpers (mirrors main.gd logic) ---
+var _script: GDScript = load("res://scripts/main.gd")
 
-func _hit_test(mouse_pos: Vector2, shape_pos: Vector2, radius: float) -> bool:
-	return mouse_pos.distance_to(shape_pos) <= radius
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
 
-func _toggle_select(current_selected: int, hit: int) -> int:
-	if hit == current_selected:
-		return -1
-	else:
-		return hit
+func _hover(m: Node2D, at: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = at
+	m._input(e)
 
-func _hover_nearest(mouse_pos: Vector2, shapes: Array) -> int:
-	var nearest: int = -1
-	var nearest_dist: float = INF
-	for i in range(shapes.size()):
-		var shape = shapes[i]
-		var dist: float = mouse_pos.distance_to(shape["pos"])
-		if dist <= shape["radius"] and dist < nearest_dist:
-			nearest = i
-			nearest_dist = dist
-	return nearest
+func _click(m: Node2D, at: Vector2) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = true
+	e.position = at
+	m._input(e)
 
-# --- Tests ---
+func _escape(m: Node2D) -> void:
+	var e := InputEventKey.new()
+	e.keycode = KEY_ESCAPE
+	e.pressed = true
+	m._input(e)
 
-func _test_hit_inside() -> void:
-	var hit = _hit_test(Vector2(105, 120), Vector2(100, 120), 28.0)
-	expect(hit == true, "hit_inside: point inside radius should register hit")
+func _centre(m: Node2D, i: int) -> Vector2:
+	return m._shapes[i]["pos"]
 
-func _test_hit_outside() -> void:
-	var hit = _hit_test(Vector2(200, 120), Vector2(100, 120), 28.0)
-	expect(hit == false, "hit_outside: point outside radius should miss")
+## Somewhere with no shape under it.
+func _empty_space() -> Vector2:
+	return Vector2(600.0, 440.0)
 
-func _test_hit_edge() -> void:
-	# Point exactly at radius distance
-	var shape_pos = Vector2(100, 120)
-	var edge_pos = shape_pos + Vector2(28.0, 0.0)
-	var hit = _hit_test(edge_pos, shape_pos, 28.0)
-	expect(hit == true, "hit_edge: point exactly at radius should register hit")
+func _test_the_shapes_are_laid_out() -> void:
+	print("the shapes")
+	var m := _make()
+	expect(m._shapes.size() > 2, "there are several shapes to pick between")
+	begin_quiet()
+	for shape in m._shapes:
+		expect_quiet(shape["radius"] > 0.0, "a shape has no size to click on")
+	expect(_quiet_failures == 0, "every shape has a size")
 
-func _test_toggle_select() -> void:
-	# Clicking the already-selected shape should deselect
-	var result_deselect = _toggle_select(2, 2)
-	expect(result_deselect == -1, "toggle_select: clicking selected shape deselects (returns -1)")
-	# Clicking a different shape should select it (old deselects implicitly)
-	var result_new = _toggle_select(2, 4)
-	expect(result_new == 4, "toggle_select: clicking different shape selects it")
+func _test_nothing_is_picked_to_start_with() -> void:
+	print("before the mouse moves")
+	var m := _make()
+	expect(m._hovered == -1, "nothing is hovered")
+	expect(m._selected == -1, "and nothing is selected")
 
-func _test_hover_nearest() -> void:
-	var shapes: Array = [
-		{"pos": Vector2(100, 100), "radius": 28.0},
-		{"pos": Vector2(300, 200), "radius": 22.0},
-	]
-	# Near shape 0
-	var nearest = _hover_nearest(Vector2(110, 105), shapes)
-	expect(nearest == 0, "hover_nearest: closest shape within radius is selected as hovered")
-	# Outside all radii
-	var none = _hover_nearest(Vector2(500, 400), shapes)
-	expect(none == -1, "hover_nearest: no shape in range returns -1")
+func _test_hovering_a_shape_highlights_it() -> void:
+	print("hovering")
+	var m := _make()
+	begin_quiet()
+	for i in m._shapes.size():
+		_hover(m, _centre(m, i))
+		expect_quiet(m._hovered == i, "hovering shape %d highlighted %d instead" % [i, m._hovered])
+	expect(_quiet_failures == 0, "the cursor over a shape highlights that shape")
 
-func _ready() -> void:
-	print("=== Sprite Outline Tests ===")
-	_test_hit_inside()
-	_test_hit_outside()
-	_test_hit_edge()
-	_test_toggle_select()
-	_test_hover_nearest()
-	_report()
+	# Just inside the edge counts, just outside does not.
+	var shape: Dictionary = m._shapes[0]
+	_hover(m, shape["pos"] + Vector2(shape["radius"] - 2.0, 0.0))
+	expect(m._hovered == 0, "the edge of a shape is still the shape")
+	_hover(m, shape["pos"] + Vector2(shape["radius"] + 4.0, 0.0))
+	expect(m._hovered == -1, "and just past it is not")
+
+func _test_hovering_the_gap_highlights_nothing() -> void:
+	print("hovering the background")
+	var m := _make()
+	_hover(m, _centre(m, 0))
+	_hover(m, _empty_space())
+	expect(m._hovered == -1, "moving off the shapes clears the highlight")
+
+func _test_overlapping_shapes_pick_the_nearest_centre() -> void:
+	print("overlapping shapes")
+	var m := _make()
+	# Two shapes on top of each other: the cursor is inside both, and the one
+	# whose centre is closer should win rather than whichever comes first.
+	m._shapes[0]["pos"] = Vector2(200.0, 200.0)
+	m._shapes[0]["radius"] = 60.0
+	m._shapes[1]["pos"] = Vector2(240.0, 200.0)
+	m._shapes[1]["radius"] = 60.0
+	_hover(m, Vector2(235.0, 200.0))
+	expect(m._hovered == 1, "the shape whose centre is nearest takes the hover")
+	_hover(m, Vector2(205.0, 200.0))
+	expect(m._hovered == 0, "and the other one when the cursor moves across")
+
+func _test_clicking_selects() -> void:
+	print("selecting")
+	var m := _make()
+	_click(m, _centre(m, 2))
+	expect(m._selected == 2, "clicking a shape selects it")
+
+func _test_clicking_the_same_shape_again_deselects() -> void:
+	print("toggling")
+	var m := _make()
+	_click(m, _centre(m, 2))
+	_click(m, _centre(m, 2))
+	expect(m._selected == -1, "clicking the selected shape again lets it go")
+
+func _test_clicking_another_shape_moves_the_selection() -> void:
+	print("moving the selection")
+	var m := _make()
+	_click(m, _centre(m, 2))
+	_click(m, _centre(m, 4))
+	expect(m._selected == 4, "clicking another shape selects that one instead")
+
+func _test_clicking_empty_space_clears_the_selection() -> void:
+	print("clicking away")
+	var m := _make()
+	_click(m, _centre(m, 2))
+	_click(m, _empty_space())
+	expect(m._selected == -1, "clicking the background clears the selection")
+
+func _test_escape_clears_the_selection() -> void:
+	print("escape")
+	var m := _make()
+	_click(m, _centre(m, 3))
+	expect(m._selected == 3, "selected")
+	_escape(m)
+	expect(m._selected == -1, "escape clears it")
+
+	var released := _make()
+	_click(released, _centre(released, 3))
+	var key := InputEventKey.new()
+	key.keycode = KEY_ESCAPE
+	key.pressed = false
+	released._input(key)
+	expect(released._selected == 3, "and letting go of escape does not clear it a second time")
+
+var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
