@@ -15,8 +15,14 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	move_and_slide()
+	update_visuals()
 
-	# Flip visual to face movement direction
+## Face the way we are going, and play the animation that matches.
+##
+## The two thresholds are deliberately above zero and different from each
+## other: a body resting against a wall keeps a hair of velocity, and a single
+## threshold would leave the sprite flipping and the animation restarting on it.
+func update_visuals() -> void:
 	if velocity.x < -5:
 		visual.scale.x = -1
 	elif velocity.x > 5:
