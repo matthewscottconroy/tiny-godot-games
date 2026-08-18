@@ -12,6 +12,7 @@ func _ready() -> void:
 	_test_hovering_the_gap_highlights_nothing()
 	_test_overlapping_shapes_pick_the_nearest_centre()
 	_test_clicking_selects()
+	_test_a_mouse_release_does_not_select()
 	_test_clicking_the_same_shape_again_deselects()
 	_test_clicking_another_shape_moves_the_selection()
 	_test_clicking_empty_space_clears_the_selection()
@@ -121,6 +122,22 @@ func _test_clicking_selects() -> void:
 	var m := _make()
 	_click(m, _centre(m, 2))
 	expect(m._selected == 2, "clicking a shape selects it")
+
+func _test_a_mouse_release_does_not_select() -> void:
+	print("releases")
+	var m := _make()
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = _centre(m, 2)
+	m._input(release)
+	# Acting on both halves of a click toggles twice and nothing ever stays
+	# selected.
+	expect(m._selected == -1, "letting go of the button selects nothing")
+
+	_click(m, _centre(m, 2))
+	m._input(release)
+	expect(m._selected == 2, "and does not clear a selection either")
 
 func _test_clicking_the_same_shape_again_deselects() -> void:
 	print("toggling")
