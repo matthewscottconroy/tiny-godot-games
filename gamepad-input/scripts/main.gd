@@ -65,8 +65,7 @@ func _process(_delta: float) -> void:
 	var id  := pads[0]
 	var axes := []
 	for ax: JoyAxis in AXIS_NAMES:
-		var raw := Input.get_joy_axis(id, ax)
-		var val := 0.0 if absf(raw) < DEADZONE else raw
+		var val := apply_deadzone(Input.get_joy_axis(id, ax))
 		axes.append("  %-20s  %.3f" % [AXIS_NAMES[ax], val])
 	axis_label.text = "Axes (deadzone %.2f):\n" % DEADZONE + "\n".join(axes)
 
@@ -76,6 +75,14 @@ func _process(_delta: float) -> void:
 			pressed_btns.append(BUTTON_NAMES[b])
 	button_label.text = "Buttons pressed: " + (", ".join(pressed_btns) if pressed_btns else "(none)")
 	queue_redraw()
+
+## Ignore the small readings a stick gives when nobody is touching it.
+##
+## Analogue sticks rarely rest at exactly zero, so without this the demo
+## reports a permanent drift and anything driven by it creeps across the
+## screen on its own.
+func apply_deadzone(raw: float) -> float:
+	return 0.0 if absf(raw) < DEADZONE else raw
 
 func _vibrate() -> void:
 	var pads := Input.get_connected_joypads()
