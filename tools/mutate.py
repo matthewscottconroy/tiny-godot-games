@@ -237,7 +237,13 @@ def candidates(demo, include_driver=False):
                 drawing = FUNC_LINE.match(line).group(1).startswith("_draw")
             if drawing or SKIP_LINE.match(line) or not line.strip():
                 continue
+            # Trailing comments are prose. strip_strings() has already blanked
+            # any '#' inside a string literal, so the first one left starts a
+            # real comment — subviewport lost a mutation to the words in one.
             masked = strip_strings(line)
+            hash_at = masked.find("#")
+            if hash_at != -1:
+                masked = masked[:hash_at]
             for name, pattern, replacement in MUTATIONS:
                 match = pattern.search(masked)
                 if not match:

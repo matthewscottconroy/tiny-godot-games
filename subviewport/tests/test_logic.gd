@@ -119,6 +119,11 @@ func _test_the_dot_tracks_the_player_across_the_minimap() -> void:
 	expect(far_corner.x > near_corner.x, "walking right moves the dot right on the minimap")
 	expect(far_corner.y > near_corner.y, "and walking down moves it down")
 	expect(_dot(m).visible, "with the dot visible")
+	# A rectangle with its edges the wrong way round has the same centre and
+	# no area at all, so it shows nothing.
+	var dot := _dot(m)
+	expect(dot.offset_right > dot.offset_left, "the dot has width")
+	expect(dot.offset_bottom > dot.offset_top, "and height")
 
 func _test_the_dot_stays_on_the_minimap() -> void:
 	print("the dot's bounds")
