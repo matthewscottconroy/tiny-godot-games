@@ -1,5 +1,7 @@
 # Multiplayer RPC
 
+<!-- tags: ui, signals, component, needs-network -->
+
 A minimal Godot 4 demo of the high-level multiplayer API: host or join over ENet, keep a shared player roster, and send messages between peers with `@rpc`.
 
 ## Purpose

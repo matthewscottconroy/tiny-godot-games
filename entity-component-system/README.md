@@ -1,5 +1,7 @@
 # Entity Component System
 
+<!-- tags: procedural, component -->
+
 A minimal Godot 4 demo showing a pure GDScript ECS: entities as integer IDs, components as data dictionaries, and systems as functions that query and mutate component data.
 
 ## Purpose

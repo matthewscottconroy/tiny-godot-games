@@ -1,5 +1,7 @@
 # Rigid Body
 
+<!-- tags: physics, ui -->
+
 Demonstrates `RigidBody2D` as a fully physics-driven object: click anywhere to spawn boxes and circles that fall, collide, and stack under gravity — all controlled by the physics engine with no manual velocity code.
 
 ## Purpose

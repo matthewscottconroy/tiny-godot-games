@@ -1,5 +1,7 @@
 # Local Multiplayer
 
+<!-- tags: physics, ui, signals -->
+
 Demonstrates two-player local multiplayer on the same keyboard by assigning different input schemes to different player instances via `@export var player_id`.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Double Jump
 
+<!-- tags: physics, ui -->
+
 A minimal Godot 4 demo showing the double-jump mechanic.
 
 ## Purpose

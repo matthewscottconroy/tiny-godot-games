@@ -1,5 +1,7 @@
 # Quest System
 
+<!-- tags: signals, component, shows-its-working -->
+
 A multi-quest tracker with three distinct objective types — kill enemies, collect items, and reach a location — each with a progress bar, XP reward, and a shared victory condition.
 
 ## Purpose

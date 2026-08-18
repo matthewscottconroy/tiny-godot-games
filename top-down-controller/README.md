@@ -1,5 +1,7 @@
 # Top-Down Controller
 
+<!-- tags: physics, ui -->
+
 8-directional free movement with no gravity — the canonical setup for top-down action games. The player moves in any direction; a facing indicator follows the last movement direction even when standing still.
 
 ## Purpose

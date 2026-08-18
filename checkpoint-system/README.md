@@ -1,5 +1,7 @@
 # Checkpoint System
 
+<!-- tags: physics, ui, signals, component -->
+
 A one-way checkpoint system for a platformer: walking through a flag permanently updates the player's respawn position, turning the flag green. Press R to die and respawn at the last reached checkpoint.
 
 ## Purpose

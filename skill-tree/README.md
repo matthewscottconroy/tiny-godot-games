@@ -1,5 +1,7 @@
 # Skill Tree
 
+<!-- tags: signals, component, shows-its-working -->
+
 A node-graph skill tree with prerequisite dependencies, variable point costs, hover tooltips, and animated unlock states — all driven by a flat Array of skill Dictionaries.
 
 ## Purpose

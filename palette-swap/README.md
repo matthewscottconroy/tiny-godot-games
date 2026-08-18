@@ -1,5 +1,7 @@
 # Palette Swap
 
+<!-- tags: shader, ui, procedural -->
+
 A fragment shader that replaces specific source colors with destination colors using RGB distance comparison. Cycle through 5 character palettes at runtime — armor and body color change instantly without extra textures or draw calls.
 
 ## Purpose

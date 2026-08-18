@@ -1,5 +1,7 @@
 # Parallax Scroll
 
+<!-- tags: physics -->
+
 Demonstrates the parallax effect: multiple background layers scrolling at different speeds to simulate depth and distance.
 
 ## Purpose

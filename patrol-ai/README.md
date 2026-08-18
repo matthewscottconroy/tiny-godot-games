@@ -1,5 +1,7 @@
 # Patrol AI
 
+<!-- tags: physics, ui, signals -->
+
 Implements a three-state Finite State Machine for enemy AI: patrol along waypoints, chase the player when detected, and return to the patrol route when the player escapes.
 
 ## Purpose

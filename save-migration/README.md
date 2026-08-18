@@ -1,5 +1,7 @@
 # Save Migration
 
+<!-- tags: ui, component -->
+
 Loading save files written by older versions of your game: a version field, one small step per version bump, and a refusal when the chain is broken.
 
 ## Purpose

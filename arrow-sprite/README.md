@@ -1,5 +1,7 @@
 # Arrow Sprite
 
+<!-- tags: good-first-demo -->
+
 Moves a sprite around the screen using arrow keys, demonstrating basic 2D movement, normalized direction vectors, and frame-rate-independent motion.
 
 ## Purpose

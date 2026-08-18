@@ -1,5 +1,7 @@
 # Save / Load
 
+<!-- tags: ui, persistence, component -->
+
 Demonstrates persistent game state: writing structured data to a JSON file in the user's data directory and reading it back across sessions.
 
 ## Purpose

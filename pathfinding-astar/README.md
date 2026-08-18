@@ -1,5 +1,7 @@
 # A* Pathfinding
 
+<!-- tags: procedural, shows-its-working -->
+
 An interactive A* pathfinder on a 20×15 grid. Paint walls, drag start and goal positions, and watch the algorithm highlight its open set, closed set, and optimal path in real time.
 
 ## Purpose

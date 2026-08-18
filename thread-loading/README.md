@@ -1,5 +1,7 @@
 # Thread Loading
 
+<!-- tags: ui, persistence -->
+
 Demonstrates `ResourceLoader.load_threaded_request()` — loading multiple resources on a background thread while tracking progress and updating a UI on the main thread.
 
 ## Purpose

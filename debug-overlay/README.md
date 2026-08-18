@@ -1,5 +1,7 @@
 # Debug Overlay
 
+<!-- tags: physics, ui -->
+
 A toggleable, always-on-top HUD panel that displays live runtime data — FPS, world position, velocity, floor contact, and movement state — while the game is running.
 
 ## Purpose

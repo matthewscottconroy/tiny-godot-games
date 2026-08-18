@@ -1,5 +1,7 @@
 # Shader Intro
 
+<!-- tags: shader, ui -->
+
 Introduces Godot's `ShaderMaterial` and GLSL shaders for 2D: three visual effects (tint, hit-flash, outline) applied to a sprite by swapping materials at runtime.
 
 ## Purpose

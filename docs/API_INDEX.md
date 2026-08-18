@@ -40,6 +40,7 @@ ones where you are looking for *the* example rather than *an* example.
 | `Items.get_children()` | [drag-drop](../drag-drop) |
 | `LineOfSight.is_clear()` | [line-of-sight](../line-of-sight) |
 | `NavigationAgent2D` | [navigation-agent](../navigation-agent) |
+| `NavigationServer2D.bake_from_source_geometry_data()` | [navigation-agent](../navigation-agent) |
 | `Performance.get_monitor()` | [performance-profiling](../performance-profiling) |
 | `PhysicsRayQueryParameters2D.create()` | [line-of-sight](../line-of-sight) |
 | `ResourceLoader.load_threaded_get()` | [thread-loading](../thread-loading) |
@@ -95,7 +96,7 @@ ones where you are looking for *the* example rather than *an* example.
 | `Time.get_ticks_msec()` | [combo-system](../combo-system), [shader-effects](../shader-effects), [signal-relay](../signal-relay) |
 | `Tween` | [camera-rooms](../camera-rooms), [drag-drop](../drag-drop), [drop-table](../drop-table), [floating-text](../floating-text), [screen-flash](../screen-flash), [tween-juice](../tween-juice) |
 | `Vector2.from_angle()` | [boid-flocking](../boid-flocking), [homing-projectile](../homing-projectile), [radial-menu](../radial-menu), [tool-script](../tool-script) |
-| `add_child()` | [boid-flocking](../boid-flocking), [drop-table](../drop-table), [groups](../groups), [homing-projectile](../homing-projectile), [joint-physics](../joint-physics), [object-pool](../object-pool), [rigid-body](../rigid-body), [scene-instancing](../scene-instancing) _(+1 more)_ |
+| `add_child()` | [boid-flocking](../boid-flocking), [drop-table](../drop-table), [groups](../groups), [homing-projectile](../homing-projectile), [joint-physics](../joint-physics), [light-shadow](../light-shadow), [object-pool](../object-pool), [rigid-body](../rigid-body) _(+2 more)_ |
 | `create_tween()` | [camera-rooms](../camera-rooms), [drag-drop](../drag-drop), [dynamic-music](../dynamic-music), [grid-movement](../grid-movement), [groups](../groups), [health-bar](../health-bar), [interaction-system](../interaction-system), [notification-queue](../notification-queue) _(+5 more)_ |
 | `draw_arc()` | [ability-system](../ability-system), [audio-positional](../audio-positional), [behavior-tree](../behavior-tree), [bezier-path](../bezier-path), [bouncing-ball](../bouncing-ball), [circle-buttons](../circle-buttons), [coin-collector](../coin-collector), [context-menu](../context-menu) _(+30 more)_ |
 | `draw_circle()` | [2d-lighting](../2d-lighting), [2d-water](../2d-water), [ability-system](../ability-system), [animated-walk](../animated-walk), [animation-tree](../animation-tree), [audio-positional](../audio-positional), [behavior-tree](../behavior-tree), [bezier-path](../bezier-path) _(+72 more)_ |
@@ -114,4 +115,4 @@ ones where you are looking for *the* example rather than *an* example.
 
 ---
 
-_96 APIs across 165 demos._
+_97 APIs across 165 demos._

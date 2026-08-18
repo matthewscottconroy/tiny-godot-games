@@ -1,5 +1,7 @@
 # Audio Demo
 
+<!-- tags: audio, ui -->
+
 Generates sound effects entirely in code using raw PCM synthesis, then routes them through Godot's audio bus system with volume control.
 
 ## Purpose

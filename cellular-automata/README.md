@@ -1,5 +1,7 @@
 # Cellular Automata
 
+<!-- tags: procedural -->
+
 A minimal Godot 4 demo implementing a falling-sand simulation: sand, water, and stone with simple per-cell update rules.
 
 ## Purpose

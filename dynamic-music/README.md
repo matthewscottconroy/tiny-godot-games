@@ -1,5 +1,7 @@
 # dynamic-music
 
+<!-- tags: audio, ui, shows-its-working -->
+
 Demonstrates real-time audio synthesis and crossfading between two music "layers" using `AudioStreamGenerator` and `Tween`.
 
 ## Purpose

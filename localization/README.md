@@ -1,5 +1,7 @@
 # Localization
 
+<!-- tags: ui -->
+
 Demonstrates Godot 4's `TranslationServer` and `Translation` resource: register string tables for English, Spanish, and French in code, then switch locales at runtime and watch all UI labels update instantly.
 
 ## Purpose

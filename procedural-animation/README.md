@@ -1,5 +1,7 @@
 # Procedural Animation
 
+<!-- tags: shows-its-working -->
+
 Implements FABRIK (Forward And Backward Reaching Inverse Kinematics) on an 8-joint chain that follows the mouse cursor in real time, drawn as a tapered, color-graded snake/tentacle using procedural polygon rendering.
 
 ## Purpose

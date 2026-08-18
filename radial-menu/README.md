@@ -1,5 +1,7 @@
 # Radial Menu
 
+<!-- tags: ui, signals, shows-its-working -->
+
 Hold **Tab** to open a radial menu with six action items arranged in a circle.
 Move the mouse to highlight a wedge; release **Tab** to select it (or move to
 the dead-zone in the centre to cancel).

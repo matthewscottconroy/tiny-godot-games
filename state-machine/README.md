@@ -1,5 +1,7 @@
 # State Machine
 
+<!-- tags: physics, ui, signals -->
+
 Implements a four-state Finite State Machine for a platformer character: IDLE, WALK, JUMP, and FALL — each with a distinct color — driven by physics state.
 
 ## Purpose

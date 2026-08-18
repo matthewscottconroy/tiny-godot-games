@@ -1,5 +1,7 @@
 # Sprite Outline
 
+<!-- tags: shows-its-working -->
+
 Implements hover and selection outlines on clickable shapes using procedural `_draw()` calls — no sprites, no shaders, no textures required.
 
 ## Purpose

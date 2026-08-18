@@ -1,5 +1,7 @@
 # Inventory
 
+<!-- tags: ui, signals, component, shows-its-working -->
+
 A grid-based inventory: pick up world items into a "held item" cursor, place them into slots, swap between slots, and drop back to the world — all through a single click handler and a `GridContainer` of Button nodes.
 
 ## Purpose

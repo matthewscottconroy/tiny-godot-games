@@ -1,5 +1,7 @@
 # Floating Text
 
+<!-- tags: physics, ui, procedural, component -->
+
 Damage numbers, pickups, and status messages that rise from a position and fade out — implemented as a self-managing `Label` that spawns, tweens, and frees itself. No scene file needed.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Event Bus
 
+<!-- tags: physics, ui, signals -->
+
 Implements the Event Bus (or Message Broker) pattern: a globally-accessible Autoload that holds signals, allowing any node to broadcast or listen without direct references between senders and receivers.
 
 ## Purpose

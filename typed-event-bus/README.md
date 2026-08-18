@@ -1,5 +1,7 @@
 # Typed Event Bus
 
+<!-- tags: component, shows-its-working -->
+
 A publish/subscribe event bus where events are identified by string keys and carry typed `Dictionary` payloads. Click enemies to fire `"enemy_died"` events — watch three independent systems (Score, UI, Audio) react without knowing about each other.
 
 ## Purpose

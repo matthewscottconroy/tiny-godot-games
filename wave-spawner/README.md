@@ -1,5 +1,7 @@
 # Wave Spawner
 
+<!-- tags: ui, signals, component -->
+
 A phase-based wave system with intermission countdowns, per-wave difficulty scaling, and click-to-damage enemies — the standard pattern for horde modes, tower defense, and arena survival games.
 
 ## Purpose

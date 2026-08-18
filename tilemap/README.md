@@ -1,5 +1,7 @@
 # TileMap
 
+<!-- tags: physics, procedural -->
+
 Builds a `TileSet` and `TileMapLayer` entirely in GDScript — generating a 3-tile atlas texture at runtime, registering physics collision on solid tiles, loading map data from a 2D array, and implementing keyboard tile-painting.
 
 > **Godot 4.3+ note:** this demo uses `TileMapLayer`, the node that replaced the now-deprecated `TileMap`. Each `TileMapLayer` is a *single* layer, so `set_cell()` / `erase_cell()` no longer take a leading layer-index argument, and multiple layers are modelled as multiple `TileMapLayer` nodes rather than layers inside one `TileMap`.

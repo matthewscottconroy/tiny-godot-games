@@ -1,5 +1,7 @@
 # Homing Projectile
 
+<!-- tags: component -->
+
 A missile that steers toward a moving target each frame using `lerp_angle` on its velocity direction. Speed stays constant — only the heading rotates toward the target.
 
 ## Purpose

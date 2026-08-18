@@ -1,5 +1,7 @@
 # Destructibles
 
+<!-- tags: physics, procedural -->
+
 Click a box to break it. Each box shatters into `RigidBody2D` fragments with `Polygon2D` visuals, scattered outward with random velocities. Multi-hit boxes show crack lines before breaking.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Input Remapping
 
+<!-- tags: ui -->
+
 Runtime key rebinding using Godot's `InputMap` singleton. Click any action row to enter listening mode, press a new key, and the binding updates immediately. The player square at the bottom moves with the remapped keys.
 
 ## Purpose

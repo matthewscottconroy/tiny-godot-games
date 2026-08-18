@@ -1,5 +1,7 @@
 # Accessibility Options
 
+<!-- tags: ui, persistence, signals, component -->
+
 Colourblind-safe palettes, reduced motion, text scaling, and shape cues — one settings node that everything else reacts to.
 
 ## Purpose

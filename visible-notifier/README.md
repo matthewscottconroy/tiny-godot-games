@@ -1,5 +1,7 @@
 # Visible Notifier
 
+<!-- tags: ui, procedural -->
+
 Demonstrates `VisibleOnScreenNotifier2D` — a node that fires `screen_entered` and `screen_exited` signals when an object crosses the camera boundary, enabling signal-driven CPU culling with zero per-frame polling.
 
 ## Purpose

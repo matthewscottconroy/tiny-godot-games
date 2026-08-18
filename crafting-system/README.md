@@ -1,5 +1,7 @@
 # Crafting System
 
+<!-- tags: component, shows-its-working -->
+
 Click two ingredient tiles from a grid of eight materials, press Craft, and get a result looked up from a Dictionary of sorted key pairs — with alphabetic normalization to make every recipe commutative.
 
 ## Purpose

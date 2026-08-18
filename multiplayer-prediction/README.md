@@ -1,5 +1,7 @@
 # Multiplayer Prediction
 
+<!-- tags: ui, signals, component -->
+
 Applying input locally the moment it happens, then correcting when the authoritative server disagrees.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Drop Table
 
+<!-- tags: ui, procedural, component -->
+
 Weighted random loot selection: each enemy has a table of items with relative weights. Rolling the table picks one item proportionally. Kill enemies and watch observed drop rates converge on the expected probabilities.
 
 ## Purpose

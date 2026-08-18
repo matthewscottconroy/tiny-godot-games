@@ -1,5 +1,7 @@
 # Platformer Controller
 
+<!-- tags: physics, ui -->
+
 A CharacterBody2D controller implementing two essential feel-quality techniques: **coyote time** and **jump buffering** — the difference between a controller that feels sluggish and one that feels tight.
 
 ## Purpose

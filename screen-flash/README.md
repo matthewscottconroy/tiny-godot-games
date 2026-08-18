@@ -1,5 +1,7 @@
 # Screen Flash
 
+<!-- tags: physics -->
+
 Implements full-screen color flash feedback using a `ColorRect` on a `CanvasLayer` that fades out with a Tween — triggered automatically by game events and manually by key presses.
 
 ## Purpose

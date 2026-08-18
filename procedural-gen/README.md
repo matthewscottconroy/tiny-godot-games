@@ -1,5 +1,7 @@
 # Procedural Generation
 
+<!-- tags: ui, procedural -->
+
 Uses `FastNoiseLite` to generate terrain, caves, islands, and moisture maps — demonstrating how one noise function produces wildly different biome results through thresholds, masks, and parameter tuning.
 
 ## Purpose

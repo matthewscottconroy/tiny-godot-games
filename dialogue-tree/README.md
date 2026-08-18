@@ -1,5 +1,7 @@
 # Dialogue Tree
 
+<!-- tags: component, shows-its-working -->
+
 A branching NPC conversation system driven by a Dictionary-based graph: nodes carry speaker text and a list of player choices, choices carry conditions that filter them based on game state and effects that mutate it when selected.
 
 ## Purpose

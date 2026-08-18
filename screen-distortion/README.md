@@ -1,5 +1,7 @@
 # Screen Distortion
 
+<!-- tags: physics, shader, ui -->
+
 Full-screen post-process heat-haze effect applied to the entire game world via a `SubViewport` + `ShaderMaterial`. A `canvas_item` shader displaces UV coordinates with sine/cosine waves driven by `TIME`, with four preset intensity levels switchable at runtime.
 
 ## Purpose

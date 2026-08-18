@@ -1,5 +1,7 @@
 # Autoload Score
 
+<!-- tags: signals, good-first-demo -->
+
 Demonstrates the Autoload (Singleton) pattern: a single globally-accessible node that holds game state and emits signals when that state changes.
 
 ## Purpose

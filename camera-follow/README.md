@@ -1,5 +1,7 @@
 # Camera Follow
 
+<!-- tags: physics -->
+
 Demonstrates how to attach a `Camera2D` as a child of the player so the view follows movement automatically, with position smoothing and hard limits.
 
 ## Purpose

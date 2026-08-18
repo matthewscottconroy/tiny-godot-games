@@ -1,5 +1,7 @@
 # Interaction System
 
+<!-- tags: physics, ui, component -->
+
 A reusable "press E to interact" system using Area2D proximity detection. The player automatically sees prompts when near interactable objects and can trigger them without explicit raycast logic.
 
 ## Purpose

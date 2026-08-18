@@ -1,5 +1,7 @@
 # Config File
 
+<!-- tags: persistence, shows-its-working -->
+
 A settings panel with sliders and toggles that persists to `user://settings.cfg` using Godot's built-in `ConfigFile` class, with defaults on first run, clamped validation, and auto-save on slider release.
 
 ## Purpose

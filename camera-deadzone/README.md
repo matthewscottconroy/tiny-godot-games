@@ -1,5 +1,7 @@
 # Camera Deadzone
 
+<!-- tags: physics, ui -->
+
 A side-scrolling camera that stays still while the player is near the center of the screen, then smoothly catches up once the player exits a rectangular dead zone.
 
 ## Purpose

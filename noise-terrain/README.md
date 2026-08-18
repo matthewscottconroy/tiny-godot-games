@@ -1,5 +1,7 @@
 # noise-terrain
 
+<!-- tags: ui, procedural, shows-its-working -->
+
 Demonstrates procedural 1D terrain generation using `FastNoiseLite.get_noise_1d()`. The terrain is rendered as a filled polygon and redraws live as you adjust frequency and octaves.
 
 ## Purpose

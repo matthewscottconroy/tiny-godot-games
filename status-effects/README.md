@@ -1,5 +1,7 @@
 # Status Effects
 
+<!-- tags: physics, ui, signals, component, shows-its-working -->
+
 Poison, burn, and freeze effects applied by walking into colored floor zones. Each effect is a timed modifier stored in a dictionary; multiple effects can be active simultaneously. Demonstrates a clean, data-driven effect stack pattern.
 
 ## Purpose

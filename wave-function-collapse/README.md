@@ -1,5 +1,7 @@
 # Wave Function Collapse
 
+<!-- tags: procedural -->
+
 A minimal Godot 4 demo implementing the Wave Function Collapse algorithm: constraint-propagation tile placement that generates locally consistent maps.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Moving Platforms
 
+<!-- tags: physics -->
+
 Sinusoidally-oscillating platforms that correctly carry the player, implemented with `StaticBody2D.constant_linear_velocity` to communicate platform motion to Godot's physics engine.
 
 ## Purpose

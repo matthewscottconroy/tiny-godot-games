@@ -1,5 +1,7 @@
 # Drag and Drop
 
+<!-- tags: physics, ui -->
+
 Implements mouse-driven drag-and-drop with snap-back animation when dropped outside a valid target zone.
 
 ## Purpose

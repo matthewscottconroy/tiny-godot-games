@@ -1,5 +1,7 @@
 # Object Factory
 
+<!-- tags: component -->
+
 A minimal Godot 4 demo showing the factory pattern: a type registry that decouples entity creation from caller code.
 
 ## Purpose

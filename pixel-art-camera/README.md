@@ -1,5 +1,7 @@
 # Pixel Art Camera
 
+<!-- tags: shows-its-working -->
+
 Renders the game world at 160×120 pixels and scales it 4× to fill a 640×480 window via a `SubViewport`, producing crisp integer-scaled pixel art without any filtering blur.
 
 ## Purpose

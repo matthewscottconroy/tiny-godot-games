@@ -1,5 +1,7 @@
 # Groups
 
+<!-- tags: ui -->
+
 Demonstrates Godot's group system: broadcasting method calls to all nodes in a named group with a single line of code.
 
 ## Purpose

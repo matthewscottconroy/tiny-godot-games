@@ -1,5 +1,7 @@
 # Boid Flocking
 
+<!-- tags: procedural -->
+
 35 agents self-organize into flocks via separation, alignment, and cohesion forces. No explicit leader — emergent group behavior from three simple per-agent rules applied each frame.
 
 ## Purpose

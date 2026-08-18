@@ -1,5 +1,7 @@
 # Audio Bus Effects
 
+<!-- tags: audio, ui -->
+
 Dynamic reverb, echo, and compression routed through AudioBus. Press Space to play a tone; use arrow keys to switch buses. Demonstrates the bus architecture none of the other audio demos touch.
 
 ## Purpose

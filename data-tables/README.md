@@ -1,5 +1,7 @@
 # Data Tables
 
+<!-- tags: ui, component -->
+
 A Resource-based item database: items are defined as `ItemData` (a `Resource` subclass), stored in a typed array, and browseable through a filter-and-detail UI. Demonstrates the full pattern for structured game data in Godot.
 
 ## Purpose

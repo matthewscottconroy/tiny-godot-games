@@ -1,5 +1,7 @@
 # L-System
 
+<!-- tags: none -->
+
 A minimal Godot 4 demo showing Lindenmayer systems: string-rewriting rules that generate fractal geometry via turtle graphics.
 
 ## Purpose

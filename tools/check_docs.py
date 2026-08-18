@@ -197,6 +197,52 @@ def check_scene_groups(demo):
                      % (os.path.basename(path), i))
 
 
+# A demo whose README links to no other demo is a dead end: the reader has to
+# go back to the index to find the next thing, and the connections between
+# ideas — which is most of what a collection is for — go unsaid.
+#
+# Exempt where there is genuinely nothing adjacent, with the reason.
+CROSSLINK_EXEMPT = {
+    "editor-plugin": "the only editor-tooling demo; nothing to send a reader on to",
+}
+
+# Below this a suite is not really checking the demo, whatever its score.
+MIN_ASSERTIONS = 6
+
+
+def check_cross_links(demo):
+    """Every demo should point at least one other demo."""
+    if demo in CROSSLINK_EXEMPT:
+        return
+    text = read(os.path.join(demo, "README.md"))
+    for match in re.finditer(r"\]\(\.\./([a-z0-9-]+)", text):
+        if match.group(1) != demo and os.path.isdir(match.group(1)):
+            return
+    fail(demo, "README links to no other demo — add a 'Related demos' line, or "
+               "list it in CROSSLINK_EXEMPT with the reason")
+
+
+def check_suite_depth(demo):
+    """Flag a suite too thin to be checking much."""
+    path = os.path.join(demo, "tests", "test_logic.gd")
+    if not os.path.exists(path):
+        return
+    source = read(path)
+    # expect() and its quiet variant are the only assertion calls in a suite;
+    # the definitions themselves are skipped.
+    assertions = len(re.findall(r"^\s+expect(?:_quiet)?\(", source, re.M))
+    if assertions < MIN_ASSERTIONS:
+        fail(demo, "tests/test_logic.gd makes only %d assertions (want %d or more)"
+             % (assertions, MIN_ASSERTIONS))
+
+
+def check_tags(demo):
+    """Every README carries the tag line tools/build_tags.py writes."""
+    text = read(os.path.join(demo, "README.md"))
+    if "<!-- tags:" not in text:
+        fail(demo, "README has no tag line — run tools/build_tags.py")
+
+
 def check_index():
     root = read("README.md")
     listed = re.findall(r"^\| \[([a-z0-9-]+)\]\(([a-z0-9-]+)\)", root, re.M)
@@ -246,10 +292,13 @@ def main():
         check_size(demo)
         check_deprecated_apis(demo)
         check_scene_groups(demo)
+        check_suite_depth(demo)
         if os.path.exists(demo + "/README.md"):
             check_sections(demo)
             check_control_claims(demo)
             check_stale_version_prose(demo)
+            check_cross_links(demo)
+            check_tags(demo)
     check_index()
 
     if problems:

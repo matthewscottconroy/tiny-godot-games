@@ -1,5 +1,7 @@
 # Editor Plugin
 
+<!-- tags: ui, tool-script -->
+
 An `EditorPlugin` that adds a dock and registers a custom node type — extending the editor itself rather than the game.
 
 ## Purpose

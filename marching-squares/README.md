@@ -1,5 +1,7 @@
 # Marching Squares
 
+<!-- tags: procedural -->
+
 A minimal Godot 4 demo showing the marching squares algorithm: contour line extraction from a 2D scalar field.
 
 ## Purpose

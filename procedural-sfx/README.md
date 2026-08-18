@@ -1,5 +1,7 @@
 # procedural-sfx
 
+<!-- tags: audio, procedural, shows-its-working -->
+
 Demonstrates real-time procedural sound effect generation using `AudioStreamGeneratorPlayback.push_frame()`. Four distinct SFX are synthesized on demand from four mathematical formulas — no audio files required.
 
 ## Purpose

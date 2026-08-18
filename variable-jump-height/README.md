@@ -1,5 +1,7 @@
 # Variable Jump Height
 
+<!-- tags: physics, ui -->
+
 A minimal Godot 4 demo showing hold-to-jump-higher mechanics via a velocity cut on early button release.
 
 ## Purpose

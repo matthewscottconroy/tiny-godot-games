@@ -1,5 +1,7 @@
 # Ledge Grab
 
+<!-- tags: physics, ui -->
+
 Wall sliding and wall jumping built on `CharacterBody2D`: the player clings to walls mid-air, slows their descent, and launches off at a diagonal angle using `get_wall_normal()` for automatic direction calculation.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Health Bar
 
+<!-- tags: ui, signals, component -->
+
 Implements a complete health system with animated HP bar, color-coded feedback flashes, a reactive character display, and game-over state — all driven by a central HP value.
 
 ## Purpose

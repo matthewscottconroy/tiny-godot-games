@@ -1,5 +1,7 @@
 # Bouncing Ball
 
+<!-- tags: physics -->
+
 A ball that bounces around the screen using Godot's built-in rigid body physics engine — no manual velocity or collision code required.
 
 ## Purpose

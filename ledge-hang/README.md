@@ -1,5 +1,7 @@
 # Ledge Hang
 
+<!-- tags: shows-its-working -->
+
 A platformer demo where the player automatically grabs platform ledge corners when falling past them, freezes in a hanging state, then pulls up or drops on input — all built with a custom AABB physics system and no Godot physics engine.
 
 ## Purpose

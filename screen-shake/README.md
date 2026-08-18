@@ -1,5 +1,7 @@
 # Screen Shake
 
+<!-- tags: none -->
+
 Implements camera shake by animating the `Camera2D.offset` property through a series of random displacements using a Tween.
 
 ## Purpose

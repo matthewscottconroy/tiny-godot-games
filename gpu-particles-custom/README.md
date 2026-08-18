@@ -1,5 +1,7 @@
 # GPU Particles Custom
 
+<!-- tags: shader, ui -->
+
 Fragment shader that procedurally simulates 80 particles entirely on the GPU — no CPU particle state. Each particle's position is computed analytically from a seed and time uniform, making it zero-overhead regardless of particle count.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Vision Cone
 
+<!-- tags: component, shows-its-working -->
+
 A patrolling enemy detects the player using a 120-degree field-of-view cone combined with a Liang-Barsky line-of-sight test against axis-aligned wall obstacles — no physics engine involved.
 
 ## Purpose

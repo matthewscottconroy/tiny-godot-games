@@ -1,5 +1,7 @@
 # Cooldown Shoot
 
+<!-- tags: physics, ui -->
+
 Demonstrates projectile instantiation, `@export` scene references, cooldown timers, and a visual cooldown indicator using a `ProgressBar`.
 
 ## Purpose

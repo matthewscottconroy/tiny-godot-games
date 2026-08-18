@@ -1,5 +1,7 @@
 # Knockback
 
+<!-- tags: physics, ui, component -->
+
 Velocity-based hit recoil: a separate `_knockback` vector is computed on contact, layered on top of normal movement velocity, and decays exponentially each frame. Patrolling enemies trigger hits via `Area2D` overlap, and invincibility frames prevent stun-locking.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Hitbox / Hurtbox
 
+<!-- tags: physics, ui -->
+
 Demonstrates the hitbox/hurtbox pattern: a combat system where attack collision (hitbox) is separate from the vulnerable area (hurtbox), enabling precise frame-by-frame control over when damage can be dealt or received.
 
 ## Purpose

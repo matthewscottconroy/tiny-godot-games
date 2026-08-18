@@ -1,5 +1,7 @@
 # Normal Map Lighting
 
+<!-- tags: shader, ui -->
+
 Procedural bump-map lighting demo. A canvas_item shader computes per-fragment surface normals using finite differences on a multi-frequency height field, then applies Phong diffuse shading with distance attenuation from a point light driven by the mouse cursor.
 
 ## Purpose

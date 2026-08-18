@@ -1,5 +1,7 @@
 # Steering Behaviors
 
+<!-- tags: component, shows-its-working -->
+
 Eight autonomous agents demonstrate Craig Reynolds' classic steering behaviors — Seek/Arrive, Flee, and Wander — using force-based velocity accumulation with toroidal screen wrapping.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Coin Collector
 
+<!-- tags: physics, signals, good-first-demo -->
+
 Demonstrates scene instancing, custom signals, and Area2D pickup detection to implement a simple collect-all objective.
 
 ## Purpose

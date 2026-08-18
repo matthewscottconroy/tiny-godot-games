@@ -1,5 +1,7 @@
 # Performance Profiling
 
+<!-- tags: ui, procedural, component -->
+
 Measuring where a frame's time actually goes, against the budget the target frame rate gives you.
 
 ## Purpose

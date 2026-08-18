@@ -1,5 +1,7 @@
 # Camera Zoom
 
+<!-- tags: ui -->
+
 Demonstrates smooth `Camera2D` zoom driven by the scroll wheel or buttons, with a lerp-based target system, configurable min/max limits, and a one-key reset.
 
 ## Purpose

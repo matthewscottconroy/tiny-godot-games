@@ -1,5 +1,7 @@
 # Custom Resource
 
+<!-- tags: ui, procedural, component -->
+
 Demonstrates how to define `class_name` resources with `@export` variables to create typed, reusable data containers — and how a visual node reacts automatically when its data changes.
 
 ## Purpose

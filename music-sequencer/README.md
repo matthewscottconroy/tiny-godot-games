@@ -1,5 +1,7 @@
 # Music Sequencer
 
+<!-- tags: audio, shows-its-working -->
+
 A 16-step × 8-note step sequencer with real-time sine-wave audio synthesis via `AudioStreamGenerator`. Click cells to toggle notes, Space to play/pause, +/- to change BPM.
 
 ## Purpose

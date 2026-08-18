@@ -1,5 +1,7 @@
 # Joint Physics
 
+<!-- tags: physics -->
+
 Demonstrates Godot's two most useful 2D joints side by side: a `PinJoint2D` pendulum chain (left) and a `DampedSpringJoint2D` hanging weight (right), with all bodies and joints created entirely in code at runtime.
 
 ## Purpose

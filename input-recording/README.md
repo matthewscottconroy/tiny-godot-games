@@ -1,5 +1,7 @@
 # Input Recording
 
+<!-- tags: ui, signals, component -->
+
 Capturing input per frame and replaying it deterministically — for attract modes, ghosts, and reproducing the bug you just hit.
 
 ## Purpose

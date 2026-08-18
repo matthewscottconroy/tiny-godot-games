@@ -1,5 +1,7 @@
 # Experience & Leveling
 
+<!-- tags: signals, component, shows-its-working -->
+
 Click enemies to defeat them, collect XP, and watch a character level up through an exponential threshold curve — with overflow carry, stat gains per level, and a respawn loop so the enemies never run out.
 
 ## Purpose

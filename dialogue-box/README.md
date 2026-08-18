@@ -1,5 +1,7 @@
 # Dialogue Box
 
+<!-- tags: ui, signals, component -->
+
 Implements a reusable dialogue system with typewriter text reveal, speaker labels, multi-line progression, and a "skip to full text" mechanic.
 
 ## Purpose

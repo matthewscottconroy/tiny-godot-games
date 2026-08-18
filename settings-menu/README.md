@@ -1,5 +1,7 @@
 # Settings Menu
 
+<!-- tags: audio, ui, persistence -->
+
 A settings panel with master-volume slider, fullscreen toggle, and a player-
 speed option.  **Apply** saves to disk and takes effect immediately; **Cancel**
 reverts the UI; **Reset** restores built-in defaults.

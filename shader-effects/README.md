@@ -1,5 +1,7 @@
 # Shader Effects
 
+<!-- tags: shader, ui -->
+
 Three applied `canvas_item` shaders beyond the basics: **dissolve** (noise-based pixel discard with a burning edge), **pixelate** (snapped UV sampling), and **wave warp** (UV distortion over time). Each is swapped onto a Sprite2D at runtime.
 
 ## Purpose

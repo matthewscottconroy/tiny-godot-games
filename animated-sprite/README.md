@@ -1,5 +1,7 @@
 # Animated Sprite
 
+<!-- tags: physics, ui, procedural -->
+
 A platformer character whose entire sprite sheet is generated at runtime in code — no image files, no imports. `SpriteFrames` is built programmatically from `Image` objects, demonstrating the complete pipeline from CPU pixel data to GPU texture to animated sprite.
 
 ## Purpose

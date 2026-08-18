@@ -1,5 +1,7 @@
 # Screen Warp
 
+<!-- tags: shader, shows-its-working -->
+
 Applies a sinusoidal UV displacement shader to the entire rendered game world by compositing it through a `SubViewport` and attaching a `canvas_item` shader to the `SubViewportContainer`.
 
 ## Purpose

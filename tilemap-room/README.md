@@ -1,5 +1,7 @@
 # Tilemap Room
 
+<!-- tags: physics -->
+
 Demonstrates a scrollable room larger than the viewport, with `Camera2D` limits to prevent the view from going outside the room boundary, and a checkerboard floor drawn in code.
 
 ## Purpose

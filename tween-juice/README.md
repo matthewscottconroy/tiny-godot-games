@@ -1,5 +1,7 @@
 # Tween Juice
 
+<!-- tags: ui -->
+
 Demonstrates "game feel" through Tween animations: a button that squishes on press using `TRANS_BACK` easing and spawns a floating score label that drifts upward and fades out.
 
 ## Purpose

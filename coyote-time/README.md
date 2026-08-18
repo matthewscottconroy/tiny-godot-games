@@ -1,5 +1,7 @@
 # Coyote Time
 
+<!-- tags: physics, ui -->
+
 A minimal Godot 4 demo showing two classic platformer feel improvements: **coyote time** and **jump buffering**.
 
 ## Purpose

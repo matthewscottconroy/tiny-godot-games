@@ -1,5 +1,7 @@
 # Palette Cycling
 
+<!-- tags: shows-its-working -->
+
 Animates a 40×30 grid of colored tiles using classic indexed-color palette rotation — each cell stores a palette index, and a floating-point offset shifts all lookups simultaneously each frame to create animated water, lava, and rainbow effects.
 
 ## Purpose

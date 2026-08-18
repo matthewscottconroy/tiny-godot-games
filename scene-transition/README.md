@@ -1,5 +1,7 @@
 # Scene Transition
 
+<!-- tags: none -->
+
 Smooth fade-to-black scene changes implemented as a persistent Autoload `CanvasLayer`. Any scene calls `Transition.fade_to("res://scenes/level.tscn")` and the overlay handles the fade, the scene swap, and the fade-back-in automatically.
 
 ## Purpose

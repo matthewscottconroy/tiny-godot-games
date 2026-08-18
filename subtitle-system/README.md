@@ -1,5 +1,7 @@
 # Subtitle System
 
+<!-- tags: ui, signals, component -->
+
 A caption queue for speech and non-speech audio, with durations derived from reading time and one caption on screen at a time.
 
 ## Purpose

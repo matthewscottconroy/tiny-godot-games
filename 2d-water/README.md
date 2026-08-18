@@ -1,5 +1,7 @@
 # 2D Water
 
+<!-- tags: shader -->
+
 An animated water surface rendered with a `canvas_item` shader on a `ColorRect` — featuring dual sine-wave UV distortion, depth-based color gradient, noise-generated foam at the surface, and shimmer highlights. The player can walk into and swim through the water with modified physics.
 
 ## Purpose

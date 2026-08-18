@@ -1,5 +1,7 @@
 # Grapple Hook
 
+<!-- tags: shows-its-working -->
+
 A 2D platformer where the player fires a grapple hook at any surface. When the hook lands, the player swings like a pendulum, with full air control, floor jumping, and a custom AABB-vs-circle collision system — all written without Godot's physics engine.
 
 ## Purpose

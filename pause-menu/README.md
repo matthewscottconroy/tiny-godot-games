@@ -1,5 +1,7 @@
 # Pause Menu
 
+<!-- tags: physics -->
+
 Demonstrates Godot's pause system: `get_tree().paused` halts all pausable nodes while a `CanvasLayer` with `PROCESS_MODE_ALWAYS` continues processing, enabling a functional pause menu.
 
 ## Purpose

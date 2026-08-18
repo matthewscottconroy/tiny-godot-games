@@ -1,5 +1,7 @@
 # Spread Shot
 
+<!-- tags: physics, ui -->
+
 Fires a configurable burst of N bullets distributed evenly across a fixed angle. Each bullet travels in a straight line; only the initial direction differs between them.
 
 ## Purpose

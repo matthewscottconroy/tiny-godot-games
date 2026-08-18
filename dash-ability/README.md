@@ -1,5 +1,7 @@
 # Dash Ability
 
+<!-- tags: physics, ui -->
+
 A horizontal dash that overrides normal movement for a fixed duration, with a cooldown timer, invincibility frames, and a ghost-image afterimage trail — all layered on top of a standard platformer controller without modifying its core logic.
 
 ## Purpose

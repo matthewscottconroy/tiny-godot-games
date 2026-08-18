@@ -132,7 +132,37 @@ def build_api_index(usage, descs):
     return "\n".join(lines) + "\n"
 
 
-def related_for(demo, apis, usage, neighbours, limit=4):
+def tags_of():
+    """demo -> its concept tags, as tools/build_tags.py wrote them."""
+    tags = {}
+    for demo in demos():
+        path = os.path.join(demo, "README.md")
+        if not os.path.exists(path):
+            continue
+        match = re.search(r"<!-- tags: ([^>]*?) -->", read(path))
+        if not match or match.group(1).strip() == "none":
+            tags[demo] = set()
+            continue
+        tags[demo] = {t.strip() for t in match.group(1).split(",") if t.strip()}
+    return tags
+
+
+def categories():
+    """demo -> the index section it is listed under in the root README."""
+    section = None
+    found = {}
+    for line in read("README.md").split("\n"):
+        heading = re.match(r"^### (.+)$", line)
+        if heading:
+            section = heading.group(1).strip()
+            continue
+        row = re.match(r"^\| \[([a-z0-9-]+)\]", line)
+        if row and section:
+            found[row.group(1)] = section
+    return found
+
+
+def related_for(demo, apis, usage, neighbours, tags, categories_by_demo, limit=4):
     """Score every other demo by shared APIs, weighted toward rare ones."""
     scores = defaultdict(float)
     for api in apis.get(demo, ()):
@@ -150,7 +180,38 @@ def related_for(demo, apis, usage, neighbours, limit=4):
         scores[other] += 5.0
 
     ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
-    return [name for name, score in ranked[:limit] if score > 0.4]
+    chosen = [name for name, score in ranked[:limit] if score > 0.4]
+    if chosen:
+        return chosen
+
+    # Nothing shared an API worth counting. Rather than leave the demo a dead
+    # end, fall back to concept tags: a weaker signal, but "these three are
+    # also about shaders" still beats sending the reader back to the index.
+    mine = tags.get(demo, set())
+    by_overlap = defaultdict(float)
+    for other, theirs in tags.items():
+        if other == demo or not mine:
+            continue
+        shared = mine & theirs
+        if not shared:
+            continue
+        # A tag only a few demos carry says more than one half of them share.
+        for tag in shared:
+            holders = sum(1 for t in tags.values() if tag in t)
+            by_overlap[other] += 1.0 / math.log(2.0 + holders)
+    ranked = sorted(by_overlap.items(), key=lambda kv: (-kv[1], kv[0]))
+    if ranked:
+        return [name for name, score in ranked[:limit]]
+
+    # No API in common and no tag in common — the smallest demos land here.
+    # The index already sorts every demo into a category, which is the last
+    # honest thing to relate them by.
+    mine = categories_by_demo.get(demo)
+    if not mine:
+        return []
+    siblings = sorted(other for other, category in categories_by_demo.items()
+                      if category == mine and other != demo)
+    return siblings[:limit]
 
 
 def write_related(demo, related, descs):
@@ -188,11 +249,13 @@ def main():
 
     descs = descriptions()
     neighbours = path_neighbours()
+    tags = tags_of()
+    categories_by_demo = categories()
 
     pending = {API_INDEX: build_api_index(usage, descs)}
     linked = 0
     for demo in names:
-        related = related_for(demo, apis, usage, neighbours)
+        related = related_for(demo, apis, usage, neighbours, tags, categories_by_demo)
         if not related:
             continue
         path, content = write_related(demo, related, descs)

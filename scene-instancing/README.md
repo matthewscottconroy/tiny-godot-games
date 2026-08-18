@@ -1,5 +1,7 @@
 # Scene Instancing
 
+<!-- tags: physics, good-first-demo -->
+
 Demonstrates how to instantiate a scene at runtime using `preload()` and a `Timer`, creating independent copies that each self-destruct after a fixed duration.
 
 ## Purpose

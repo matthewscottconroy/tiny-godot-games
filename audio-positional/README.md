@@ -1,5 +1,7 @@
 # Audio Positional
 
+<!-- tags: audio, ui, shows-its-working -->
+
 Demonstrates `AudioStreamPlayer2D` — a sound source fixed in world space that automatically attenuates as a movable listener travels away from it, with a synthesized 440 Hz sine tone so no audio file assets are required.
 
 ## Purpose

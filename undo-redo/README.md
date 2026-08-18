@@ -1,5 +1,7 @@
 # Undo / Redo
 
+<!-- tags: ui -->
+
 A freehand drawing canvas demonstrating Godot 4's built-in `UndoRedo` class. Draw strokes with the mouse; undo and redo them with Ctrl+Z / Ctrl+Y. The history stack is managed entirely by `UndoRedo` — no manual stack code required.
 
 ## Purpose

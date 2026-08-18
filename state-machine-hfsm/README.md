@@ -1,5 +1,7 @@
 # Hierarchical Finite State Machine (HFSM)
 
+<!-- tags: component, shows-its-working -->
+
 A character's behavior is organized into a tree of states — Alive contains Idle/Walk/Run/Combat, Combat contains Attack/Block/Dodge — with enter/exit callbacks, cascading transitions, and a real-time tree visualization.
 
 ## Purpose

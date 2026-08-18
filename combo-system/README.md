@@ -1,5 +1,7 @@
 # Combo System
 
+<!-- tags: physics, ui, component -->
+
 Timed attack chains: press Light (Space) and Heavy (Escape) in sequence to trigger named combos. Inputs expire after 0.6 seconds. Longer patterns take priority over shorter ones.
 
 ## Purpose

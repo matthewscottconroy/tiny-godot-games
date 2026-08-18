@@ -1,5 +1,7 @@
 # Tool Script
 
+<!-- tags: ui, component, tool-script -->
+
 `@tool`: a layout helper that arranges its children in the editor, before the game ever runs.
 
 ## Purpose

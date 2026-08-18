@@ -1,5 +1,7 @@
 # SubViewport
 
+<!-- tags: procedural -->
+
 Renders the same `World2D` through two cameras simultaneously — a close-up main camera following the player and a zoomed-out minimap camera — using `SubViewport` as an offscreen render target whose texture is displayed in the HUD.
 
 ## Purpose

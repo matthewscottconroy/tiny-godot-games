@@ -1,5 +1,7 @@
 # Simple AI
 
+<!-- tags: physics -->
+
 Demonstrates the most basic form of enemy AI: a circular enemy that always moves directly toward the player, with a "sight line" drawn between them and a distance readout.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # Wall Jump
 
+<!-- tags: physics, ui -->
+
 A minimal Godot 4 demo showing wall-sliding and wall-jumping mechanics.
 
 ## Purpose

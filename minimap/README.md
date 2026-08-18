@@ -1,5 +1,7 @@
 # Minimap
 
+<!-- tags: physics -->
+
 A platformer set in a wide 2000×480 world with a real-time minimap drawn in
 the top-right corner — no SubViewport required.
 

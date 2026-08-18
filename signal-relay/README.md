@@ -1,5 +1,7 @@
 # Signal Relay
 
+<!-- tags: ui, signals, good-first-demo -->
+
 Demonstrates Godot's signal system: a transmitter node emits a custom signal; a receiver node has a method to handle it; a third node (main) wires them together.
 
 ## Purpose
