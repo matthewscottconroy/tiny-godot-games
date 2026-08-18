@@ -5,7 +5,6 @@ const WAVEFORM_SAMPLES := 256
 
 @onready var _player: AudioStreamPlayer = $SFXPlayer
 
-var _generating := false
 var _gen_phase := 0.0
 var _gen_frames := 0
 var _gen_total := 0
