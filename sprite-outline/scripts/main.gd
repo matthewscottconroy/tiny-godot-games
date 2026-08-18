@@ -6,12 +6,12 @@ var _hovered: int = -1
 
 func _ready() -> void:
 	_shapes = [
-		{"pos": Vector2(100, 120), "radius": 28.0, "color": Color(0.9, 0.2, 0.2), "selected": false, "hovered": false},
-		{"pos": Vector2(240, 100), "radius": 22.0, "color": Color(0.2, 0.7, 0.9), "selected": false, "hovered": false},
-		{"pos": Vector2(380, 140), "radius": 35.0, "color": Color(0.2, 0.85, 0.3), "selected": false, "hovered": false},
-		{"pos": Vector2(140, 280), "radius": 45.0, "color": Color(0.9, 0.6, 0.1), "selected": false, "hovered": false},
-		{"pos": Vector2(320, 300), "radius": 30.0, "color": Color(0.7, 0.2, 0.9), "selected": false, "hovered": false},
-		{"pos": Vector2(500, 220), "radius": 20.0, "color": Color(0.9, 0.9, 0.2), "selected": false, "hovered": false},
+		{"pos": Vector2(100, 120), "radius": 28.0, "color": Color(0.9, 0.2, 0.2)},
+		{"pos": Vector2(240, 100), "radius": 22.0, "color": Color(0.2, 0.7, 0.9)},
+		{"pos": Vector2(380, 140), "radius": 35.0, "color": Color(0.2, 0.85, 0.3)},
+		{"pos": Vector2(140, 280), "radius": 45.0, "color": Color(0.9, 0.6, 0.1)},
+		{"pos": Vector2(320, 300), "radius": 30.0, "color": Color(0.7, 0.2, 0.9)},
+		{"pos": Vector2(500, 220), "radius": 20.0, "color": Color(0.9, 0.9, 0.2)},
 	]
 
 func _input(event: InputEvent) -> void:
