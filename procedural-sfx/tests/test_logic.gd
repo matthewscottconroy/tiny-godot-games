@@ -1,21 +1,23 @@
 extends Node
 
+# Drives the real sound generation from scripts/main.gd — see
+# docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
-const MIX_RATE := 44100.0
-
-
 func _ready() -> void:
-	_test_beep_range()
-	_test_buzz_is_binary()
-	_test_crash_bounded()
-	_test_chirp_frequency_increases()
-	_test_fade_envelope_beep()
-	_test_fade_envelope_chirp()
-	_test_sfx_durations()
+	_test_the_player_is_a_generator()
+	_test_the_waveform_buffer_starts_silent()
+	_test_each_effect_sets_its_own_length()
+	_test_an_unknown_effect_still_gets_a_length()
+	_test_starting_an_effect_rewinds_it()
+	_test_every_effect_makes_a_sound()
+	_test_the_effects_sound_different()
+	_test_the_beep_and_chirp_fade_out()
+	_test_the_chirp_climbs()
+	_test_samples_stay_in_range()
 	_report()
-
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -25,143 +27,141 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-
-func expect_approx(a: float, b: float, label: String, tol: float = 0.001) -> void:
-	expect(absf(a - b) < tol, label)
-
-
-# --- Minimal SFX sampler mirroring _get_sample logic ---
-
-class SFXSampler:
-	var gen_type := ""
-	var gen_phase := 0.0
-	const MIX_RATE_LOCAL := 44100.0
-
-	func get_sample(t: float) -> float:
-		match gen_type:
-			"beep":
-				var freq := 440.0
-				gen_phase += freq / MIX_RATE_LOCAL
-				return sin(TAU * gen_phase) * (1.0 - t)
-			"buzz":
-				var freq := 120.0
-				gen_phase += freq / MIX_RATE_LOCAL
-				return sign(sin(TAU * gen_phase)) * (1.0 - t)
-			"crash":
-				# Bounded noise: randf() returns [0,1), scale to [-1,1)
-				return (randf() * 2.0 - 1.0) * pow(1.0 - t, 0.5)
-			"chirp":
-				var freq := lerpf(200.0, 800.0, t)
-				gen_phase += freq / MIX_RATE_LOCAL
-				return sin(TAU * gen_phase) * (1.0 - pow(t, 2.0))
-		return 0.0
-
-
-# --- Tests ---
-
-func _test_beep_range() -> void:
-	print("beep sine wave stays in [-1, 1]")
-	var s := SFXSampler.new()
-	s.gen_type = "beep"
-	var max_abs := 0.0
-	for i in 500:
-		var t := float(i) / 500.0
-		var val := s.get_sample(t)
-		if absf(val) > max_abs:
-			max_abs = absf(val)
-	expect(max_abs <= 1.001, "beep amplitude never exceeds 1.0")
-	expect(max_abs > 0.0, "beep produces non-zero output at t=0")
-
-
-func _test_buzz_is_binary() -> void:
-	print("buzz square wave output is only +1, -1, or 0")
-	var s := SFXSampler.new()
-	s.gen_type = "buzz"
-	var all_binary := true
-	for i in 500:
-		var t := float(i) / 500.0
-		var raw_sign := signf(sin(TAU * (float(i) * 120.0 / MIX_RATE)))
-		# The sign() function returns -1, 0, or +1
-		if not (raw_sign == -1.0 or raw_sign == 0.0 or raw_sign == 1.0):
-			all_binary = false
-	expect(all_binary, "square wave raw sign is always -1, 0, or +1")
-
-	# Confirm amplitude envelope (1-t) monotonically decreases
-	s.gen_phase = 0.0
-	var early := absf(s.get_sample(0.1))
-	s.gen_phase = 0.0
-	# reset phase and sample at t=0.9 (far along, sign flips so sample could be same raw magnitude)
-	# Instead, directly check envelope values
-	var env_early := (1.0 - 0.1)
-	var env_late := (1.0 - 0.9)
-	expect(env_early > env_late, "buzz envelope is larger at t=0.1 than t=0.9")
-
-
-func _test_crash_bounded() -> void:
-	print("crash noise burst stays in [-1, 1]")
-	var s := SFXSampler.new()
-	s.gen_type = "crash"
-	var all_bounded := true
-	for i in 1000:
-		var t := float(i) / 1000.0
-		var val := s.get_sample(t)
-		if absf(val) > 1.001:
-			all_bounded = false
-	expect(all_bounded, "crash samples all within [-1, 1]")
-
-	# Verify envelope: at t=0 amplitude can be up to 1, at t=1 envelope = pow(0, 0.5) = 0
-	var envelope_at_start := pow(1.0 - 0.0, 0.5)
-	var envelope_at_end := pow(1.0 - 1.0, 0.5)
-	expect_approx(envelope_at_start, 1.0, "crash envelope is 1.0 at t=0")
-	expect_approx(envelope_at_end, 0.0, "crash envelope is 0.0 at t=1")
-
-
-func _test_chirp_frequency_increases() -> void:
-	print("chirp frequency increases linearly from 200 to 800 Hz")
-	var freq_at_0 := lerpf(200.0, 800.0, 0.0)
-	var freq_at_half := lerpf(200.0, 800.0, 0.5)
-	var freq_at_1 := lerpf(200.0, 800.0, 1.0)
-	expect_approx(freq_at_0, 200.0, "chirp starts at 200 Hz")
-	expect_approx(freq_at_half, 500.0, "chirp is 500 Hz at midpoint")
-	expect_approx(freq_at_1, 800.0, "chirp ends at 800 Hz")
-	expect(freq_at_0 < freq_at_half, "chirp freq increases from start to mid")
-	expect(freq_at_half < freq_at_1, "chirp freq increases from mid to end")
-
-
-func _test_fade_envelope_beep() -> void:
-	print("beep amplitude envelope decreases with t")
-	var env_early := 1.0 - 0.1   # t=0.1
-	var env_mid   := 1.0 - 0.5   # t=0.5
-	var env_late  := 1.0 - 0.9   # t=0.9
-	expect(env_early > env_mid, "beep envelope at 0.1 > envelope at 0.5")
-	expect(env_mid > env_late, "beep envelope at 0.5 > envelope at 0.9")
-	expect_approx(1.0 - 1.0, 0.0, "beep envelope reaches 0 at t=1")
-
-
-func _test_fade_envelope_chirp() -> void:
-	print("chirp amplitude envelope (1 - t^2) decreases with t")
-	var env := func(t: float) -> float: return 1.0 - pow(t, 2.0)
-	expect(env.call(0.0) > env.call(0.5), "chirp envelope larger at t=0 than t=0.5")
-	expect(env.call(0.5) > env.call(0.9), "chirp envelope larger at t=0.5 than t=0.9")
-	expect_approx(env.call(1.0), 0.0, "chirp envelope is 0 at t=1")
-	expect_approx(env.call(0.0), 1.0, "chirp envelope is 1 at t=0")
-
-
-func _test_sfx_durations() -> void:
-	print("SFX total frame counts match durations")
-	var durations := {"beep": 0.3, "buzz": 0.4, "crash": 0.2, "chirp": 0.5}
-	for sfx_name in durations:
-		var expected_frames := int(durations[sfx_name] * MIX_RATE)
-		expect(expected_frames > 0, "%s has positive frame count" % sfx_name)
-		# Verify the formula: int(duration * MIX_RATE)
-		var computed := int(durations[sfx_name] * MIX_RATE)
-		expect(computed == expected_frames, "%s frame count is deterministic" % sfx_name)
-	expect(int(0.5 * MIX_RATE) > int(0.2 * MIX_RATE), "chirp is longer than crash")
-	expect(int(0.4 * MIX_RATE) > int(0.3 * MIX_RATE), "buzz is longer than beep")
-
-
 func _report() -> void:
 	var summary := "[procedural-sfx] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const EFFECTS := ["beep", "buzz", "crash", "chirp"]
+var _cached: Node2D
+
+# One scene for the suite: it starts an AudioStreamPlayer, and several would
+# stack up audio that never gets stopped.
+func _make() -> Node2D:
+	if not is_instance_valid(_cached):
+		_cached = load("res://scenes/main.tscn").instantiate()
+		add_child(_cached)
+	return _cached
+
+## Sample an effect across its whole length, without going near the audio bus.
+func _sample_effect(m: Node2D, type: String, count: int = 64) -> Array[float]:
+	m._start_sfx(type)
+	var samples: Array[float] = []
+	for i in count:
+		samples.append(m._get_sample(float(i) / float(count - 1)))
+	return samples
+
+func _peak(samples: Array[float], from: int, to: int) -> float:
+	var loudest := 0.0
+	for i in range(from, mini(to, samples.size())):
+		loudest = maxf(loudest, absf(samples[i]))
+	return loudest
+
+func _test_the_player_is_a_generator() -> void:
+	print("the player")
+	var m := _make()
+	expect(m._player.stream is AudioStreamGenerator, "the sound is generated frame by frame")
+	expect((m._player.stream as AudioStreamGenerator).mix_rate == m.MIX_RATE,
+		"at the demo's mix rate")
+	expect(m._player.playing, "with the player already running, ready to be fed")
+
+func _test_the_waveform_buffer_starts_silent() -> void:
+	print("the waveform display")
+	var m := _make()
+	expect(m._wave_buf.size() == m.WAVEFORM_SAMPLES, "the ring buffer is the size it says")
+
+func _test_each_effect_sets_its_own_length() -> void:
+	print("lengths")
+	var m := _make()
+	var lengths := {}
+	begin_quiet()
+	for type in EFFECTS:
+		m._start_sfx(type)
+		expect_quiet(m._gen_total > 0, "%s has no length" % type)
+		lengths[m._gen_total] = type
+	expect(_quiet_failures == 0, "every effect has a length")
+	expect(lengths.size() > 2, "and they are not all the same")
+
+func _test_an_unknown_effect_still_gets_a_length() -> void:
+	print("an unknown effect")
+	var m := _make()
+	m._start_sfx("no such sound")
+	# Falling back to zero would divide by zero when working out how far
+	# through the sound each sample is.
+	expect(m._gen_total > 0, "an unknown effect falls back to a real length")
+
+func _test_starting_an_effect_rewinds_it() -> void:
+	print("starting over")
+	var m := _make()
+	m._start_sfx("beep")
+	m._gen_frames = 500
+	m._gen_phase = 3.0
+	m._start_sfx("beep")
+	expect(m._gen_frames == 0, "starting an effect plays it from the beginning")
+	expect(is_zero_approx(m._gen_phase), "with its phase reset, so it does not click")
+
+func _test_every_effect_makes_a_sound() -> void:
+	print("sound")
+	var m := _make()
+	begin_quiet()
+	for type in EFFECTS:
+		var samples := _sample_effect(m, type)
+		expect_quiet(_peak(samples, 0, samples.size()) > 0.05, "%s is silent" % type)
+	expect(_quiet_failures == 0, "every effect produces something audible")
+
+func _test_the_effects_sound_different() -> void:
+	print("variety")
+	var m := _make()
+	var shapes := {}
+	for type in EFFECTS:
+		shapes[str(_sample_effect(m, type))] = type
+	expect(shapes.size() == EFFECTS.size(), "the four effects are four different sounds")
+
+func _test_the_beep_and_chirp_fade_out() -> void:
+	print("envelopes")
+	var m := _make()
+	begin_quiet()
+	for type in ["beep", "buzz", "chirp"]:
+		var samples := _sample_effect(m, type, 128)
+		var early := _peak(samples, 0, 32)
+		var late := _peak(samples, 96, 128)
+		# A sound that stops at full volume clicks.
+		expect_quiet(early > late, "%s does not fade as it plays" % type)
+	expect(_quiet_failures == 0, "the tuned effects fade out rather than stopping dead")
+
+func _test_the_chirp_climbs() -> void:
+	print("the chirp")
+	var m := _make()
+	m._start_sfx("chirp")
+	# A chirp sweeps upwards, so its samples cross zero more often late on than
+	# early — the phase advances faster as it goes.
+	var early_phase: float = 0.0
+	m._gen_phase = 0.0
+	m._get_sample(0.05)
+	early_phase = m._gen_phase
+	m._gen_phase = 0.0
+	m._get_sample(0.95)
+	expect(m._gen_phase > early_phase, "the chirp rises in pitch as it plays")
+
+func _test_samples_stay_in_range() -> void:
+	print("levels")
+	var m := _make()
+	begin_quiet()
+	for type in EFFECTS:
+		var samples := _sample_effect(m, type, 200)
+		for s in samples:
+			# Anything past one clips when it reaches the speakers.
+			expect_quiet(absf(s) <= 1.0, "%s produced a sample of %.2f" % [type, s])
+	expect(_quiet_failures == 0, "no effect produces a sample outside the audible range")
+
+var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
