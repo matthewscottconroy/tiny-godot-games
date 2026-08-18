@@ -34,18 +34,25 @@ func _make_tone(freq: float, duration: float) -> AudioStreamWAV:
 	return wav
 
 func _physics_process(delta: float) -> void:
-	var dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	tick(delta, Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"))
+	queue_redraw()
+
+## How loud the source is from a given distance, as a fraction.
+##
+## AudioStreamPlayer2D uses the nearest AudioListener2D in the scene tree; this
+## works the same falloff out by hand so the number can be shown on screen.
+func volume_at(dist: float) -> float:
+	var vol := clampf(1.0 - dist / player.max_distance, 0.0, 1.0)
+	return pow(vol, player.attenuation)
+
+func tick(delta: float, dir: Vector2) -> void:
 	listener.position += dir * LISTENER_SPEED * delta
 	listener.position  = listener.position.clamp(Vector2(20, 60), Vector2(620, 460))
 
-	# AudioStreamPlayer2D uses the nearest AudioListener2D in the scene tree.
-	# Here we manually update the player's volume to illustrate attenuation math.
 	var dist := listener.position.distance_to(source.position)
-	var vol  := clampf(1.0 - dist / player.max_distance, 0.0, 1.0)
-	vol = pow(vol, player.attenuation)
+	var vol  := volume_at(dist)
 	info.text = "Distance: %.0f px   Volume: %.0f%%   Max dist: %.0f px" % [
 		dist, vol * 100, player.max_distance]
-	queue_redraw()
 
 func _draw() -> void:
 	# Max-distance circle
