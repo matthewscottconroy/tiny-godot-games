@@ -23,6 +23,11 @@ jobs:
       - name: Check generated indexes are current
         run: ./tools/build_index.py --check
 
+      # Concept tags are derived the same way: a demo that stops using audio
+      # should stop being tagged audio, and this is what notices.
+      - name: Check concept tags are current
+        run: ./tools/build_tags.py --check
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -121,11 +126,16 @@ jobs:
           merge-multiple: false
       - name: Build the compatibility table
         run: ./tools/build_compat.py results
+      # Both files: the table, and the README whose badge is generated with it.
+      # CI does not push, so a maintainer copies these in — which is why the
+      # badge is plain text rather than something only a browser can render.
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: compatibility
-          path: docs/COMPATIBILITY.md
+          path: |
+            docs/COMPATIBILITY.md
+            README.md
 
   mutation:
     # A full sweep takes several minutes, so it does not gate a push.

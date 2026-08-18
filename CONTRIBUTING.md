@@ -73,9 +73,16 @@ count for that reason; `JOBS=` overrides it.
 
 | Check | What it catches |
 |-------|-----------------|
-| `./run-tests.sh` | Demos that fail to load, and failing assertions |
-| `tools/check_docs.py` | Missing README sections, controls the code never binds, index drift, demo-count drift |
+| `./run-tests.sh` | Demos that fail to load, failing assertions, engine warnings, and tests that abort partway |
+| `tools/check_docs.py` | Missing README sections, controls the code never binds, index drift, demo-count drift, demos that link to nothing, suites too thin to be checking much |
+| `tools/build_index.py --check` | A stale API index or stale related-demo links |
+| `tools/build_tags.py --check` | Concept tags that no longer match the source they are derived from |
 | `gdlint` | Dead arguments, mixed tabs/spaces, tautological comparisons, naming |
+
+`tools/preflight.sh` reports which of the repository's pipelines can run on your
+machine. The tests and doc checks run anywhere Godot does; screenshots need a
+display and the web export needs Godot's export templates, and preflight says so
+before you start rather than partway through.
 
 The test job runs against several Godot versions. Only the current release gates
 the branch; the others are advisory early warning, because this collection has
@@ -96,6 +103,30 @@ All six are required, and `tools/check_docs.py` enforces their presence:
 - **Files** — what each file holds.
 - **Use as a building block** — what to copy, the public API, and any autoloads,
   input actions, or project settings an adopter needs.
+
+## Concept tags
+
+Every demo carries a line under its title:
+
+```markdown
+<!-- tags: physics, ui, signals -->
+```
+
+Do not edit it by hand. `tools/build_tags.py` derives every tag from the demo's
+own source — a demo that stops using audio stops being tagged `audio` — and CI
+fails if the line disagrees with the code. Run the tool after changing what a
+demo uses, and it writes both the line and [docs/TAGS.md](docs/TAGS.md).
+
+The one exception is `good-first-demo`, which is a judgement rather than
+something the code can answer, so it is a hand-kept list at the top of
+`tools/build_tags.py`. A demo belongs on it when it is short, teaches one idea,
+and needs no concept from another demo first.
+
+**The GitHub label mirrors that list.** If you maintain the repository, create a
+`good first demo` label and apply it to issues about the demos tagged
+`good-first-demo` in [docs/TAGS.md](docs/TAGS.md). The tag is the source of
+truth because it lives with the code and is checked; the label is a view of it
+for people arriving through the issue tracker.
 
 ## Style
 
