@@ -83,3 +83,20 @@ both self-contained and widely wanted (`ObjectPool`, `SaveMigrator`,
 `AccessibilitySettings` are the obvious candidates). Each would need its own
 `class_name` prefix to avoid collisions, and its own README. That is a per-
 component decision rather than a repo-wide one, and nothing here forecloses it.
+
+## Pipelines that need more than Godot
+
+Two of the tools here cannot run on a machine with only the editor installed:
+
+| Pipeline | Needs | Why it is not in CI yet |
+|----------|-------|-------------------------|
+| `tools/screenshots.sh` | a display (`xvfb-run`) | Godot's headless mode uses a dummy renderer, so a capture returns null |
+| `tools/export_web.sh` | web export templates (~1GB) | a separate download from the editor |
+
+`tools/preflight.sh` reports which pipelines can run here and what each missing
+one needs, so the answer arrives before a capture starts rather than partway
+through it. Both scripts still refuse to run and say why, so a machine without
+the prerequisites produces a message rather than blank images or failed exports.
+
+Neither has been validated end to end. That is recorded here rather than left
+to be discovered, and it is the honest state: the scripts are a starting point.

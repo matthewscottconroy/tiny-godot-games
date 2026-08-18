@@ -10,6 +10,9 @@
 # STATUS: this has NOT been run end to end. It needs Godot's web export
 # templates (~1GB), which are not present in the environment it was written in.
 # Treat it as a starting point to validate rather than a working pipeline.
+#
+# `tools/preflight.sh` says whether the templates are installed before you
+# start, rather than the export failing per demo when they are not.
 # ---------------------------------------------------------------------------
 #
 # Godot exports from a named preset in export_presets.cfg, and none of the demos

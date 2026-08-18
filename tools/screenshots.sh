@@ -16,7 +16,8 @@
 #   Fedora:         sudo dnf install xorg-x11-server-Xvfb
 #
 # If xvfb is missing the script says so and exits rather than producing blank
-# images.
+# images. `tools/preflight.sh` reports the same thing without starting a
+# capture, which is the cheaper way to find out.
 # ---------------------------------------------------------------------------
 #
 # Capture uses Godot's Movie Maker mode (--write-movie) rather than a script
