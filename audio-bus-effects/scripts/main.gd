@@ -29,6 +29,16 @@ func _input(event: InputEvent) -> void:
 		_player.play()
 
 func _setup_buses() -> void:
+	# Dry bus: deliberately empty, and the reference the others are heard
+	# against. It has to exist like the rest — assigning a player to a bus that
+	# was never created is silently ignored, and the player stays on Master
+	# while the label claims otherwise.
+	if AudioServer.get_bus_index("Dry") == -1:
+		AudioServer.add_bus()
+		var dry_idx := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(dry_idx, "Dry")
+		AudioServer.set_bus_send(dry_idx, "Master")
+
 	# Reverb bus
 	if AudioServer.get_bus_index("Reverb") == -1:
 		AudioServer.add_bus()
