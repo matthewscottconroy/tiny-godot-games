@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_the_tone_fades_out()
 	_test_the_waveforms_differ()
 	_test_a_square_wave_is_square()
+	_test_a_sine_is_smooth()
 	_test_a_sweep_changes_pitch()
 	_test_the_buttons_play_different_notes()
 	_test_the_volume_slider_moves_the_bus()
@@ -108,6 +109,17 @@ func _test_the_tone_fades_out() -> void:
 	expect(early > late, "the tone fades as it plays (%d then %d)" % [early, late])
 	expect(early > 1000, "and starts loud enough to hear")
 
+	# Every waveform has to arrive at silence, not merely get quieter: a tone
+	# that stops on a large sample clicks, and the last sample is where a
+	# half-written sample shows up.
+	begin_quiet()
+	for wave in ["sine", "square", "sweep"]:
+		var each := (m._make_tone(300.0, 0.3, wave) as AudioStreamWAV).data
+		var last: int = each.size() / 2 - 1
+		expect_quiet(absi(_sample(each, last)) < 500,
+			"the %s tone ends on %d rather than silence" % [wave, _sample(each, last)])
+	expect(_quiet_failures == 0, "every waveform ends on silence")
+
 func _test_the_waveforms_differ() -> void:
 	print("the waveforms")
 	var m := _make()
@@ -132,6 +144,30 @@ func _test_a_square_wave_is_square() -> void:
 		sine_total += absi(_sample(sine, i))
 	expect(square_total > sine_total,
 		"the square wave carries more energy than the sine at the same peak")
+	# And it opens on its positive half, as the sine does — phase matters as
+	# soon as two sounds are mixed.
+	expect(_sample(square, 1) > 0, "the square wave starts on its positive half")
+
+func _test_a_sine_is_smooth() -> void:
+	print("smoothness")
+	var m := _make()
+	var tone := (m._make_tone(440.0, 0.2) as AudioStreamWAV).data
+	# At 440 Hz and 22050 samples a second, one step of a sine moves about an
+	# eighth of its range. Samples assembled from the wrong bytes still
+	# oscillate, but they jump far further than that between neighbours.
+	var biggest := 0
+	for i in range(1, 2000):
+		biggest = maxi(biggest, absi(_sample(tone, i) - _sample(tone, i - 1)))
+	expect(biggest < 8000, "consecutive samples step smoothly (largest step %d)" % biggest)
+	expect(biggest > 0, "and the tone is not silence")
+
+	var square := (m._make_tone(300.0, 0.2, "square") as AudioStreamWAV).data
+	# A square wave is the exception: it is meant to jump, once per half cycle.
+	var jumps := 0
+	for i in range(1, 2000):
+		if absi(_sample(square, i) - _sample(square, i - 1)) > 8000:
+			jumps += 1
+	expect(jumps > 0, "while a square wave is all edges")
 
 func _test_a_sweep_changes_pitch() -> void:
 	print("the sweep")
