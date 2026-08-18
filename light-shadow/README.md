@@ -4,7 +4,9 @@ Demonstrates 2D lighting using `PointLight2D` with a procedurally generated radi
 
 ## Purpose
 
-Godot's 2D lighting system requires a texture on `PointLight2D` — but you do not need image files. This demo shows how to generate a smooth light falloff texture at runtime using `Image` pixel math, and how `CanvasModulate` multiplies a base color over everything to create darkness. Understanding this system is essential for dungeon crawlers, horror games, stealth games, and any project with dynamic lighting.
+Godot's 2D lighting system requires a texture on `PointLight2D` — but you do not need image files. This demo shows how to generate a smooth light falloff texture at runtime using `Image` pixel math, and how `CanvasModulate` multiplies a base color over everything to create darkness.
+
+Shadows need both halves: `shadow_enabled` on the light, and a `LightOccluder2D` for anything that should block it. Either one alone casts nothing, which is an easy thing to miss — the walls simply look like paint on the floor. Here the wall rectangles are listed once and used for both the drawing and the occluders, so a shadow can never disagree with what is on screen. Understanding this system is essential for dungeon crawlers, horror games, stealth games, and any project with dynamic lighting.
 
 ## Controls
 
