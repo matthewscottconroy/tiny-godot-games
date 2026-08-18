@@ -43,7 +43,11 @@ func _ready() -> void:
 		})
 
 func _process(delta: float) -> void:
-	var dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	tick(delta, Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"))
+	queue_redraw()
+
+## Move the player, follow with the main camera, and place the minimap dot.
+func tick(delta: float, dir: Vector2) -> void:
 	_player_pos += dir * PLAYER_SPEED * delta
 	_player_pos.x = clampf(_player_pos.x, 16, WORLD_W - 16)
 	_player_pos.y = clampf(_player_pos.y, 16, WORLD_H - 16)
@@ -61,8 +65,6 @@ func _process(delta: float) -> void:
 	$HUD/PlayerDot.offset_right = px + 3
 	$HUD/PlayerDot.offset_bottom = py + 3
 	$HUD/PlayerDot.color = Color(1, 1, 0, 0.9)
-
-	queue_redraw()
 
 func _draw() -> void:
 	# World background with subtle grid
