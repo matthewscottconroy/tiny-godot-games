@@ -43,12 +43,12 @@ After converting fourteen suites and correcting the measurement, the floor was:
 15 suites caught everything, 105 caught nothing
 ```
 
-It rose to 258/643 (40.1%), then 341/649 (52.5%), and the recorded floor is
-now:
+It rose to 258/643 (40.1%), then 341/649 (52.5%), then 420/653 (64.3%). With
+every suite converted, the recorded floor is:
 
 ```
-420/653 mutations caught (64.3%)
-53 suites caught everything, 25 caught nothing
+518/664 mutations caught (78.0%)
+70 suites caught everything, 3 caught nothing
 ```
 
 The sample is smaller because the sweep now uses three mutations per demo rather
@@ -253,11 +253,16 @@ The work is deliberately incremental. Converting every remaining zero-scoring
 suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
-Eighty-five are done, and 25 suites still catch nothing. Almost all of those
-are shader, lighting and audio showcases, where the output is pixels or sound
-and the smoke gate is the honest guard — a gate that now fails on engine
-warnings, which is how a shader parameter that never took effect announces
-itself. Some needed only a rewritten suite because the component
+All 165 are done: every suite drives the demo's own code rather than a copy of
+its logic. Three still catch nothing, and each has a reason on the record —
+the mutations that survive are in a scene-change that would replace the suite's
+own scene, in an audio buffer loop that needs a playback device the headless
+driver does not provide, or are equivalent.
+
+The smoke gate carries the demos whose output is genuinely pixels or sound. It
+now fails on engine warnings, which is how a refused operation — a shader
+parameter that never took effect, a viewport size the container owns —
+announces itself. Some needed only a rewritten suite because the component
 already existed (`experience-leveling`, `drop-table`, `autoload-score`,
 `boid-flocking`, `groups`); the rest needed their logic lifting into a method
 first (`coyote-time`, `double-jump`, `variable-jump-height`, `wall-slide`,
