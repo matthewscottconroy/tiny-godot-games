@@ -16,6 +16,8 @@ func _ready() -> void:
 	_test_right_click_erases()
 	_test_the_eraser_selection_erases_on_a_left_click()
 	_test_clicks_map_to_the_cell_under_them()
+	_test_each_tile_is_drawn_with_a_border()
+	_test_the_player_jumps_only_from_the_floor()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -172,6 +174,38 @@ func _test_clicks_map_to_the_cell_under_them() -> void:
 		expect_quiet(_layer(fresh).get_cell_atlas_coords(cell) == Vector2i(2, 0),
 			"a click over %s painted somewhere else" % cell)
 	expect(_quiet_failures == 0, "a click paints the cell it lands on")
+
+func _test_each_tile_is_drawn_with_a_border() -> void:
+	print("the tile artwork")
+	var m := _make()
+	var source := _layer(m).tile_set.get_source(0) as TileSetAtlasSource
+	var image: Image = source.texture.get_image()
+	var size: int = m.TILE_SIZE
+	begin_quiet()
+	for tile in 3:
+		var left: int = tile * size
+		var centre: Color = image.get_pixel(left + size / 2, size / 2)
+		# A darker edge on every side is what separates one tile from the next;
+		# without it the map reads as flat colour.
+		var edges := {
+			"left": image.get_pixel(left, size / 2),
+			"right": image.get_pixel(left + size - 1, size / 2),
+			"top": image.get_pixel(left + size / 2, 0),
+			"bottom": image.get_pixel(left + size / 2, size - 1),
+		}
+		for side in edges:
+			var edge: Color = edges[side]
+			expect_quiet(edge.get_luminance() < centre.get_luminance(),
+				"tile %d has no darker %s edge" % [tile, side])
+		expect_quiet(centre.get_luminance() > 0.0, "tile %d has no colour in the middle" % tile)
+	expect(_quiet_failures == 0, "every tile is drawn with a darker edge on all four sides")
+
+func _test_the_player_jumps_only_from_the_floor() -> void:
+	print("jumping")
+	var m := _make()
+	expect(m.can_jump(true, true), "pressing jump on the ground jumps")
+	expect(not m.can_jump(true, false), "pressing it in mid-air does not")
+	expect(not m.can_jump(false, true), "and standing on the ground is not enough by itself")
 
 var _quiet_failures := 0
 

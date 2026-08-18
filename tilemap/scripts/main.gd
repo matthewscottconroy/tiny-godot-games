@@ -75,11 +75,14 @@ func _setup_player() -> void:
 func _physics_process(delta: float) -> void:
 	if not player.is_on_floor():
 		player.velocity.y += 900.0 * delta
-	if player.is_on_floor() and Input.is_action_just_pressed("ui_up"):
+	if can_jump(Input.is_action_just_pressed("ui_up"), player.is_on_floor()):
 		player.velocity.y = -420.0
 	player.velocity.x = Input.get_axis("ui_left", "ui_right") * 180.0
 	player.move_and_slide()
 	player.queue_redraw()
+
+func can_jump(jump_pressed: bool, on_floor: bool) -> bool:
+	return jump_pressed and on_floor
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
