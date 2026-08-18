@@ -40,6 +40,10 @@ func _input(event: InputEvent) -> void:
 				_player_light.texture_scale = max(0.2, _player_light.texture_scale - 0.2)
 
 func _process(delta: float) -> void:
+	tick(delta, input_direction())
+	queue_redraw()
+
+func input_direction() -> Vector2:
 	var direction := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W):
 		direction.y -= 1.0
@@ -49,13 +53,16 @@ func _process(delta: float) -> void:
 		direction.x -= 1.0
 	if Input.is_key_pressed(KEY_D):
 		direction.x += 1.0
+	return direction
+
+## Carry the player's light with them, keeping it on screen.
+func tick(delta: float, direction: Vector2) -> void:
 	if direction.length_squared() > 0.0:
 		direction = direction.normalized()
 	_player_pos += direction * SPEED * delta
 	_player_pos.x = clamp(_player_pos.x, 0.0, 640.0)
 	_player_pos.y = clamp(_player_pos.y, 0.0, 480.0)
 	_player_light.position = _player_pos
-	queue_redraw()
 
 func _draw() -> void:
 	# Dark floor background
