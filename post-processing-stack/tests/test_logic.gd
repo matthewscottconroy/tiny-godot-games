@@ -1,14 +1,20 @@
 extends Node
 
+# Drives the real overlay from scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_vignette_formula()
-	_test_chromatic_aberration()
-	_test_color_grading()
-	_test_effect_toggling()
-	_test_corner_vignette()
+	_test_the_overlay_covers_the_screen()
+	_test_the_overlay_carries_a_shader()
+	_test_the_shader_declares_all_three_passes()
+	_test_all_three_start_on()
+	_test_each_key_toggles_its_own_pass()
+	_test_the_toggles_reach_the_shader()
+	_test_the_passes_are_independent()
+	_test_the_readout_reports_all_three()
+	_test_the_scene_underneath_keeps_moving()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -19,65 +25,129 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-func expect_near(a: float, b: float, label: String, tol := 0.01) -> void:
-	expect(absf(a - b) <= tol, label)
-
-func _vignette(uv: Vector2, strength: float) -> float:
-	var center := uv - Vector2(0.5, 0.5)
-	var vig := 1.0 - center.dot(center) * strength * 3.8
-	return clampf(vig, 0.0, 1.0)
-
-func _test_vignette_formula() -> void:
-	print("vignette formula")
-	var center_vig := _vignette(Vector2(0.5, 0.5), 1.4)
-	expect_near(center_vig, 1.0, "vignette is 1.0 at screen center", 0.001)
-	var edge_vig := _vignette(Vector2(0.0, 0.5), 1.4)
-	expect(edge_vig < center_vig, "vignette darker at edge than center")
-	expect(edge_vig >= 0.0, "vignette non-negative at edge")
-
-func _test_corner_vignette() -> void:
-	print("vignette at corners")
-	var corner := _vignette(Vector2(0.0, 0.0), 1.4)
-	expect(corner < 0.5, "corner heavily vignetted")
-	var opposite := _vignette(Vector2(1.0, 1.0), 1.4)
-	expect_near(corner, opposite, "vignette symmetric at opposite corners", 0.001)
-
-func _test_chromatic_aberration() -> void:
-	print("chromatic aberration offset")
-	var uv := Vector2(0.8, 0.3)
-	var chroma_str := 0.006
-	var offset := (uv - Vector2(0.5, 0.5)) * chroma_str
-	expect(offset.length() > 0.0, "offset non-zero away from center")
-	var center_offset := (Vector2(0.5, 0.5) - Vector2(0.5, 0.5)) * chroma_str
-	expect_near(center_offset.length(), 0.0, "no offset at screen center")
-	var r_uv := uv + offset
-	var b_uv := uv - offset
-	expect(r_uv.distance_to(b_uv) > 0.0, "red and blue channels sample different positions")
-
-func _test_color_grading() -> void:
-	print("color grading")
-	var grade_tint := Vector3(1.05, 0.95, 0.88)
-	var gamma := 0.94
-	var col := Vector3(0.5, 0.5, 0.5)
-	col = Vector3(col.x * grade_tint.x, col.y * grade_tint.y, col.z * grade_tint.z)
-	col = Vector3(pow(col.x, gamma), pow(col.y, gamma), pow(col.z, gamma))
-	expect(col.x > col.y, "warm tint: red channel boosted above green")
-	expect(col.y > col.z, "warm tint: green channel above blue")
-	expect(col.x <= 1.0 and col.y <= 1.0 and col.z <= 1.0, "graded values within range")
-
-func _test_effect_toggling() -> void:
-	print("effect toggling")
-	var effects := {"vignette": true, "chroma": true, "grade": true}
-	effects["vignette"] = not effects["vignette"]
-	expect(not effects["vignette"], "vignette toggled off")
-	effects["vignette"] = not effects["vignette"]
-	expect(effects["vignette"], "vignette toggled back on")
-	effects["chroma"] = false
-	effects["grade"] = false
-	expect(not effects["chroma"] and not effects["grade"], "both effects off simultaneously")
-
 func _report() -> void:
 	var summary := "[post-processing-stack] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+const STEP := 1.0 / 60.0
+const PASSES := {
+	KEY_1: ["vignette_on", "_vignette"],
+	KEY_2: ["chromatic_on", "_chroma"],
+	KEY_3: ["grade_on", "_grade"],
+}
+
+var _scene: Node2D
+
+func _make() -> Node2D:
+	if is_instance_valid(_scene):
+		remove_child(_scene)
+		_scene.free()
+	_scene = load("res://scenes/main.tscn").instantiate()
+	add_child(_scene)
+	return _scene
+
+func _press(m: Node2D, code: Key) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = true
+	m._input(e)
+
+func _material(m: Node2D) -> ShaderMaterial:
+	return m._overlay.material as ShaderMaterial
+
+func _test_the_overlay_covers_the_screen() -> void:
+	print("the overlay")
+	var m := _make()
+	# A post-processing pass that covers part of the screen grades part of the
+	# picture, which reads as a bug rather than an effect.
+	expect(m._overlay.size.x >= 640.0 and m._overlay.size.y >= 480.0,
+		"the overlay covers the whole window (%s)" % m._overlay.size)
+
+func _test_the_overlay_carries_a_shader() -> void:
+	print("the shader")
+	var m := _make()
+	expect(_material(m) != null, "the overlay has a shader material")
+	expect(_material(m) != null and _material(m).shader != null, "with a shader in it")
+
+func _test_the_shader_declares_all_three_passes() -> void:
+	print("the uniforms")
+	var m := _make()
+	var code: String = _material(m).shader.code
+	begin_quiet()
+	for key in PASSES:
+		var uniform: String = (PASSES[key] as Array)[0]
+		# A toggle the shader never declares is a switch wired to nothing.
+		expect_quiet(code.contains(uniform), "the shader has no %s uniform" % uniform)
+	expect(_quiet_failures == 0, "the shader declares every pass the demo toggles")
+
+func _test_all_three_start_on() -> void:
+	print("on open")
+	var m := _make()
+	expect(m._vignette and m._chroma and m._grade,
+		"every pass starts on, so the demo shows the full stack")
+
+func _test_each_key_toggles_its_own_pass() -> void:
+	print("the keys")
+	begin_quiet()
+	for key in PASSES:
+		var m := _make()
+		var field: String = (PASSES[key] as Array)[1]
+		var before: bool = m.get(field)
+		_press(m, key)
+		expect_quiet(m.get(field) != before, "key for %s did not toggle it" % field)
+		_press(m, key)
+		expect_quiet(m.get(field) == before, "and did not toggle it back")
+	expect(_quiet_failures == 0, "each key toggles its own pass and back")
+
+func _test_the_toggles_reach_the_shader() -> void:
+	print("reaching the shader")
+	begin_quiet()
+	for key in PASSES:
+		var m := _make()
+		var uniform: String = (PASSES[key] as Array)[0]
+		var field: String = (PASSES[key] as Array)[1]
+		_press(m, key)
+		# Flipped in a variable and never handed over, the picture would not
+		# change and the readout would lie.
+		expect_quiet(_material(m).get_shader_parameter(uniform) == m.get(field),
+			"%s was not handed to the shader" % uniform)
+	expect(_quiet_failures == 0, "every toggle reaches the shader")
+
+func _test_the_passes_are_independent() -> void:
+	print("independence")
+	var m := _make()
+	_press(m, KEY_1)
+	expect(not m._vignette, "the vignette is off")
+	expect(m._chroma and m._grade, "and the other two are untouched")
+	_press(m, KEY_3)
+	expect(not m._vignette and not m._grade, "two off")
+	expect(m._chroma, "with the third still on")
+
+func _test_the_readout_reports_all_three() -> void:
+	print("the readout")
+	var m := _make()
+	expect(m._label.text.count("ON") == 3, "the readout shows all three on to start with")
+	_press(m, KEY_2)
+	expect(m._label.text.count("OFF") == 1, "and one off after a toggle")
+	expect(m._label.text.count("ON") == 2, "leaving two on")
+
+func _test_the_scene_underneath_keeps_moving() -> void:
+	print("the scene below")
+	var m := _make()
+	var before: float = m._time
+	m._process(0.5)
+	# Something has to move under the effect, or there is nothing to see it do.
+	expect(m._time > before, "the scene beneath the overlay animates")
+
+var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
