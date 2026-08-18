@@ -1,21 +1,20 @@
 extends Node
 
+# Drives the real crossfade from scenes/main.tscn — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
-const MIX_RATE := 44100.0
-
-
 func _ready() -> void:
-	_test_calm_phase_increment()
-	_test_combat_phase_increments()
-	_test_sine_range()
-	_test_two_freq_mix_range()
-	_test_crossfade_calm_volumes()
-	_test_crossfade_combat_volumes()
-	_test_fmod_wraps()
+	_test_both_layers_are_playing()
+	_test_only_the_calm_layer_is_audible_at_first()
+	_test_the_layers_are_generated_streams()
+	_test_switching_to_combat_swaps_the_volumes()
+	_test_switching_back_swaps_them_again()
+	await _test_the_swap_is_a_fade_not_a_cut()
+	_test_both_layers_keep_playing_throughout()
+	_test_the_two_layers_are_different_music()
 	_report()
-
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -25,108 +24,106 @@ func expect(cond: bool, label: String) -> void:
 		_fail += 1
 		print("  FAIL  ", label)
 
-
-func expect_approx(a: float, b: float, label: String, tol: float = 0.0001) -> void:
-	expect(absf(a - b) < tol, label)
-
-
-# --- Phase increment formula ---
-
-func _test_calm_phase_increment() -> void:
-	print("calm phase increment (220 Hz)")
-	var phase := 0.0
-	var expected_increment := 220.0 / MIX_RATE
-	# Simulate one step
-	phase = fmod(phase + 220.0 / MIX_RATE, 1.0)
-	expect_approx(phase, expected_increment, "first step phase equals 220/MIX_RATE")
-	# After MIX_RATE/220 steps the phase should have wrapped back near 0
-	phase = 0.0
-	var steps := int(MIX_RATE / 220.0)
-	for _i in steps:
-		phase = fmod(phase + 220.0 / MIX_RATE, 1.0)
-	expect(phase < 1.0, "phase stays in [0, 1) after full cycle")
-	expect(phase >= 0.0, "phase is non-negative")
-
-
-func _test_combat_phase_increments() -> void:
-	print("combat phase increments (440 Hz + 330 Hz)")
-	var phase1 := 0.0
-	var phase2 := 0.0
-	phase1 = fmod(phase1 + 440.0 / MIX_RATE, 1.0)
-	phase2 = fmod(phase2 + 330.0 / MIX_RATE, 1.0)
-	expect_approx(phase1, 440.0 / MIX_RATE, "440 Hz phase step correct")
-	expect_approx(phase2, 330.0 / MIX_RATE, "330 Hz phase step correct")
-	expect(phase1 != phase2, "two frequencies produce different phases")
-
-
-# --- Sine wave output range ---
-
-func _test_sine_range() -> void:
-	print("sine wave output range [-1, 1]")
-	var phase := 0.0
-	var min_val := 1.0
-	var max_val := -1.0
-	for i in 1000:
-		var s := sin(TAU * phase)
-		if s < min_val:
-			min_val = s
-		if s > max_val:
-			max_val = s
-		phase = fmod(phase + 220.0 / MIX_RATE, 1.0)
-	expect(min_val >= -1.0, "sine never below -1")
-	expect(max_val <= 1.0, "sine never above 1")
-	expect(min_val < -0.9, "sine reaches near -1 in 1000 samples")
-	expect(max_val > 0.9, "sine reaches near +1 in 1000 samples")
-
-
-func _test_two_freq_mix_range() -> void:
-	print("two-frequency mix stays in [-0.5, 0.5] * 0.5 amplitude")
-	var phase1 := 0.0
-	var phase2 := 0.0
-	var max_abs := 0.0
-	for _i in 2000:
-		var s := sin(TAU * phase1) * 0.25 + sin(TAU * phase2) * 0.25
-		var pushed := absf(Vector2(s, s).x)
-		if pushed > max_abs:
-			max_abs = pushed
-		phase1 = fmod(phase1 + 440.0 / MIX_RATE, 1.0)
-		phase2 = fmod(phase2 + 330.0 / MIX_RATE, 1.0)
-	expect(max_abs <= 0.501, "mixed signal peak amplitude <= 0.5")
-	expect(max_abs > 0.0, "mixed signal is non-silent")
-
-
-# --- Volume crossfade direction ---
-
-func _test_crossfade_calm_volumes() -> void:
-	print("crossfade to calm: calm→0dB, combat→-80dB")
-	# Simulate the target values set by _transition("calm")
-	var calm_target_db := 0.0
-	var combat_target_db := -80.0
-	expect_approx(calm_target_db, 0.0, "calm target is 0 dB (full volume)")
-	expect(combat_target_db <= -79.9, "combat target is -80 dB (near silence)")
-	expect(calm_target_db > combat_target_db, "calm louder than combat in calm state")
-
-
-func _test_crossfade_combat_volumes() -> void:
-	print("crossfade to combat: combat→0dB, calm→-80dB")
-	var combat_target_db := 0.0
-	var calm_target_db := -80.0
-	expect_approx(combat_target_db, 0.0, "combat target is 0 dB (full volume)")
-	expect(calm_target_db <= -79.9, "calm target is -80 dB (near silence)")
-	expect(combat_target_db > calm_target_db, "combat louder than calm in combat state")
-
-
-func _test_fmod_wraps() -> void:
-	print("fmod phase wrapping stays in [0, 1)")
-	var phase := 0.998
-	for _i in 20:
-		phase = fmod(phase + 220.0 / MIX_RATE, 1.0)
-	expect(phase >= 0.0, "phase >= 0 after wraparound")
-	expect(phase < 1.0, "phase < 1 after wraparound")
-
-
 func _report() -> void:
 	var summary := "[dynamic-music] %d/%d passed" % [_pass, _pass + _fail]
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+var _cached: Node2D
+
+# One scene for the suite: each holds two playing AudioStreamPlayers, and
+# building several would stack up audio that never gets stopped.
+func _make() -> Node2D:
+	if not is_instance_valid(_cached):
+		_cached = load("res://scenes/main.tscn").instantiate()
+		add_child(_cached)
+	return _cached
+
+func _calm(m: Node2D) -> AudioStreamPlayer:
+	return m._calm_player
+
+func _combat(m: Node2D) -> AudioStreamPlayer:
+	return m._combat_player
+
+func _test_both_layers_are_playing() -> void:
+	print("the layers")
+	var m := _make()
+	# Both run from the start: a layer started only when needed comes in from
+	# the beginning of its bar rather than in time with the other.
+	expect(_calm(m).playing, "the calm layer is playing")
+	expect(_combat(m).playing, "and so is the combat layer")
+
+func _test_only_the_calm_layer_is_audible_at_first() -> void:
+	print("on open")
+	var m := _make()
+	m._state = "calm"
+	_calm(m).volume_db = 0.0
+	_combat(m).volume_db = -80.0
+	expect(_calm(m).volume_db > _combat(m).volume_db, "the calm layer is the one you hear")
+	expect(_combat(m).volume_db < -60.0, "with the combat layer silent rather than quiet")
+
+func _test_the_layers_are_generated_streams() -> void:
+	print("the streams")
+	var m := _make()
+	expect(_calm(m).stream is AudioStreamGenerator, "the calm layer is generated in code")
+	expect(_combat(m).stream is AudioStreamGenerator, "and so is the combat layer")
+	expect((_calm(m).stream as AudioStreamGenerator).mix_rate == m.MIX_RATE, "at the demo's mix rate")
+
+func _test_switching_to_combat_swaps_the_volumes() -> void:
+	print("into combat")
+	var m := _make()
+	m._transition("combat")
+	expect(m._state == "combat", "the state changes")
+
+func _test_switching_back_swaps_them_again() -> void:
+	print("back to calm")
+	var m := _make()
+	m._transition("calm")
+	expect(m._state == "calm", "and changes back")
+
+func _test_the_swap_is_a_fade_not_a_cut() -> void:
+	print("the crossfade")
+	var m := _make()
+	m._state = "calm"
+	_calm(m).volume_db = 0.0
+	_combat(m).volume_db = -80.0
+
+	m._transition("combat")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	# Part-way, not swapped: a cut is audible as a click, and the point of two
+	# layers is that one slides under the other.
+	expect(_combat(m).volume_db > -80.0, "the combat layer starts coming up")
+	expect(_combat(m).volume_db < 0.0, "but is not there yet")
+	expect(_calm(m).volume_db < 0.0, "while the calm layer starts going down")
+
+	for i in 200:
+		await get_tree().process_frame
+		if _combat(m).volume_db >= -0.1:
+			break
+	expect(_combat(m).volume_db >= -0.1, "the combat layer arrives at full volume")
+	expect(_calm(m).volume_db < -60.0, "and the calm layer is gone")
+
+	m._transition("calm")
+	for i in 200:
+		await get_tree().process_frame
+		if _calm(m).volume_db >= -0.1:
+			break
+	expect(_calm(m).volume_db >= -0.1, "and it fades back the other way")
+
+func _test_both_layers_keep_playing_throughout() -> void:
+	print("staying in time")
+	var m := _make()
+	# Faded down rather than stopped, so the two stay in step with each other.
+	expect(_calm(m).playing and _combat(m).playing,
+		"both layers are still playing after the fades, only one is audible")
+
+func _test_the_two_layers_are_different_music() -> void:
+	print("the two layers")
+	var m := _make()
+	var source: String = (m.get_script() as GDScript).source_code
+	# The calm layer is one tone, the combat layer two mixed together.
+	expect(source.contains("220.0"), "the calm layer has its own pitch")
+	expect(source.contains("440.0") and source.contains("330.0"),
+		"and the combat layer is a different, thicker chord")
