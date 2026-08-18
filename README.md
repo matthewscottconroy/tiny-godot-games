@@ -2,7 +2,13 @@
 
 A collection of **165 tiny, self-contained Godot 4 demos** — each one isolates a single game-development concept in the smallest complete project that teaches it. Every demo is its own Godot project with a focused `README.md`, runnable scene, and an automated test suite.
 
-Built for **Godot 4.7** (Forward+). Every demo is **2D** — there is no 3D content here.
+Built for **Godot 4.7** (Forward+). Every demo is **2D** — 3D lives in its own
+collection, [tiny-godot-3d](../tiny-godot-3d), and the gaps there are listed in
+[docs/GAPS.md](docs/GAPS.md).
+
+<!-- compat-badge -->
+**Godot 4.7** — 165/165 demos passing. [Full table](docs/COMPATIBILITY.md)
+<!-- /compat-badge -->
 
 New here, or want a route rather than an index? **[Learning paths](docs/LEARNING_PATHS.md)** orders these demos into tracks — build a platformer, an RPG's systems, multiplayer — with a difficulty marker on each step.
 

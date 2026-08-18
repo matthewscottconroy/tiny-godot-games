@@ -8,6 +8,11 @@ trying it.
 
     ./run-tests.sh | tee results-4.7.1.txt      # one per version, in CI
     tools/build_compat.py results/              # -> docs/COMPATIBILITY.md
+    tools/build_compat.py results/ --check      # fail if it is out of date
+
+It also writes a one-line badge into the root README, between its
+`<!-- compat-badge -->` markers, so the front page cannot claim a state the
+table disagrees with.
 
 Accepts either a directory of `results-<version>.txt` files or a directory of
 per-version subdirectories, which is how actions/download-artifact lays them out.
@@ -19,6 +24,11 @@ import re
 import sys
 
 OUT = "docs/COMPATIBILITY.md"
+
+# The badge lives between these in the root README, so it can be regenerated
+# without touching the prose around it.
+BADGE_START = "<!-- compat-badge -->"
+BADGE_END = "<!-- /compat-badge -->"
 RESULT_LINE = re.compile(r"^(PASS|FAIL|SKIP)\s+(\S+)")
 VERSION_FROM_NAME = re.compile(r"results-([0-9]+(?:\.[0-9]+)*)")
 
@@ -44,8 +54,45 @@ def parse(path):
     return status
 
 
+def badge(versions, results, demos):
+    """A one-line status for the top of the README.
+
+    Written as plain text rather than an image: it renders the same in a
+    terminal, in an editor preview and on a network the reader may not have,
+    and it cannot go stale independently of the table it is generated with.
+    """
+    newest = versions[-1]
+    passing = sum(1 for s in results[newest].values() if s == "PASS")
+    total = len(demos)
+    mark = "passing" if passing == total else "%d failing" % (total - passing)
+    return ("%s\n**Godot %s** — %d/%d demos %s. "
+            "[Full table](docs/COMPATIBILITY.md)\n%s"
+            % (BADGE_START, newest, passing, total, mark, BADGE_END))
+
+
+def write_badge(text, check):
+    """Put the badge in the README, between its markers."""
+    readme = "README.md"
+    with open(readme, encoding="utf-8") as handle:
+        current = handle.read()
+    if BADGE_START not in current:
+        return ["README.md has no %s marker to put the badge in" % BADGE_START]
+    start = current.index(BADGE_START)
+    end = current.index(BADGE_END) + len(BADGE_END)
+    updated = current[:start] + text + current[end:]
+    if updated == current:
+        return []
+    if check:
+        return ["README.md badge is out of date — run tools/build_compat.py"]
+    with open(readme, "w", encoding="utf-8") as handle:
+        handle.write(updated)
+    return []
+
+
 def main():
-    root = sys.argv[1] if len(sys.argv) > 1 else "results"
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    check = "--check" in sys.argv
+    root = args[0] if args else "results"
     files = find_result_files(root)
     if not files:
         print("no results-<version>.txt files found under %r" % root, file=sys.stderr)
@@ -92,9 +139,30 @@ def main():
 
     lines += ["", "---", "", "_%d demos across %d versions._" % (len(demos), len(versions))]
 
+    content = "\n".join(lines) + "\n"
+    problems = write_badge(badge(versions, results, demos), check)
+
+    if check:
+        existing = ""
+        if os.path.exists(OUT):
+            with open(OUT, encoding="utf-8") as handle:
+                existing = handle.read()
+        if existing != content:
+            problems.append("%s is out of date — run tools/build_compat.py" % OUT)
+        if problems:
+            for problem in problems:
+                print("  " + problem)
+            return 1
+        print("compatibility table and badge are up to date")
+        return 0
+
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(lines) + "\n")
+        handle.write(content)
+    if problems:
+        for problem in problems:
+            print("  " + problem)
+        return 1
     print("wrote %s — %d demos, %d differ across versions" % (OUT, len(demos), len(differing)))
     return 0
 
