@@ -1,7 +1,23 @@
 extends Node
 
+# Drives the real dissolve from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
+
+func _ready() -> void:
+	_test_the_noise_grid_covers_the_sprite()
+	_test_the_noise_is_spread_across_the_range()
+	_test_it_starts_whole_and_still()
+	_test_d_dissolves()
+	_test_a_dissolve_finishes_and_stops()
+	_test_a_dissolve_hides_the_sprite_a_cell_at_a_time()
+	_test_a_appears()
+	_test_appearing_finishes_and_stops()
+	_test_the_two_cancel_each_other()
+	_test_r_resets()
+	_test_a_still_sprite_does_not_drift()
+	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -17,68 +33,155 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# --- Constants mirroring main.gd ---
-const COLS := 20
-const ROWS := 15
+const STEP := 1.0 / 60.0
+var _script: GDScript = load("res://scripts/main.gd")
 
-# --- Logic helpers ---
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
 
-func _cell_visible(cell_noise: float, threshold: float) -> bool:
-	return cell_noise > threshold
+func _press(m: Node2D, code: Key) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = true
+	m._input(e)
 
-func _edge_glow_active(cell_noise: float, threshold: float) -> bool:
-	return abs(cell_noise - threshold) < 0.1 and cell_noise > threshold
+func _run(m: Node2D, seconds: float) -> void:
+	var elapsed := 0.0
+	while elapsed < seconds:
+		m._process(STEP)
+		elapsed += STEP
 
-func _clamp_threshold(t: float) -> float:
-	return clampf(t, 0.0, 1.0)
+## How many cells are still drawn at the current threshold.
+func _visible_cells(m: Node2D) -> int:
+	var count := 0
+	for value in m._noise_grid:
+		if value >= m._threshold:
+			count += 1
+	return count
 
-# --- Tests ---
+func _test_the_noise_grid_covers_the_sprite() -> void:
+	print("the noise grid")
+	var m := _make()
+	expect(m._noise_grid.size() == m.COLS * m.ROWS, "there is a noise value per cell")
 
-func _test_cell_visible_below_threshold() -> void:
-	# cell_noise=0.8 > threshold=0.5 → visible
-	var visible = _cell_visible(0.8, 0.5)
-	expect(visible == true, "cell_visible: noise 0.8 > threshold 0.5 → visible")
+func _test_the_noise_is_spread_across_the_range() -> void:
+	print("the noise")
+	var m := _make()
+	var lowest := 1.0
+	var highest := 0.0
+	for value in m._noise_grid:
+		lowest = minf(lowest, value)
+		highest = maxf(highest, value)
+	# Values bunched together would make the sprite vanish all at once instead
+	# of eroding.
+	expect(lowest < 0.2, "some cells go early")
+	expect(highest > 0.8, "and some hang on to the end")
 
-func _test_cell_hidden_above_threshold() -> void:
-	# cell_noise=0.3 < threshold=0.5 → hidden
-	var visible = _cell_visible(0.3, 0.5)
-	expect(visible == false, "cell_hidden: noise 0.3 < threshold 0.5 → hidden")
+func _test_it_starts_whole_and_still() -> void:
+	print("before anything happens")
+	var m := _make()
+	expect(is_zero_approx(m._threshold), "the sprite starts whole")
+	expect(not m._dissolving and not m._appearing, "and nothing is happening to it")
+	expect(_visible_cells(m) == m._noise_grid.size(), "every cell is drawn")
 
-func _test_edge_glow() -> void:
-	# cell_noise=0.52, threshold=0.5 → difference is 0.02 < 0.1 → edge glow
-	var glow = _edge_glow_active(0.52, 0.5)
-	expect(glow == true, "edge_glow: noise 0.52 within 0.1 of threshold 0.5 → glow active")
-	# cell_noise=0.7, threshold=0.5 → difference is 0.2 >= 0.1 → no glow
-	var no_glow = _edge_glow_active(0.7, 0.5)
-	expect(no_glow == false, "edge_glow: noise 0.7 far from threshold 0.5 → no glow")
+func _test_d_dissolves() -> void:
+	print("dissolving")
+	var m := _make()
+	_press(m, KEY_D)
+	expect(m._dissolving, "D starts a dissolve")
+	_run(m, 0.3)
+	expect(m._threshold > 0.0, "and the threshold climbs")
+	expect(_visible_cells(m) < m._noise_grid.size(), "taking cells off the sprite")
 
-func _test_threshold_clamp() -> void:
-	# threshold incremented past 1.0 → clamp to 1.0
-	var t: float = 0.95
-	t += 0.2  # would become 1.15
-	t = _clamp_threshold(t)
-	expect(t == 1.0, "threshold_clamp: value past 1.0 clamped to 1.0")
-	# threshold decremented below 0.0 → clamp to 0.0
-	var t2: float = 0.05
-	t2 -= 0.2  # would become -0.15
-	t2 = _clamp_threshold(t2)
-	expect(t2 == 0.0, "threshold_clamp: value below 0.0 clamped to 0.0")
+func _test_a_dissolve_finishes_and_stops() -> void:
+	print("finishing")
+	var m := _make()
+	_press(m, KEY_D)
+	_run(m, 5.0)
+	expect(is_equal_approx(m._threshold, 1.0), "the dissolve stops at fully gone")
+	expect(not m._dissolving, "and switches itself off")
+	expect(_visible_cells(m) == 0, "with nothing left drawn")
 
-func _test_grid_size() -> void:
-	var expected: int = COLS * ROWS
-	expect(expected == 300, "grid_size: COLS*ROWS = 20*15 = 300 cells")
-	# Simulate a noise grid
-	var noise_grid: Array[float] = []
-	noise_grid.resize(COLS * ROWS)
-	for i in range(COLS * ROWS):
-		noise_grid[i] = 0.5
-	expect(noise_grid.size() == 300, "grid_size: noise_grid has 300 entries")
+func _test_a_dissolve_hides_the_sprite_a_cell_at_a_time() -> void:
+	print("eroding")
+	var m := _make()
+	_press(m, KEY_D)
+	var counts: Array[int] = []
+	for i in 8:
+		_run(m, 0.15)
+		counts.append(_visible_cells(m))
+	# Cells go a few at a time rather than all together, which is what makes it
+	# read as a dissolve.
+	var partial := 0
+	for count in counts:
+		if count > 0 and count < m._noise_grid.size():
+			partial += 1
+	expect(partial >= 4, "the sprite spends several frames part-way gone")
+	begin_quiet()
+	for i in counts.size() - 1:
+		expect_quiet(counts[i + 1] <= counts[i], "the sprite grew back mid-dissolve")
+	expect(_quiet_failures == 0, "and never grows back while dissolving")
 
-func _ready() -> void:
-	print("=== Dissolve Effect Tests ===")
-	_test_cell_visible_below_threshold()
-	_test_cell_hidden_above_threshold()
-	_test_edge_glow()
-	_test_threshold_clamp()
-	_test_grid_size()
-	_report()
+func _test_a_appears() -> void:
+	print("appearing")
+	var m := _make()
+	_press(m, KEY_D)
+	_run(m, 5.0)
+	expect(is_equal_approx(m._threshold, 1.0), "gone")
+	_press(m, KEY_A)
+	expect(m._appearing, "A starts it coming back")
+	_run(m, 0.3)
+	expect(m._threshold < 1.0, "and the threshold falls")
+	expect(_visible_cells(m) > 0, "putting cells back on the sprite")
+
+func _test_appearing_finishes_and_stops() -> void:
+	print("fully back")
+	var m := _make()
+	m._threshold = 1.0
+	_press(m, KEY_A)
+	_run(m, 5.0)
+	expect(is_zero_approx(m._threshold), "it stops at fully present")
+	expect(not m._appearing, "and switches itself off")
+	expect(_visible_cells(m) == m._noise_grid.size(), "with the whole sprite back")
+
+func _test_the_two_cancel_each_other() -> void:
+	print("changing direction")
+	var m := _make()
+	_press(m, KEY_D)
+	expect(m._dissolving and not m._appearing, "dissolving")
+	_press(m, KEY_A)
+	# Running both at once would leave the threshold hovering while the two
+	# cancel out.
+	expect(m._appearing and not m._dissolving, "A takes over from D rather than fighting it")
+	_press(m, KEY_D)
+	expect(m._dissolving and not m._appearing, "and D takes back over")
+
+func _test_r_resets() -> void:
+	print("reset")
+	var m := _make()
+	_press(m, KEY_D)
+	_run(m, 0.8)
+	_press(m, KEY_R)
+	expect(is_zero_approx(m._threshold), "R puts the sprite back whole")
+	expect(not m._dissolving and not m._appearing, "and stops whatever was running")
+
+func _test_a_still_sprite_does_not_drift() -> void:
+	print("at rest")
+	var m := _make()
+	m._threshold = 0.4
+	_run(m, 1.0)
+	expect(is_equal_approx(m._threshold, 0.4),
+		"a sprite left part-way through stays where it is until asked to move")
+
+var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
