@@ -49,8 +49,16 @@ IGNORE = {"new", "call", "size", "append", "has", "get", "set", "duplicate", "cl
           "keys", "values", "erase", "is_empty", "emit", "connect", "format", "front", "back"}
 
 
+# Directories that hold a project.godot but are not demos. The browser is a tool
+# that reads the collection; counting it as one of the demos would put it in the
+# index, the tags and the count on the front page.
+NOT_A_DEMO = {"browser"}
+
+
 def demos():
-    return sorted(os.path.dirname(p) for p in glob.glob("*/project.godot"))
+    return sorted(d for d in (os.path.dirname(p)
+                                for p in glob.glob("*/project.godot"))
+                  if d not in NOT_A_DEMO)
 
 
 def read(path):

@@ -10,6 +10,11 @@ collection, [tiny-godot-3d](../tiny-godot-3d), and the gaps there are listed in
 **Godot 4.7** — 165/165 demos passing. [Full table](docs/COMPATIBILITY.md)
 <!-- /compat-badge -->
 
+Prefer to browse and run rather than read? `godot --path browser` opens the
+**[demo browser](browser)** — search the collection, filter it by concept tag,
+and launch any demo. See also **[concept tags](docs/TAGS.md)** for the same
+demos grouped by what they use rather than what they are about.
+
 New here, or want a route rather than an index? **[Learning paths](docs/LEARNING_PATHS.md)** orders these demos into tracks — build a platformer, an RPG's systems, multiplayer — with a difficulty marker on each step.
 
 ## Using a demo

@@ -85,8 +85,16 @@ def read(path):
         return handle.read()
 
 
+# Directories that hold a project.godot but are not demos. The browser is a tool
+# that reads the collection; counting it as one of the demos would put it in the
+# index, the tags and the count on the front page.
+NOT_A_DEMO = {"browser"}
+
+
 def demo_dirs():
-    return sorted(os.path.dirname(p) for p in glob.glob("*/project.godot"))
+    return sorted(d for d in (os.path.dirname(p)
+                                for p in glob.glob("*/project.godot"))
+                  if d not in NOT_A_DEMO)
 
 
 def scripts_of(demo):

@@ -77,9 +77,16 @@ TAGS = [
 TAG_NAMES = [name for name, _, _ in TAGS] + ["good-first-demo"]
 
 
+# Directories that hold a project.godot but are not demos. The browser is a
+# tool that reads the collection; tagging it would put it in the index and the
+# count on the front page.
+NOT_A_DEMO = {"browser"}
+
+
 def demo_dirs():
     return sorted(d for d in os.listdir(".")
-                  if os.path.isdir(d) and os.path.exists(os.path.join(d, "project.godot")))
+                  if os.path.isdir(d) and d not in NOT_A_DEMO
+                  and os.path.exists(os.path.join(d, "project.godot")))
 
 
 def read(path):
