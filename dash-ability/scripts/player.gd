@@ -107,4 +107,5 @@ func _update_label() -> void:
 		parts.append("IFRAMES %.2fs" % _iframes)
 	if _cooldown > 0.0:
 		parts.append("CD %.2fs" % _cooldown)
-	_label.text = " | ".join(parts) if parts.size() > 0 else "READY"
+	if _label:
+		_label.text = " | ".join(parts) if parts.size() > 0 else "READY"

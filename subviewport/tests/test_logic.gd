@@ -151,9 +151,11 @@ func _test_the_world_objects_are_scattered_and_repeatable() -> void:
 	expect(_quiet_failures == 0, "every object is inside the world")
 
 	# A fixed seed, so the demo looks the same every run and a screenshot of it
-	# means something.
+	# means something. The first layout is copied out before the second scene
+	# is built, since making it frees the first.
+	var first: Vector2 = m._objects[0]["pos"]
 	var again := _make()
-	expect(again._objects[0]["pos"] == m._objects[0]["pos"], "the layout is the same every run")
+	expect(again._objects[0]["pos"] == first, "the layout is the same every run")
 
 var _quiet_failures := 0
 

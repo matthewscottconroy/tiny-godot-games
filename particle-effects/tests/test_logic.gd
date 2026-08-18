@@ -122,12 +122,15 @@ func _test_fire_rises_and_smoke_drifts() -> void:
 	var fire_p := _particles(fire)
 	expect(fire_p.gravity.y < 0.0, "fire is pulled upwards")
 	expect(fire_p.color.r > fire_p.color.b, "and is warm-coloured")
+	# Copied out before the next scene is built: _make() frees the last one.
+	var fire_lifetime: float = fire_p.lifetime
+	var fire_scale: float = fire_p.scale_amount_max
 
 	var smoke := _make()
 	_press(smoke, "SmokeBtn")
 	var smoke_p := _particles(smoke)
-	expect(smoke_p.lifetime > fire_p.lifetime, "smoke lingers longer than flame")
-	expect(smoke_p.scale_amount_max > fire_p.scale_amount_max, "in bigger, softer puffs")
+	expect(smoke_p.lifetime > fire_lifetime, "smoke lingers longer than flame")
+	expect(smoke_p.scale_amount_max > fire_scale, "in bigger, softer puffs")
 	expect(smoke_p.color.a < 1.0, "and is see-through")
 
 func _test_sparkle_goes_everywhere() -> void:

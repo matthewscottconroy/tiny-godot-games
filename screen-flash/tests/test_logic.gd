@@ -10,7 +10,7 @@ func _ready() -> void:
 	_test_a_flash_tints_the_screen()
 	await _test_a_flash_fades_out()
 	_test_the_number_keys_flash_different_colours()
-	_test_the_keys_choose_different_lengths()
+	await _test_the_keys_choose_different_lengths()
 	_test_other_keys_do_not_flash()
 	_test_a_held_key_does_not_flash_again()
 	_test_walking_into_the_hazard_flashes()
@@ -98,16 +98,21 @@ func _test_the_keys_choose_different_lengths() -> void:
 	print("lengths")
 	# A pickup should blink and a respawn should linger; equal durations would
 	# make the four events feel the same.
+	# One at a time: _make() frees the previous scene, so the two cannot be
+	# left running side by side. Each is measured as a fraction of where it
+	# started, three frames in.
 	var quick := _make()
 	_press(quick, KEY_2)
+	for i in 3:
+		await get_tree().process_frame
+	var quick_left: float = _rect(quick).color.a / 0.70
+
 	var slow := _make()
 	_press(slow, KEY_4)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	await get_tree().process_frame
-	# Both started at a similar alpha; the shorter flash has dropped further.
-	var quick_left: float = _rect(quick).color.a / 0.70
+	for i in 3:
+		await get_tree().process_frame
 	var slow_left: float = _rect(slow).color.a / 0.90
+
 	expect(quick_left < slow_left, "the short flash fades faster than the long one")
 
 func _test_other_keys_do_not_flash() -> void:

@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_a_diagonal_is_no_faster()
 	_test_l_turns_the_darkness_off()
 	_test_the_size_keys_have_a_floor()
+	_test_a_key_release_changes_nothing()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -113,15 +114,21 @@ func _test_the_player_stays_on_screen() -> void:
 
 func _test_a_diagonal_is_no_faster() -> void:
 	print("diagonals")
+	# Measured one at a time: _make() frees the previous scene, and reading
+	# from a freed node aborts this function rather than failing it.
 	var straight := _make()
 	var straight_start: Vector2 = straight._player_pos
 	straight.tick(0.5, Vector2.RIGHT)
+	var straight_distance: float = straight._player_pos.distance_to(straight_start)
+
 	var diagonal := _make()
 	var diagonal_start: Vector2 = diagonal._player_pos
 	diagonal.tick(0.5, Vector2(1.0, 1.0))
-	expect(is_equal_approx(diagonal._player_pos.distance_to(diagonal_start),
-		straight._player_pos.distance_to(straight_start)),
-		"holding two keys travels no faster than one")
+	var diagonal_distance: float = diagonal._player_pos.distance_to(diagonal_start)
+
+	expect(is_equal_approx(diagonal_distance, straight_distance),
+		"holding two keys travels no faster than one (%.1f against %.1f)"
+		% [diagonal_distance, straight_distance])
 
 func _test_l_turns_the_darkness_off() -> void:
 	print("the L key")
@@ -148,6 +155,20 @@ func _test_the_size_keys_have_a_floor() -> void:
 	# A texture_scale of zero or below makes the light vanish and cannot be
 	# grown back by eye.
 	expect(m._player_light.texture_scale > 0.0, "the light never shrinks away to nothing")
+
+func _test_a_key_release_changes_nothing() -> void:
+	print("key releases")
+	var m := _make()
+	var lights_on: bool = m._lights_on
+	var scale: float = m._player_light.texture_scale
+	for code in [KEY_L, KEY_EQUAL, KEY_MINUS]:
+		var e := InputEventKey.new()
+		e.keycode = code
+		e.pressed = false
+		m._input(e)
+	expect(m._lights_on == lights_on, "letting go of L does not toggle the lighting")
+	expect(is_equal_approx(m._player_light.texture_scale, scale),
+		"and letting go of the size keys does not resize the light")
 
 var _quiet_failures := 0
 

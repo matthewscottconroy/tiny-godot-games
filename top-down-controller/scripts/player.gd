@@ -32,7 +32,8 @@ func _physics_process(_delta: float) -> void:
 	update_facing(dir)
 	move_and_slide()
 	queue_redraw()
-	_label.text = "IDLE" if dir == Vector2.ZERO else "%.0f°" % rad_to_deg(_last_dir.angle())
+	if _label:
+		_label.text = "IDLE" if dir == Vector2.ZERO else "%.0f°" % rad_to_deg(_last_dir.angle())
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, 14, Color.DODGER_BLUE)

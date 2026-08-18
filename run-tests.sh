@@ -35,6 +35,13 @@ GODOT="${GODOT:-godot}"
 # Any of these in the output means the demo is broken, even when Godot exits 0.
 ERROR_RE='Parse Error|SCRIPT ERROR|SHADER ERROR|Failed to load|Failed to instantiate|^ERROR: '
 
+# Errors that abandon the function they happen in, which is the dangerous kind
+# inside a test: the assertions after them never run, the suite prints a
+# smaller n/n passed, and the counts still agree. Deliberately narrower than
+# ERROR_RE — a suite that drives a script outside its scene logs "Node not
+# found" for each @onready, which is noise rather than a failure.
+SUITE_ABORT_RE='previously freed|Invalid access to property|Nonexistent function|Invalid type in function|Invalid index|Out of bounds|null instance|Division By Zero|Invalid assignment'
+
 # Warnings count too. Godot reports a refused operation as a warning rather
 # than an error, so a feature can silently do nothing and still pass every
 # other gate: pixel-art-camera set a SubViewport size the container owned, and
@@ -114,7 +121,13 @@ do_check() {
       summary="$(printf '%s\n' "$output" | grep -oE '[0-9]+/[0-9]+ passed' | tail -1)"
       n="${summary%%/*}"
       m="${summary#*/}"; m="${m%% passed}"
-      if [ "$status" -ne 0 ] || [ -z "$summary" ] || [ "$n" != "$m" ]; then
+      # A runtime error abandons the function it happened in, so the
+      # assertions after it never run: the suite prints a smaller n/n passed
+      # and the counts still agree. Four suites were quietly skipping the tail
+      # of a test this way before the check existed.
+      local suite_errors
+      suite_errors="$(printf '%s\n' "$output" | grep -E "$SUITE_ABORT_RE")"
+      if [ "$status" -ne 0 ] || [ -z "$summary" ] || [ "$n" != "$m" ] || [ -n "$suite_errors" ]; then
         detail="tests: ${summary:-no summary}, exit $status"$'\n'"$(printf '%s\n' "$output" | sed 's/^/      | /')"
         failed=1
       fi

@@ -70,4 +70,7 @@ func _draw() -> void:
 	draw_rect(Rect2( 1, -22, 5, 5), Color.WHITE)
 
 func _ready() -> void:
-	_label.text = State.keys()[state]
+	# Guarded like the other write: driven outside its scene there is no label,
+	# and an assignment to null abandons whatever function it happens in.
+	if _label:
+		_label.text = State.keys()[state]

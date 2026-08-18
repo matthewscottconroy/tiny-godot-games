@@ -31,7 +31,8 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	queue_redraw()
-	_label.text = "READY" if _cooldown <= 0.0 else "CD %.1fs" % _cooldown
+	if _label:
+		_label.text = "READY" if _cooldown <= 0.0 else "CD %.1fs" % _cooldown
 
 ## The fan of directions a single shot produces.
 ##

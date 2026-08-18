@@ -104,14 +104,18 @@ func _test_the_speed_buttons_change_the_pace() -> void:
 	expect(fast > m._speed and m._speed > slow, "fast, normal and slow are three different paces")
 	expect(slow > 0.0, "and none of them stops time")
 
+	# Each measured before the next scene is built: _make() frees the previous
+	# one, and reading from a freed node aborts this test rather than failing it.
 	var quick := _make()
 	quick._time = 0.0
 	(quick.get_node("HUD/SpeedRow/FastBtn") as Button).pressed.emit()
 	_run(quick, 1.0)
+	var quick_time: float = quick._time
+
 	var steady := _make()
 	steady._time = 0.0
 	_run(steady, 1.0)
-	expect(quick._time > steady._time, "and the fast one really does run the day down quicker")
+	expect(quick_time > steady._time, "and the fast one really does run the day down quicker")
 
 func _test_a_keyframe_returns_its_own_colour() -> void:
 	print("on a keyframe")
