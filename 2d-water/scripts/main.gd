@@ -27,6 +27,16 @@ func _ready() -> void:
 	$HUD/AmpRow/AmpSlider.value   = 0.018
 
 func _physics_process(delta: float) -> void:
+	tick(delta, Input.get_axis("ui_left", "ui_right"),
+		Input.is_action_just_pressed("ui_up"))
+	queue_redraw()
+
+## One step of swimming or walking, given this frame's input.
+##
+## Water changes four things at once — gravity, top speed, how high a jump
+## goes, and how quickly you slow down — which is what makes going under feel
+## different rather than just look different.
+func tick(delta: float, move_axis: float, jump_pressed: bool) -> void:
 	_in_water = _player_pos.y + 14 > WATER_Y
 
 	if not _on_floor:
@@ -34,11 +44,11 @@ func _physics_process(delta: float) -> void:
 		_vel.y += grav * delta
 
 	var speed := SPEED * (0.4 if _in_water else 1.0)
-	_vel.x = Input.get_axis("ui_left", "ui_right") * speed
+	_vel.x = move_axis * speed
 
-	if _on_floor and Input.is_action_just_pressed("ui_up"):
+	if _on_floor and jump_pressed:
 		_vel.y = JUMP_VEL
-	if _in_water and Input.is_action_just_pressed("ui_up"):
+	if _in_water and jump_pressed:
 		_vel.y = JUMP_VEL * 0.55  # swim up
 
 	_player_pos += _vel * delta
@@ -55,8 +65,6 @@ func _physics_process(delta: float) -> void:
 
 	if _in_water:
 		_vel *= 0.85  # water drag
-
-	queue_redraw()
 
 func _draw() -> void:
 	# Sky
