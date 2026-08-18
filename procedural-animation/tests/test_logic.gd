@@ -1,11 +1,21 @@
 extends Node
 
+# Drives the real FABRIK solver from scripts/main.gd — see docs/TEST_INTEGRITY.md.
+
 var _pass := 0
 var _fail := 0
 
-const N := 8
-const SEG_LEN := 28.0
-const ITERS := 8
+func _ready() -> void:
+	_test_the_chain_starts_laid_out()
+	_test_the_tail_stays_on_the_base()
+	_test_the_segments_keep_their_length()
+	_test_the_head_reaches_a_target_within_range()
+	_test_an_out_of_range_target_stretches_towards_it()
+	_test_the_chain_follows_a_moving_target()
+	_test_the_solver_settles()
+	_test_a_target_on_the_base_does_not_break_it()
+	_test_the_mouse_sets_the_target()
+	_report()
 
 func expect(cond: bool, label: String) -> void:
 	if cond:
@@ -21,88 +31,141 @@ func _report() -> void:
 	if _fail > 0:
 		push_error(summary)
 
-# Standalone FABRIK solver for testing
-func _fabrik_solve(joints: PackedVector2Array, target: Vector2, base: Vector2) -> PackedVector2Array:
-	var j := PackedVector2Array(joints)
-	for _iter in range(ITERS):
-		# Forward pass
-		j[0] = target
-		for i in range(1, N + 1):
-			var dir := (j[i] - j[i - 1]).normalized()
-			j[i] = j[i - 1] + dir * SEG_LEN
-		# Backward pass
-		j[N] = base
-		for i in range(N - 1, -1, -1):
-			var dir := (j[i] - j[i + 1]).normalized()
-			j[i] = j[i + 1] + dir * SEG_LEN
-	return j
+var _script: GDScript = load("res://scripts/main.gd")
 
-func _make_chain(base: Vector2) -> PackedVector2Array:
-	var j := PackedVector2Array()
-	j.resize(N + 1)
-	for i in range(N + 1):
-		j[i] = base + Vector2(0, i * SEG_LEN)
-	return j
+func _make() -> Node2D:
+	var m: Node2D = _script.new()
+	add_child(m)
+	return m
 
-func _test_fabrik_forward_reach() -> void:
-	print("TEST: fabrik forward reach")
-	var base := Vector2(320, 400)
-	# 141px from the base — inside the 224px reach, and off the chain's axis.
-	var target := Vector2(220, 300)
-	var joints := _make_chain(base)
-	var result := _fabrik_solve(joints, target, base)
-	expect(result[0].distance_to(target) < 1.0, "head at target after solve")
+## Solve for a target, without going through the mouse.
+func _solve_for(m: Node2D, target: Vector2) -> void:
+	m._target = target
+	m._fabrik_solve()
 
-func _test_fabrik_segment_length() -> void:
-	print("TEST: fabrik segment lengths")
-	var base := Vector2(320, 400)
-	var target := Vector2(200, 150)
-	var joints := _make_chain(base)
-	var result := _fabrik_solve(joints, target, base)
-	var all_ok := true
-	for i in range(N):
-		var dist := result[i].distance_to(result[i + 1])
-		if abs(dist - SEG_LEN) >= 0.1:
-			all_ok = false
-			print("    segment %d length=%f expected=%f" % [i, dist, SEG_LEN])
-	expect(all_ok, "all segment lengths ≈ SEG_LEN (within 0.1)")
+func _worst_segment_error(m: Node2D) -> float:
+	var worst := 0.0
+	for i in m.N:
+		worst = maxf(worst, absf(m._joints[i].distance_to(m._joints[i + 1]) - m.SEG_LEN))
+	return worst
 
-func _test_fabrik_base_constraint() -> void:
-	print("TEST: fabrik base constraint")
-	var base := Vector2(320, 400)
-	var target := Vector2(200, 150)
-	var joints := _make_chain(base)
-	var result := _fabrik_solve(joints, target, base)
-	expect(result[N].distance_to(base) < 0.1, "tail ≈ base after solve")
+func _reach(m: Node2D) -> float:
+	return m.SEG_LEN * m.N
 
-func _test_fabrik_converges() -> void:
-	print("TEST: fabrik converges (reachable target)")
-	var base := Vector2(320, 400)
-	# Target within reach: chain total length = N * SEG_LEN = 8 * 28 = 224.
-	# Kept off the vertical so the solver has a bend direction to converge on —
-	# a target straight along the rest pose's axis is degenerate.
-	var target := Vector2(380, 280)  # 134px from base
-	var joints := _make_chain(base)
-	var result := _fabrik_solve(joints, target, base)
-	expect(result[0].distance_to(target) < 1.0, "head within 1px of reachable target")
+func _test_the_chain_starts_laid_out() -> void:
+	print("the chain")
+	var m := _make()
+	expect(m._joints.size() == m.N + 1, "there is a joint at each end of every segment")
+	expect(_worst_segment_error(m) < 0.001, "laid out one segment length apart")
+	# Hanging down from the base, which is what is on screen before the mouse
+	# is moved — laid out the other way it starts off the top of the window.
+	expect(m._joints[m.N].y > m._joints[0].y, "hanging down from the head")
+	expect(m._joints[0].is_equal_approx(m._base), "with the head at the base to begin with")
 
-func _test_unreachable() -> void:
-	print("TEST: unreachable target")
-	var base := Vector2(320, 400)
-	# Target 600px away, chain reach = 224px — unreachable
-	var target := Vector2(320, -200)
-	var joints := _make_chain(base)
-	var result := _fabrik_solve(joints, target, base)
-	# Chain should point toward target (head should be above base)
-	expect(result[0].y < result[N].y, "chain points toward target (head above base)")
-	# Base still held
-	expect(result[N].distance_to(base) < 0.1, "base constraint held even when unreachable")
+func _test_the_tail_stays_on_the_base() -> void:
+	print("the anchor")
+	var m := _make()
+	begin_quiet()
+	for target in [Vector2(100.0, 100.0), Vector2(600.0, 300.0), Vector2(320.0, 460.0)]:
+		_solve_for(m, target)
+		expect_quiet(m._joints[m.N].is_equal_approx(m._base),
+			"the tail left the base reaching for %s" % target)
+	expect(_quiet_failures == 0, "the tail stays pinned to the base wherever the head goes")
 
-func _ready() -> void:
-	print("=== Procedural Animation Tests ===")
-	_test_fabrik_forward_reach()
-	_test_fabrik_segment_length()
-	_test_fabrik_base_constraint()
-	_test_fabrik_converges()
-	_test_unreachable()
-	_report()
+func _test_the_segments_keep_their_length() -> void:
+	print("segment lengths")
+	var m := _make()
+	begin_quiet()
+	for target in [Vector2(100.0, 100.0), Vector2(600.0, 420.0), Vector2(320.0, 240.0)]:
+		_solve_for(m, target)
+		expect_quiet(_worst_segment_error(m) < 1.0,
+			"reaching %s stretched a segment by %.2f px" % [target, _worst_segment_error(m)])
+	expect(_quiet_failures == 0, "no segment stretches, whatever the chain is reaching for")
+
+func _test_the_head_reaches_a_target_within_range() -> void:
+	print("reaching")
+	var m := _make()
+	# Comfortably inside the chain's reach, so it should arrive rather than
+	# merely point — and off to the sides as well as straight ahead, where a
+	# solver that is subtly wrong still lands within a pixel.
+	var offsets := [
+		Vector2(0.0, -_reach(m) * 0.5),
+		Vector2(_reach(m) * 0.5, -_reach(m) * 0.3),
+		Vector2(-_reach(m) * 0.6, 0.0),
+		Vector2(_reach(m) * 0.2, _reach(m) * 0.4),
+	]
+	begin_quiet()
+	for offset in offsets:
+		var target: Vector2 = m._base + offset
+		_solve_for(m, target)
+		var miss: float = m._joints[0].distance_to(target)
+		expect_quiet(miss < 1.0, "the head lands %.2f px from a target at %s" % [miss, offset])
+	expect(_quiet_failures == 0, "the head arrives at any target inside the chain's reach")
+
+func _test_an_out_of_range_target_stretches_towards_it() -> void:
+	print("out of reach")
+	var m := _make()
+	var far: Vector2 = m._base + Vector2(0.0, -_reach(m) * 3.0)
+	_solve_for(m, far)
+	# It cannot arrive, but it should straighten out pointing that way rather
+	# than curling up or coming apart.
+	expect(m._joints[0].distance_to(far) > 1.0, "the head cannot reach a target beyond the chain")
+	expect(_worst_segment_error(m) < 1.0, "and does not stretch trying")
+	expect(m._joints[0].distance_to(m._base) > _reach(m) * 0.9,
+		"the chain straightens out towards it instead")
+
+func _test_the_chain_follows_a_moving_target() -> void:
+	print("following")
+	var m := _make()
+	var first: Vector2 = m._base + Vector2(-100.0, -100.0)
+	_solve_for(m, first)
+	var head_left: Vector2 = m._joints[0]
+	var second: Vector2 = m._base + Vector2(100.0, -100.0)
+	_solve_for(m, second)
+	expect(m._joints[0].x > head_left.x, "the head follows the target across")
+
+func _test_the_solver_settles() -> void:
+	print("settling")
+	var m := _make()
+	var target: Vector2 = m._base + Vector2(60.0, -120.0)
+	_solve_for(m, target)
+	var settled: PackedVector2Array = m._joints.duplicate()
+	_solve_for(m, target)
+	var moved := 0.0
+	for i in m._joints.size():
+		moved = maxf(moved, m._joints[i].distance_to(settled[i]))
+	# Solving again for the same target should barely move anything; a solver
+	# that keeps wandering makes the limb jitter while the mouse is still.
+	expect(moved < 1.0, "solving again for the same target barely moves the chain (%.2f px)" % moved)
+
+func _test_a_target_on_the_base_does_not_break_it() -> void:
+	print("a degenerate target")
+	var m := _make()
+	# Normalising a zero-length difference is a division by zero, and a NaN
+	# joint never comes back.
+	_solve_for(m, m._base)
+	var sane := true
+	for joint in m._joints:
+		if is_nan(joint.x) or is_nan(joint.y):
+			sane = false
+	expect(sane, "a target on the base leaves every joint a real position")
+	expect(m._joints[m.N].is_equal_approx(m._base), "with the tail still anchored")
+
+func _test_the_mouse_sets_the_target() -> void:
+	print("the mouse")
+	var m := _make()
+	var e := InputEventMouseMotion.new()
+	e.position = Vector2(200.0, 150.0)
+	m._input(e)
+	expect(m._target == Vector2(200.0, 150.0), "moving the mouse sets the target")
+
+var _quiet_failures := 0
+
+## Zero the tally, so one test's failures cannot cascade into the next.
+func begin_quiet() -> void:
+	_quiet_failures = 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
