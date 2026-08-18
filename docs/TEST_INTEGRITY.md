@@ -43,12 +43,12 @@ After converting fourteen suites and correcting the measurement, the floor was:
 15 suites caught everything, 105 caught nothing
 ```
 
-Another thirty conversions later it was 258/643 (40.1%), and thirty after that
-the recorded floor is:
+It rose to 258/643 (40.1%), then 341/649 (52.5%), and the recorded floor is
+now:
 
 ```
-341/649 mutations caught (52.5%)
-43 suites caught everything, 46 caught nothing
+420/653 mutations caught (64.3%)
+53 suites caught everything, 25 caught nothing
 ```
 
 The sample is smaller because the sweep now uses three mutations per demo rather
@@ -241,8 +241,11 @@ The work is deliberately incremental. Converting every remaining zero-scoring
 suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
-Sixty are done, and 46 suites still catch nothing — a good share of those
-being shader and audio showcases where the smoke gate is the honest guard. Some needed only a rewritten suite because the component
+Eighty-five are done, and 25 suites still catch nothing. Almost all of those
+are shader, lighting and audio showcases, where the output is pixels or sound
+and the smoke gate is the honest guard — a gate that now fails on engine
+warnings, which is how a shader parameter that never took effect announces
+itself. Some needed only a rewritten suite because the component
 already existed (`experience-leveling`, `drop-table`, `autoload-score`,
 `boid-flocking`, `groups`); the rest needed their logic lifting into a method
 first (`coyote-time`, `double-jump`, `variable-jump-height`, `wall-slide`,
