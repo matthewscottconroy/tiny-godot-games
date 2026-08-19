@@ -468,10 +468,10 @@ def main():
         print("run was aborted early — baseline untouched", file=sys.stderr)
         return 4
     if args.update:
-        _write_baseline(total_killed, tried, len(demos))
+        _write_baseline(total_killed, tried, len(demos), args.limit, args.seed)
         return 0
     if args.check:
-        return _check_baseline(total_killed, tried)
+        return _check_baseline(total_killed, tried, args.limit)
 
     return 0
 
@@ -479,13 +479,16 @@ def main():
 BASELINE = "docs/mutation-baseline.json"
 
 
-def _write_baseline(killed, tried, demo_count):
+def _write_baseline(killed, tried, demo_count, limit, seed):
     data = {
         "killed": killed,
         "tried": tried,
         "demos": demo_count,
+        "limit": limit,
+        "seed": seed,
         "ratio": round(killed / tried, 4) if tried else 0.0,
         "note": "Mutation score floor. Raise it by improving suites; never lower it. "
+                "Check it with the same --limit it was recorded at. "
                 "See docs/TEST_INTEGRITY.md.",
     }
     with open(BASELINE, "w", encoding="utf-8") as handle:
@@ -494,12 +497,32 @@ def _write_baseline(killed, tried, demo_count):
     print("recorded baseline: %d/%d (%.1f%%)" % (killed, tried, 100.0 * data["ratio"]))
 
 
-def _check_baseline(killed, tried):
+def _check_baseline(killed, tried, limit):
     if not os.path.exists(BASELINE):
         print("no baseline recorded — run with --update first", file=sys.stderr)
         return 2
     with open(BASELINE, encoding="utf-8") as handle:
         recorded = json.load(handle)
+
+    # A score is only comparable to one taken the same way. --limit decides how
+    # many mutations each demo contributes, and a demo with 40 candidates and
+    # one with 2 are weighted differently at 4 than at 5 — so the two ratios are
+    # measurements of different populations, not the same thing twice.
+    #
+    # This is not hypothetical: CI checked at --limit 4 against a floor recorded
+    # at the default 5 and reported a 2.2-point fall that no suite had caused.
+    # Silently comparing them made the gate meaningless in both directions.
+    recorded_limit = recorded.get("limit")
+    if recorded_limit is None:
+        print("WARNING: the baseline predates --limit being recorded; assuming %d"
+              % limit, file=sys.stderr)
+    elif recorded_limit != limit:
+        print("FAIL: baseline was recorded at --limit %d, checked at --limit %d"
+              % (recorded_limit, limit), file=sys.stderr)
+        print("      Those are different samples. Re-run with --limit %d."
+              % recorded_limit, file=sys.stderr)
+        return 2
+
     current = killed / tried if tried else 0.0
     floor = float(recorded.get("ratio", 0.0))
     # A small tolerance: the sample is random, so an identical suite can vary a

@@ -271,10 +271,15 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic. Three still catch nothing, and each has a reason on the record —
-the mutations that survive are in a scene-change that would replace the suite's
-own scene, in an audio buffer loop that needs a playback device the headless
-driver does not provide, or are equivalent.
+its logic, and **no suite catches nothing** — the last three were
+`animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
+beyond its score. `line-of-sight` tested the ray-casting helper thoroughly and
+never drove the enemy that decides whether it is alerted. `camera-follow`'s
+suite added a fresh copy of the world per test and left it there, which is
+invisible while every test only reads configuration and shoves the player off
+the level the moment one lets the physics run. `animated-sprite` restated the
+animation rules inline and checked its own copy against itself, in the repo that
+documents that as a failure mode.
 
 The smoke gate carries the demos whose output is genuinely pixels or sound. It
 now fails on engine warnings, which is how a refused operation — a shader
@@ -307,6 +312,22 @@ rest:
   walking into range waited up to two thirds of a second for its first shot.
 - `cellular-automata`'s own water test asserted the wrong row and passed about
   half the time, depending on which way a coin-flip sent the drop.
+
+## The measurement has to be taken the same way twice
+
+`--limit` decides how many mutations each demo contributes. A demo with forty
+candidates and one with two are weighted differently at 4 than at 5, so two runs
+at different limits are measurements of different populations — not the same
+thing twice.
+
+CI checked at `--limit 4` against a floor recorded at the default 5 and reported
+a 2.2-point fall that no suite had caused. The ceiling gives it away: at the
+commit where the floor was recorded, the most a `--limit 5` run could attempt
+was 664 mutations, which is exactly the `tried` in the baseline, and the most a
+`--limit 4` run could attempt was 552.
+
+The baseline records its `limit` and `seed` now, and `--check` refuses to
+compare across different ones rather than reporting a fall.
 
 `docs/GAPS.md` lists demo-shaped gaps; this is the test-shaped one, and it is
 the larger pile of work.

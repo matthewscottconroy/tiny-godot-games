@@ -163,7 +163,11 @@ jobs:
       - name: Measure test integrity
         # Ratchets against docs/mutation-baseline.json — the score may only go
         # up. See docs/TEST_INTEGRITY.md.
+        #
+        # No --limit here: it has to match the one the baseline was recorded at,
+        # and the tool now refuses to compare across different ones rather than
+        # reporting a fall that no suite caused.
         run: |
           export PATH="$HOME/godot:$PATH"
           ./run-tests.sh --smoke-only >/dev/null
-          ./tools/mutate.py --limit 4 --check
+          ./tools/mutate.py --check
