@@ -31,3 +31,4 @@ mono_crash.*.json
 
 # Crash-recovery journal written by tools/mutate.py
 .mutate-journal.json
+__pycache__/
