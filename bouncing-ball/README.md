@@ -10,25 +10,62 @@ Most player characters use `CharacterBody2D` where you control velocity directly
 
 This distinction matters architecturally. In platformers, destructible environments scatter debris (RigidBody2D) while the player navigates (CharacterBody2D). In puzzle games, objects the player pushes are rigid bodies. In pinball games, the entire scene except the flippers is rigid body physics. Understanding when to use each body type is a fundamental Godot design decision.
 
-This demo shows the minimum viable RigidBody2D: a ball with a collision shape, a `PhysicsMaterial` with `bounce = 1.0`, and four static wall barriers. The script contains almost no code — the engine does the work.
+This demo shows the minimum viable RigidBody2D: a ball with a collision shape, a `PhysicsMaterial` with `bounce = 0.85`, and four static wall barriers. The ball script contains almost no code — the engine does the work.
 
 ## Controls
 
-None — the simulation runs on its own. Adjust the physics material and gravity
-in the scene to change how the ball behaves.
+| Input | Action |
+|-------|--------|
+| LMB | Drop the ball again from the top |
+
+Adjust the physics material and gravity in the scene to change how it behaves.
 
 ## How It Works
 
 ### Node Tree
 
 ```
-Main (Node2D)
+Main (Node2D)                    <- main.gd (draws the walls, handles the click)
+├── Hint (Label)
 ├── Ball (RigidBody2D)           <- ball.gd (visual only)
 │   └── CollisionShape2D         (CircleShape2D, radius 20)
-├── TopWall    (StaticBody2D)    <- screen top edge
-├── BottomWall (StaticBody2D)    <- screen bottom edge
-├── LeftWall   (StaticBody2D)    <- screen left edge
-└── RightWall  (StaticBody2D)    <- screen right edge
+├── Floor     (StaticBody2D)     <- screen bottom edge
+├── Ceiling   (StaticBody2D)     <- screen top edge
+├── LeftWall  (StaticBody2D)     <- screen left edge
+└── RightWall (StaticBody2D)     <- screen right edge
+```
+
+### Drawing the Walls
+
+A `StaticBody2D` with a `CollisionShape2D` is invisible at run time — collision
+shapes are drawn by the editor, not by the game. This demo opened onto a ball
+falling through empty space and rebounding off nothing, which is the one thing it
+exists to show.
+
+`main.gd` draws them, and reads each rectangle back out of the collision shape
+rather than repeating it as a `ColorRect`:
+
+```gdscript
+var box := collider.shape as RectangleShape2D
+rects.append(Rect2(body.position + collider.position - box.size * 0.5, box.size))
+```
+
+Derived rather than duplicated, so a wall cannot be drawn anywhere the physics
+is not. The alternative — four `ColorRect`s positioned by hand — is one edit away
+from a picture that disagrees with the simulation.
+
+### Putting the Ball Back
+
+Assigning to a `RigidBody2D`'s `position` does not work: the physics server owns
+the transform and overwrites the assignment on the next step. `PhysicsServer2D`
+is the supported way in, and the velocities have to be cleared separately or the
+ball arrives at the top carrying the speed it had at the bottom.
+
+```gdscript
+PhysicsServer2D.body_set_state(_ball.get_rid(),
+        PhysicsServer2D.BODY_STATE_TRANSFORM, Transform2D(0.0, BALL_START))
+PhysicsServer2D.body_set_state(_ball.get_rid(),
+        PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, Vector2.ZERO)
 ```
 
 ### The Ball Script
@@ -42,7 +79,7 @@ func _draw() -> void:
     draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(0.8, 0.2, 0.1), 2.0)
 ```
 
-The entire script is just the visual. All movement, gravity, and collision response come from the engine. The ball's initial velocity is set in the Inspector via `Linear Velocity` (or in code: `linear_velocity = Vector2(200, -300)`). The `PhysicsMaterial` resource on the `RigidBody2D` has `bounce = 1.0` for a perfectly elastic bounce.
+The entire script is just the visual. All movement, gravity, and collision response come from the engine. The ball's initial velocity is set in the Inspector via `Linear Velocity` (or in code: `linear_velocity = Vector2(200, -300)`). The `PhysicsMaterial` resource on the `RigidBody2D` has `bounce = 0.85`: high enough to keep bouncing for a while, short of the perfectly elastic 1.0 that would never settle.
 
 ### Why _draw() Works Without queue_redraw()
 
@@ -72,7 +109,7 @@ Each physics tick (60 Hz by default):
 3. **Broadphase collision detection** — overlapping shape AABBs are found.
 4. **Narrowphase + response** — exact collision normal is computed; velocity is reflected: `v_out = v_in - 2 * dot(v_in, n) * n`, then scaled by `bounce`.
 
-Setting `PhysicsMaterial.bounce = 1.0` makes the reflection scale factor 1.0 (perfectly elastic — no energy lost). The default is 0.0 (all kinetic energy absorbed on contact).
+`PhysicsMaterial.bounce` is that scale factor: 1.0 is perfectly elastic and loses nothing, the default 0.0 absorbs all of it on contact, and this demo's 0.85 loses 15% of the speed at each impact — which is why the rebound is visibly lower every time.
 
 ### Disabling Gravity
 
@@ -101,22 +138,28 @@ Set `gravity_scale = 0.0` to make a RigidBody2D float in space — useful for sp
 ## Key Constants
 
 ```gdscript
-# Set in Inspector on the RigidBody2D node (not in script):
-# Linear Velocity: Vector2(200, -300)   <- initial launch direction
-# PhysicsMaterial.bounce: 1.0           <- perfectly elastic
+# Set in the scene on the RigidBody2D node, not in script:
+# PhysicsMaterial.bounce:   0.85   <- lossy, so the rebounds get shorter
+# PhysicsMaterial.friction: 0.05   <- nearly frictionless walls
 ```
+
+The ball starts at rest at `(320, 60)` and is dropped by gravity alone. Giving it
+a `linear_velocity` in the scene would launch it instead, which is the same demo
+with one more thing to explain.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `scripts/ball.gd` | Visual rendering only (draw_circle + draw_arc) |
-| `ball.gd` | Same script, placed at project root for direct reference |
+| `scripts/main.gd` | Draws the walls from their collision shapes; click to reset |
 | `scenes/main.tscn` | Ball, four StaticBody2D walls, PhysicsMaterial configuration |
 
 ## Use as a building block
 
-**Copy:** `scripts/ball.gd`.
+**Copy:** `scripts/main.gd` — `wall_rects()` is the reusable half, turning any
+set of rectangular static bodies into something you can see while you build the
+level.
 
 **Notes**
 - These scripts have no `class_name`, so reference them with `preload("res://…")` or give them one when you copy them in.

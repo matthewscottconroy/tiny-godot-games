@@ -48,6 +48,8 @@ func _ready() -> void:
 	_test_it_bounces_back_up()
 	_test_the_bounce_loses_energy()
 	_test_the_material_is_what_makes_it_bounce()
+	_test_the_walls_are_visible(scene)
+	await _test_clicking_puts_the_ball_back(scene)
 	_report()
 
 func _lowest_index() -> int:
@@ -99,3 +101,70 @@ func _test_the_material_is_what_makes_it_bounce() -> void:
 	expect(mat != null, "the ball has a physics material override")
 	expect(mat != null and mat.bounce > 0.5, "with a high restitution")
 	expect(mat != null and mat.bounce < 1.0, "but short of perfectly elastic")
+
+func _test_the_walls_are_visible(scene: Node2D) -> void:
+	print("the box")
+	# The walls used to be bare collision shapes, which the editor draws and a
+	# running game does not — the ball rebounded off nothing visible. main.tscn
+	# now draws them, reading the rectangles back out of the shapes so the
+	# drawing cannot drift away from the physics.
+	var drawn: Array[Rect2] = scene.wall_rects()
+	expect(drawn.size() == 4, "all four walls are drawn (%d)" % drawn.size())
+
+	_quiet_failures = 0
+	for wall_name in ["Floor", "Ceiling", "LeftWall", "RightWall"]:
+		var body: StaticBody2D = scene.get_node(wall_name)
+		var collider: CollisionShape2D = body.get_node("CollisionShape2D")
+		var box: RectangleShape2D = collider.shape
+		var want := Rect2(body.position + collider.position - box.size * 0.5, box.size)
+		var found := false
+		for rect in drawn:
+			if rect.position.is_equal_approx(want.position) and rect.size.is_equal_approx(want.size):
+				found = true
+		expect_quiet(found, "%s is drawn where its collider is (%s)" % [wall_name, want])
+	expect(_quiet_failures == 0, "every wall is drawn exactly where the physics puts it")
+
+	# The box has to enclose the play area, or the ball is falling past the
+	# picture rather than inside it.
+	var union: Rect2 = drawn[0]
+	for rect in drawn:
+		union = union.merge(rect)
+	expect(union.size.x >= 640.0 and union.size.y >= 480.0,
+		"the walls span the whole window (%s)" % union.size)
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("  (", label, " — failed)")
+
+func _test_clicking_puts_the_ball_back(scene: Node2D) -> void:
+	print("the reset")
+	# The hint on screen promises this, and for a long time nothing implemented
+	# it — the scene had no script at all. Driving the handler rather than
+	# calling reset_ball() directly, so the wiring is covered too.
+	var away: Vector2 = _ball.position
+	expect(away.distance_to(scene.BALL_START) > 100.0,
+		"the ball has moved well away from its start (%s)" % away)
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	scene._unhandled_input(click)
+	# The physics server owns the transform; the write lands on the next step.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	expect(_ball.position.distance_to(scene.BALL_START) < 40.0,
+		"clicking returns it to the top (%s)" % _ball.position)
+	expect(_ball.linear_velocity.length() < 200.0,
+		"and it arrives without the speed it had (%.0f)" % _ball.linear_velocity.length())
+
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	var before: Vector2 = _ball.position
+	scene._unhandled_input(release)
+	await get_tree().physics_frame
+	expect(_ball.position.y > before.y, "releasing the button does not reset it again")

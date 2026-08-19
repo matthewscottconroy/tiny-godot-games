@@ -6,7 +6,9 @@ var _pass := 0
 var _fail := 0
 
 func _ready() -> void:
-	_test_the_grid_starts_empty()
+	_test_the_world_opens_with_something_in_it()
+	_test_the_seed_is_the_same_every_run()
+	_test_clearing_empties_the_grid()
 	_test_painting_puts_material_down()
 	_test_painting_at_the_edge_stays_on_the_grid()
 	_test_the_number_keys_pick_a_material()
@@ -35,9 +37,18 @@ func _report() -> void:
 
 var _script: GDScript = load("res://scripts/main.gd")
 
+## The demo as it opens: seeded, with sand already falling.
 func _make() -> Node2D:
 	var m: Node2D = _script.new()
 	add_child(m)
+	return m
+
+## The same demo cleared, for the tests that build one specific arrangement of
+## cells and watch what it does. Seeded material elsewhere on the grid would
+## not change the answer, but it would make the setup harder to read.
+func _make_empty() -> Node2D:
+	var m := _make()
+	m._reset()
 	return m
 
 func _count(m: Node2D, mat: int) -> int:
@@ -48,16 +59,52 @@ func _count(m: Node2D, mat: int) -> int:
 				total += 1
 	return total
 
-func _test_the_grid_starts_empty() -> void:
+## The demo used to open onto an empty grid and do nothing until clicked, which
+## is a poor way to show an automaton. It seeds itself now, and this is the check
+## that it still does — a blank opening frame is the failure to catch.
+func _test_the_world_opens_with_something_in_it() -> void:
+	print("the opening frame")
+	var m := _make()
+	var counts: Dictionary = m.census()
+	expect(counts[m.Cell.SAND] > 100, "there is sand in the world before anything is clicked (%d)" % counts[m.Cell.SAND])
+	expect(counts[m.Cell.WATER] > 100, "and water (%d)" % counts[m.Cell.WATER])
+	expect(counts[m.Cell.STONE] > 100, "and stone for them to land on (%d)" % counts[m.Cell.STONE])
+
+	# Something has to be falling, or the opening frame is a still life.
+	var before: int = _lowest_row(m, m.Cell.SAND)
+	for _i in 20:
+		m._step()
+	expect(_lowest_row(m, m.Cell.SAND) > before,
+		"and the sand is falling from the first step (row %d -> %d)" % [before, _lowest_row(m, m.Cell.SAND)])
+
+func _test_the_seed_is_the_same_every_run() -> void:
+	print("determinism")
+	# randf lives in the falling rules, not in the seed. If it crept into the
+	# seed the opening frame would differ run to run and nothing above could be
+	# asserted against it.
+	var a: Dictionary = _make().census()
+	var b: Dictionary = _make().census()
+	expect(a == b, "two fresh worlds start identical")
+
+func _lowest_row(m: Node2D, mat: int) -> int:
+	var lowest := -1
+	for y in m.GRID_H:
+		for x in m.GRID_W:
+			if m._grid[y][x] == mat:
+				lowest = y
+	return lowest
+
+func _test_clearing_empties_the_grid() -> void:
 	print("a clean slate")
 	var m := _make()
 	expect(m._grid.size() == m.GRID_H, "the grid is GRID_H rows")
 	expect(m._grid[0].size() == m.GRID_W, "of GRID_W cells")
-	expect(_count(m, m.Cell.EMPTY) == m.GRID_W * m.GRID_H, "and every one of them is empty")
+	m._reset()
+	expect(_count(m, m.Cell.EMPTY) == m.GRID_W * m.GRID_H, "and C empties every one of them")
 
 func _test_painting_puts_material_down() -> void:
 	print("the brush")
-	var m := _make()
+	var m := _make_empty()
 	m._paint(Vector2(40 * m.CELL, 20 * m.CELL), m.Cell.SAND)
 	expect(m._grid[20][40] == m.Cell.SAND, "painting fills the cell under the cursor")
 	var width: int = m._brush * 2 + 1
@@ -68,7 +115,7 @@ func _test_painting_puts_material_down() -> void:
 
 func _test_painting_at_the_edge_stays_on_the_grid() -> void:
 	print("painting off the edge")
-	var m := _make()
+	var m := _make_empty()
 	# Half the brush hangs off the corner; the other half still lands.
 	m._paint(Vector2(0.0, 0.0), m.Cell.SAND)
 	expect(m._grid[0][0] == m.Cell.SAND, "the corner cell is painted")
@@ -88,7 +135,7 @@ func _test_painting_at_the_edge_stays_on_the_grid() -> void:
 
 func _test_the_number_keys_pick_a_material() -> void:
 	print("choosing a material")
-	var m := _make()
+	var m := _make_empty()
 	for pair in [[KEY_1, m.Cell.SAND], [KEY_2, m.Cell.WATER], [KEY_3, m.Cell.STONE]]:
 		var e := InputEventKey.new()
 		e.keycode = pair[0]
@@ -105,7 +152,7 @@ func _test_the_number_keys_pick_a_material() -> void:
 
 func _test_sand_falls() -> void:
 	print("sand")
-	var m := _make()
+	var m := _make_empty()
 	m._grid[10][40] = m.Cell.SAND
 	m._step()
 	expect(m._grid[10][40] == m.Cell.EMPTY, "a grain leaves the cell it was in")
@@ -113,7 +160,7 @@ func _test_sand_falls() -> void:
 
 func _test_sand_slides_off_a_pile() -> void:
 	print("piling up")
-	var m := _make()
+	var m := _make_empty()
 	# A grain sitting directly on another has nowhere down to go, so it takes
 	# the diagonal — that is what makes a heap instead of a tower.
 	m._grid[m.GRID_H - 1][40] = m.Cell.SAND
@@ -152,7 +199,7 @@ func _test_sand_slides_off_a_pile() -> void:
 
 func _test_sand_rests_on_stone() -> void:
 	print("sand on stone")
-	var m := _make()
+	var m := _make_empty()
 	for x in m.GRID_W:
 		m._grid[30][x] = m.Cell.STONE
 	m._grid[29][40] = m.Cell.SAND
@@ -162,7 +209,7 @@ func _test_sand_rests_on_stone() -> void:
 
 func _test_stone_never_moves() -> void:
 	print("stone")
-	var m := _make()
+	var m := _make_empty()
 	m._grid[10][40] = m.Cell.STONE
 	for i in 10:
 		m._step()
@@ -170,7 +217,7 @@ func _test_stone_never_moves() -> void:
 
 func _test_water_spreads_out_flat() -> void:
 	print("water")
-	var m := _make()
+	var m := _make_empty()
 	var floor_y: int = m.GRID_H - 1
 	m._grid[floor_y][40] = m.Cell.WATER
 	m._grid[floor_y - 1][40] = m.Cell.WATER
@@ -197,7 +244,7 @@ func _test_water_spreads_out_flat() -> void:
 
 func _test_nothing_is_created_or_destroyed() -> void:
 	print("conservation")
-	var m := _make()
+	var m := _make_empty()
 	m._paint(Vector2(30 * m.CELL, 10 * m.CELL), m.Cell.SAND)
 	m._paint(Vector2(50 * m.CELL, 10 * m.CELL), m.Cell.WATER)
 	var sand := _count(m, m.Cell.SAND)
@@ -211,7 +258,7 @@ func _test_nothing_is_created_or_destroyed() -> void:
 
 func _test_the_scan_direction_alternates() -> void:
 	print("scan order")
-	var m := _make()
+	var m := _make_empty()
 	var first: bool = m._scan_right
 	m._step()
 	expect(m._scan_right != first, "each step scans the opposite way from the last")

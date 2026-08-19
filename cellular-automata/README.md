@@ -18,6 +18,13 @@ Falling-sand games get their character from rules applied per cell, not from phy
 | 2 | Select Water |
 | 3 | Select Stone |
 | C | Clear the grid |
+| R | Reset to the opening arrangement |
+
+It opens seeded rather than blank: a stone bowl with sand falling into one half
+and water into the other, so both behaviours — sand piling to an angle of repose,
+water levelling flat — are visible in the first second without touching anything.
+`seed_world()` is deterministic, with no `randf()` in it; the randomness belongs
+to the falling rules, where a grain picks between two equally open diagonals.
 
 ## How It Works
 

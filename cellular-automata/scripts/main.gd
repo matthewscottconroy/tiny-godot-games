@@ -20,6 +20,7 @@ var _brush := 3
 
 func _ready() -> void:
 	_reset()
+	seed_world()
 
 func _reset() -> void:
 	_grid.clear()
@@ -36,6 +37,9 @@ func _input(event: InputEvent) -> void:
 			KEY_2: _selected = Cell.WATER
 			KEY_3: _selected = Cell.STONE
 			KEY_C: _reset()
+			KEY_R:
+				_reset()
+				seed_world()
 
 func _process(_delta: float) -> void:
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -46,14 +50,55 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 func _paint(mouse: Vector2, mat: int) -> void:
-	var cx := int(mouse.x / CELL)
-	var cy := int(mouse.y / CELL)
+	# floori, not int: int() truncates towards zero, so a pointer that has left
+	# the window on the left or top would paint column 0 or row 0 instead of
+	# nothing at all.
+	var cx := floori(mouse.x / CELL)
+	var cy := floori(mouse.y / CELL)
 	for dy in range(-_brush, _brush + 1):
 		for dx in range(-_brush, _brush + 1):
 			var gx := cx + dx
 			var gy := cy + dy
 			if gx >= 0 and gx < GRID_W and gy >= 0 and gy < GRID_H:
 				_grid[gy][gx] = mat
+
+## Fill the world with something already falling.
+##
+## The demo used to open onto an empty grid, so the automaton it exists to show
+## did nothing until the reader guessed they were meant to click. This gives it
+## a stone bowl with sand pouring into it and water beside — enough that sand
+## piling at its angle of repose and water finding its level are both visible in
+## the first second, before anyone touches the mouse.
+##
+## Deterministic: no randf here, so the opening frames are the same every run and
+## the suite can assert against them.
+func seed_world() -> void:
+	# A bowl: a floor with walls turned up at each end, and a low divider so the
+	# two materials start apart and meet in their own time.
+	for x in range(8, GRID_W - 8):
+		_fill(x, GRID_H - 6, 1, 3, Cell.STONE)
+	_fill(8, GRID_H - 20, 3, 14, Cell.STONE)
+	_fill(GRID_W - 11, GRID_H - 20, 3, 14, Cell.STONE)
+	_fill(GRID_W / 2 - 1, GRID_H - 14, 2, 8, Cell.STONE)
+
+	# Sand on the left, water on the right, both above the bowl and falling.
+	_fill(18, 6, 16, 12, Cell.SAND)
+	_fill(GRID_W - 34, 6, 16, 10, Cell.WATER)
+
+func _fill(x: int, y: int, w: int, h: int, mat: int) -> void:
+	for gy in range(y, y + h):
+		for gx in range(x, x + w):
+			if gx >= 0 and gx < GRID_W and gy >= 0 and gy < GRID_H:
+				_grid[gy][gx] = mat
+
+## How many cells hold each material — the cheapest way for a test to watch the
+## world change without reaching into the grid itself.
+func census() -> Dictionary:
+	var counts := {Cell.EMPTY: 0, Cell.SAND: 0, Cell.WATER: 0, Cell.STONE: 0}
+	for row in _grid:
+		for cell in row:
+			counts[cell] += 1
+	return counts
 
 func _step() -> void:
 	_scan_right = not _scan_right
