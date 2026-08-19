@@ -135,16 +135,33 @@ read with them in mind:
   because `sin` is positive just after zero — but the general case exists and a
   genuinely equivalent mutation can never be killed.
 
+  `gamepad-input` has two, and they are worth reading as the pattern. It guards
+  its reads with `return 0.0 if id == NO_PAD else Input.get_joy_axis(id, ax)`,
+  and flipping that `==` to `!=` changes nothing on a machine with no gamepad:
+  measured rather than assumed, `Input.get_joy_axis(-1, ...)` returns `0.0` and
+  `is_joy_button_pressed(-1, ...)` returns `false`, so both sides of the branch
+  agree. The guard still earns its place — it states the intent instead of
+  relying on that accident — but no test without hardware can hold it.
+
+  When a mutation survives because a line's *value* is never read, that is not
+  an equivalent mutation so much as a line worth deleting. `browser` kept a
+  `seen[tag] = true` set whose value nothing looked at; replacing the dictionary
+  with a linear `has` on thirteen tags removed the unheld line and took the demo
+  to 100%.
+
 A demo scoring 50% with the other 50% in those three categories is done.
 
 And a fourth case, where the score is not just capped but undefined:
 
-- **Demos whose subject is the scene, not a script.** `bouncing-ball` is a
-  `RigidBody2D` with a bouncy `PhysicsMaterial` between four static walls; its
-  only script draws a circle. There is nothing in a `.gd` file to mutate, so the
-  tool reports `no-mutations`. The suite is still worth writing — it just has to
-  run the real scene and watch the ball, because the alternative is a suite that
-  reimplements a bounce the demo does not contain.
+- **Demos whose subject is the scene, not a script.** A demo can be a scene with
+  a bouncy `PhysicsMaterial` and four static walls, its only script drawing a
+  circle. There is nothing in a `.gd` file to mutate, so the tool reports
+  `no-mutations`. The suite is still worth writing — it just has to run the real
+  scene and watch the ball, because the alternative is a suite that reimplements
+  a bounce the demo does not contain.
+
+  `bouncing-ball` was the example here until the screenshots showed its walls
+  were invisible; drawing them put logic back in a script, and it now scores.
 
 ## Deriving your inputs from the code under test
 

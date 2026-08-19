@@ -106,14 +106,17 @@ static func filter(entries: Array, search: String, tag: String) -> Array:
 	return out
 
 
-## Every tag in use, in the order they appear, so the filter list is stable.
+## Every tag in use, sorted, so the filter bar is the same on every run.
+##
+## A Dictionary as a set would be the faster shape, but its value is never read
+## — and a value nothing reads is a line no test can hold, since writing the
+## wrong thing there changes nothing. There are thirteen tags; the linear `has`
+## costs nothing and every line here means something.
 static func tags_in(entries: Array) -> PackedStringArray:
-	var seen := {}
 	var out := PackedStringArray()
 	for entry in entries:
 		for tag in (entry as Entry).tags:
-			if not seen.has(tag):
-				seen[tag] = true
+			if not out.has(tag):
 				out.append(tag)
 	out.sort()
 	return out

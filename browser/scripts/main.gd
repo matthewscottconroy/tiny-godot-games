@@ -14,6 +14,17 @@ const Catalogue := preload("res://scripts/catalogue.gd")
 ## Where the demos are, relative to this project.
 const COLLECTION := "res://.."
 
+## How a demo gets started. Replaceable so a test can drive the key handling
+## without a real process appearing.
+##
+## This is not decoration. Under mutation testing the suite is run against a
+## deliberately broken copy of this script, and a mutant only has to send some
+## other key down the launch path for the test to spawn a windowed Godot that
+## outlives the run — which happened, and hung the harness, because the child
+## inherits the output pipe and read() waits for an EOF that never comes.
+var spawn: Callable = func(executable: String, args: PackedStringArray) -> int:
+	return OS.create_process(executable, args)
+
 var _entries: Array = []
 var _shown: Array = []
 var _tag := ""
@@ -101,11 +112,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
-	if key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER:
+	if is_launch_key(key):
 		_launch_selected()
 	elif key.keycode == KEY_ESCAPE:
 		_search.text = ""
 		_refresh()
+
+
+## Both Enters launch. Separated from the handler so a test can ask which keys
+## count without the answer being a spawned Godot process.
+func is_launch_key(key: InputEventKey) -> bool:
+	return key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER
 
 
 func _launch_selected() -> void:
@@ -117,7 +134,7 @@ func _launch_selected() -> void:
 	var executable := OS.get_executable_path()
 	# --path, not a scene: the demo brings its own project settings, autoloads
 	# and input map, and only a fresh process gets all three.
-	var pid := OS.create_process(executable, ["--path", demo_path])
+	var pid: int = spawn.call(executable, PackedStringArray(["--path", demo_path]))
 	if pid <= 0:
 		_status.text = "Could not launch %s — is this running from an exported build?" % entry.name
 	else:

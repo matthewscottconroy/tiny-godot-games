@@ -31,6 +31,7 @@ import os
 import random
 import re
 import resource
+import signal
 import subprocess
 import sys
 import threading
@@ -270,6 +271,14 @@ def _frame_budget(demo):
             return digits
     return "5"
 
+def _kill_tree(proc):
+    """Kill the suite and anything it started."""
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except OSError:
+        proc.kill()
+
+
 def run_suite(demo, timeout=90):
     """Run only the logic suite. True if it passed."""
     if not os.path.exists(os.path.join(demo, "tests", "test.tscn")):
@@ -278,16 +287,23 @@ def run_suite(demo, timeout=90):
     try:
         # Stream and truncate rather than buffer: a mutation that makes a demo
         # error every frame would otherwise grow this process without bound.
+        # Its own process group, so the watchdog can take the whole tree down.
+        # Killing just the suite is not enough: a demo can spawn a process of
+        # its own (browser launches the demo you pick), that grandchild inherits
+        # the pipe, and read() blocks on an EOF that never comes even after the
+        # suite is dead. A mutation only has to make some other key reach the
+        # launch path for this to happen — which it did.
         proc = subprocess.Popen(
             [GODOT, "--headless", "--path", demo, "res://tests/test.tscn",
              "--quit-after", _frame_budget(demo)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            start_new_session=True,
             preexec_fn=_limit_address_space)
         # The deadline has to cover the read, not just the wait. A mutation can
         # leave a demo spinning in a loop that prints nothing — read() then
         # blocks until EOF that never comes, and the run hangs forever. Two of
         # these outlived their parent by an hour before this was added.
-        watchdog = threading.Timer(timeout, proc.kill)
+        watchdog = threading.Timer(timeout, _kill_tree, args=(proc,))
         watchdog.start()
         try:
             captured = proc.stdout.read(limit)
