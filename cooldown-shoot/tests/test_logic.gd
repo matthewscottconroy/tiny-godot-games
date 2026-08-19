@@ -15,6 +15,8 @@ func _ready() -> void:
 	_test_firing_again_restarts_the_full_cooldown()
 	_test_facing_follows_real_input_only()
 	_test_bullet_travels_and_expires()
+	await test_the_bullet_flies_and_expires()
+	await test_a_shot_starts_clear_of_the_player()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -59,6 +61,85 @@ func _test_bullet_travels_and_expires() -> void:
 		b._process(0.05)
 		elapsed += 0.05
 	expect(b.is_queued_for_deletion(), "a bullet frees itself once its lifetime runs out")
+
+## The bullet's own life, and where it starts.
+func test_the_bullet_flies_and_expires() -> void:
+	print("the bullet")
+	var bullet: Area2D = load("res://scripts/bullet.gd").new()
+	add_child(bullet)
+	bullet.direction = Vector2.RIGHT
+	bullet.position = Vector2(100, 100)
+
+	var life: float = bullet._lifetime
+	expect(life > 0.0, "a fresh bullet has time on the clock (%.2f)" % life)
+
+	bullet._process(0.1)
+	expect(bullet.position.x > 100.0, "it travels along its direction (%s)" % bullet.position)
+	expect(is_equal_approx(bullet.position.y, 100.0), "and not sideways")
+	# A frame has to pass before this means anything: queue_free() is deferred,
+	# so a bullet that freed itself on its very first step would still look
+	# valid on the line after the call.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	expect(is_instance_valid(bullet),
+		"and is still alive well inside its lifetime (%.2f left)" % bullet._lifetime)
+
+	# It frees itself when the clock runs out — a bullet that never expires
+	# accumulates one node per shot for as long as the game runs.
+	bullet._process(life)
+	# queue_free() takes effect at the end of a frame, not on the call.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	expect(not is_instance_valid(bullet), "and frees itself once the clock runs out")
+
+## Firing spawns a bullet in front of the player, and only when the cooldown says so.
+func test_a_shot_starts_clear_of_the_player() -> void:
+	print("the muzzle")
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	await get_tree().physics_frame
+	var player: CharacterBody2D = scene.get_node("Player")
+
+	player.facing = Vector2.RIGHT
+	expect(player.muzzle().x > player.global_position.x,
+		"facing right, a shot starts to the right (%s vs %s)"
+		% [player.muzzle(), player.global_position])
+	player.facing = Vector2.LEFT
+	expect(player.muzzle().x < player.global_position.x, "facing left, to the left")
+	player.facing = Vector2.UP
+	expect(player.muzzle().y < player.global_position.y, "facing up, above")
+	expect(is_equal_approx(player.muzzle().distance_to(player.global_position),
+			player.MUZZLE_OFFSET),
+		"always one muzzle length out (%.1f)"
+		% player.muzzle().distance_to(player.global_position))
+
+	# The real spawn goes through the same point, and only fires off cooldown.
+	player.facing = Vector2.RIGHT
+	player.cooldown = 0.0
+	var before := scene.get_child_count()
+	player._shoot()
+	expect(scene.get_child_count() == before + 1,
+		"firing adds a bullet to the scene (%d -> %d)" % [before, scene.get_child_count()])
+	expect(not player.can_fire(), "and starts the cooldown")
+
+	var spawned: Node2D = scene.get_child(scene.get_child_count() - 1)
+	expect(spawned.global_position.x > player.global_position.x,
+		"the bullet starts in front of the player (%s)" % spawned.global_position)
+	expect(spawned.direction == player.facing, "travelling the way the player aims")
+
+	# Nothing pressed, nothing fired. The trigger reads Input, which cannot be
+	# pressed headless — but its other half is can_fire(), and loosening the
+	# `and` to an `or` empties the magazine on every frame the cooldown is up.
+	player.cooldown = 0.0
+	var quiet := scene.get_child_count()
+	for _i in 30:
+		await get_tree().physics_frame
+	expect(player.can_fire(), "the player is off cooldown and able to fire")
+	expect(scene.get_child_count() == quiet,
+		"but fires nothing with no key pressed (%d -> %d)"
+		% [quiet, scene.get_child_count()])
+
+	scene.queue_free()
 
 func _report() -> void:
 	var summary := "[cooldown-shoot] %d/%d passed" % [_pass, _pass + _fail]

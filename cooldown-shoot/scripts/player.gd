@@ -3,6 +3,9 @@ extends CharacterBody2D
 const SPEED := 160.0
 const FIRE_COOLDOWN := 0.35
 
+## How far in front of the player a bullet spawns — clear of the 24px-wide body.
+const MUZZLE_OFFSET := 22.0
+
 @export var bullet_scene: PackedScene
 
 var cooldown := 0.0
@@ -60,9 +63,15 @@ func cooldown_ratio() -> float:
 func begin_cooldown() -> void:
 	cooldown = FIRE_COOLDOWN
 
+## Where a bullet is born: clear of the body, along the aim. Inside the player
+## it would be drawn over the shooter and, in a demo with hit detection, would
+## be overlapping it on the frame it spawns.
+func muzzle() -> Vector2:
+	return global_position + facing * MUZZLE_OFFSET
+
 func _shoot() -> void:
 	begin_cooldown()
 	var b := bullet_scene.instantiate()
-	b.global_position = global_position + facing * 22
+	b.global_position = muzzle()
 	b.direction = facing
 	get_parent().add_child(b)
