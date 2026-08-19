@@ -88,7 +88,22 @@ Same as cooldown-shoot but uses a signal instead of directly instantiating bulle
 ```gdscript
 signal fired(from: Vector2, dir: Vector2)
 if Input.is_action_just_pressed("ui_accept"):
-    fired.emit(global_position + facing * 20, facing)
+    fired.emit(muzzle(), facing)
+```
+
+The two decisions behind that line live in their own methods, because the frame
+around them reads `Input` and so cannot be driven by a test:
+
+```gdscript
+## Where the next shot starts: in front of the player, along its facing.
+func muzzle() -> Vector2:
+    return global_position + facing * MUZZLE_OFFSET
+
+## The way to face given this frame's input. Released keys read as a zero
+## vector, and normalising that gives (0, 0) — so the aim is left alone rather
+## than overwritten, or letting go would point the player at nothing.
+func aim_for(dir: Vector2, current: Vector2) -> Vector2:
+    return dir.normalized() if dir.length() > 0.0 else current
 ```
 
 ## Object Pool Theory
