@@ -56,7 +56,15 @@ exposes a `class_name`, instantiate it. If the component needs scene children,
 instantiate `res://scenes/main.tscn` and drive the real nodes.
 
 A suite that needs a physics step should do its work in `_physics_process` —
-`direct_space_state` is only valid there. The runner allows a few frames for it.
+`direct_space_state` is only valid there. The runner allows a few frames for it,
+and a demo that needs more can ask for them in `tests/frames`.
+
+Two documents are worth reading before writing a suite.
+[docs/TEST_INTEGRITY.md](docs/TEST_INTEGRITY.md) covers how much of a demo its
+tests actually reach and how that is held from slipping.
+[docs/FAILURE_MODES.md](docs/FAILURE_MODES.md) catalogues the bugs the conversion
+found, grouped by how each one stayed hidden — it is the shortest route to
+knowing what to assert.
 
 ```bash
 ./run-tests.sh my-demo        # one demo

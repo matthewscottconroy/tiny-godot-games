@@ -73,16 +73,23 @@ godot --headless --path state-machine res://tests/test.tscn --quit-after 5
 Other tooling:
 
 ```bash
+tools/preflight.sh        # which of the pipelines below can run here
 tools/check_docs.py       # README structure, control claims, index drift
 tools/new-demo.sh <name>  # scaffold a demo that is green from the start
-tools/screenshots.sh      # capture one PNG per demo (needs xvfb)
+tools/screenshots.sh      # capture one PNG per demo (xvfb, or the live session)
 tools/build_gallery.py    # write docs/GALLERY.md from those screenshots
 tools/export_web.sh       # export demos for the browser (needs export templates)
+tools/mutate.py           # how much of each demo the tests actually reach
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions these enforce, and
 [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) for why the components are copied
 rather than shipped as an addon.
+
+Every suite here drives its demo's real code, which is not where they started —
+[docs/TEST_INTEGRITY.md](docs/TEST_INTEGRITY.md) explains how that is measured and
+held, and [docs/FAILURE_MODES.md](docs/FAILURE_MODES.md) catalogues the bugs the
+conversion turned up, grouped by the shape of how each one stayed hidden.
 
 The script imports each project first (generating `.godot/`) so `class_name`
 globals and assets resolve the same way they do in CI, which runs the identical
