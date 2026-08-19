@@ -42,6 +42,20 @@ func _check() -> String:
 		if recent.size() >= pat.size():
 			var tail := recent.slice(recent.size() - pat.size())
 			if tail == pat:
-				_history.clear()
+				# Only forget the inputs if nothing longer could still grow out
+				# of them. Clearing unconditionally meant "L" "L" fired Double
+				# Cut and threw the history away, so the third "L" started from
+				# nothing and Triple Slash — along with Spin Attack and Ground
+				# Slam — could never be performed at all.
+				if not _can_extend(pat):
+					_history.clear()
 				return combo["name"]
 	return ""
+
+## Is `pat` the opening of some longer combo?
+static func _can_extend(pat: Array) -> bool:
+	for combo in COMBOS:
+		var other: Array = combo["pattern"]
+		if other.size() > pat.size() and other.slice(0, pat.size()) == pat:
+			return true
+	return false

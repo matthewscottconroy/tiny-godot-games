@@ -105,6 +105,13 @@ looks, the more thoroughly it certifies the bug.
   (`80e32ef`)
 - `bezier-path` checked the curve against itself rather than against the cubic
   worked out by hand. (`3525f7b`)
+- `combo-system` advertised seven combos and could perform four. Pressing L, L
+  fires Double Cut on the second press and cleared the history, so the third L
+  started from nothing — Triple Slash, Spin Attack and Ground Slam were
+  unreachable. The suite's `_check_sequence()` was a copy of the demo's
+  `_check()` that matched against a list handed to it and never cleared
+  anything, so it agreed with the demo about which combos *existed* and
+  disagreed about which could be *performed* — and only the copy was consulted.
 
 **Why it hides.** This is the failure mode that a passing test suite is *worst*
 at revealing, because the suite is the thing that is broken. It cannot be found

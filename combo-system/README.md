@@ -68,14 +68,46 @@ func _check() -> String:
         if recent.size() >= pat.size():
             var tail := recent.slice(recent.size() - pat.size())
             if tail == pat:
-                _history.clear()
+                if not _can_extend(pat):
+                    _history.clear()
                 return combo["name"]
     return ""
 ```
 
-`slice(-n)` extracts the last `n` elements. Comparing the tail to a pattern checks if the most recent inputs match. Combos are listed longest-first so `L+L+L` is tested before `L+L` — otherwise Triple Slash would never fire because Double Cut would match first.
+`slice(-n)` extracts the last `n` elements. Comparing the tail to a pattern checks if the most recent inputs match. Combos are listed longest-first so `L+L+L` is tested before `L+L`.
 
-After a combo triggers, `_history.clear()` prevents the same inputs from matching again.
+### Why a short match keeps its history
+
+Longest-first ordering is not enough on its own, and the version of this demo that
+shipped without `_can_extend` proved it: **none of the three-input combos could
+ever be performed.** Pressing L, L fires Double Cut on the second press — there
+are only two inputs in the history, so the three-long patterns cannot match yet —
+and clearing the history there means the third L starts from nothing. Triple
+Slash, Spin Attack and Ground Slam were unreachable, in a demo whose control
+table advertises all three.
+
+So the history is only forgotten when nothing longer could still grow out of what
+just matched:
+
+```gdscript
+## Is `pat` the opening of some longer combo?
+static func _can_extend(pat: Array) -> bool:
+    for combo in COMBOS:
+        var other: Array = combo["pattern"]
+        if other.size() > pat.size() and other.slice(0, pat.size()) == pat:
+            return true
+    return false
+```
+
+L+L is the opening of L+L+L, so it keeps its inputs and the third press upgrades
+Double Cut to Triple Slash. H+L opens nothing longer, so Counter clears and the
+next press starts a fresh combo.
+
+The old suite did not catch this because its `_check_sequence()` helper was a
+copy of `_check()` that matched against a list handed to it and never cleared
+anything — so it agreed with the demo about which combos existed and disagreed
+about which could be performed. It drives the real `ComboSystem` now. See
+[docs/FAILURE_MODES.md](../docs/FAILURE_MODES.md).
 
 ## Key Godot APIs
 

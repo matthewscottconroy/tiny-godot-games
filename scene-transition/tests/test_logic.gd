@@ -2,10 +2,11 @@ extends Node
 
 # Drives the real Transition autoload — see docs/TEST_INTEGRITY.md.
 #
-# Deliberately never completes a transition: fade_to() ends in
-# change_scene_to_file(), which would replace the scene this suite is running
-# in. So this covers the state either side of that call and the guard that
-# stops a second transition starting.
+# A transition ends in change_scene_to_file(), which would replace the scene
+# this suite is running in — so the autoload keeps that call behind a
+# replaceable `change_scene`, and the suite swaps it for one that records the
+# path. That makes the whole cycle drivable: the guard going up, the fade out,
+# the scene change, the fade back in, and the guard coming down again.
 
 var _pass := 0
 var _fail := 0
@@ -18,6 +19,7 @@ func _ready() -> void:
 	_test_a_second_transition_is_refused_while_one_runs()
 	_test_the_screens_point_at_each_other()
 	_test_both_screens_exist()
+	await _test_a_whole_transition_runs_and_releases_the_guard()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -81,3 +83,64 @@ func _test_both_screens_exist() -> void:
 	print("the destinations")
 	for path in ["res://scenes/title.tscn", "res://scenes/level.tscn"]:
 		expect(ResourceLoader.exists(path), "%s is a real scene to fade to" % path)
+
+## The full cycle, with the scene change intercepted.
+func _test_a_whole_transition_runs_and_releases_the_guard() -> void:
+	print("a transition")
+	var asked: Array[String] = []
+	var real: Callable = Transition.change_scene
+	Transition.change_scene = func(path: String) -> void: asked.append(path)
+
+	expect(not Transition._transitioning, "nothing is running to start with")
+	expect(is_equal_approx(Transition.rect.color.a, 0.0),
+		"and the screen is clear (%.2f)" % Transition.rect.color.a)
+
+	Transition.fade_to("res://scenes/level.tscn")
+
+	# The guard goes up on the same frame the call is made, or a second click
+	# in the same frame would start a second fade.
+	expect(Transition._transitioning, "the guard goes up immediately")
+	expect(Transition.rect.mouse_filter == Control.MOUSE_FILTER_STOP,
+		"and the overlay starts swallowing clicks, so nothing behind it responds")
+
+	# Partway through, the screen is darkening and the scene has not changed —
+	# changing it first would show the new scene before the fade covered it.
+	for _i in 12:
+		await get_tree().process_frame
+	expect(Transition.rect.color.a > 0.0,
+		"the screen darkens as the fade runs (%.2f)" % Transition.rect.color.a)
+	expect(asked.is_empty(), "and the scene has not changed yet")
+
+	# The refusal, while a real transition is genuinely in flight.
+	var midway: float = Transition.rect.color.a
+	Transition.fade_to("res://scenes/title.tscn")
+	expect(asked.is_empty(), "a second call during the fade starts nothing")
+	expect(is_equal_approx(Transition.rect.color.a, midway),
+		"and does not restart the fade (%.2f)" % Transition.rect.color.a)
+
+	# Let it finish: the scene changes once, the screen clears, and the guard
+	# comes down so the next transition can run at all.
+	for _i in 120:
+		await get_tree().process_frame
+		if not Transition._transitioning:
+			break
+	expect(asked == ["res://scenes/level.tscn"],
+		"the scene changes exactly once, to the path asked for (%s)" % [asked])
+	expect(not Transition._transitioning,
+		"the guard comes down when the transition ends")
+	expect(is_equal_approx(Transition.rect.color.a, 0.0),
+		"the screen fades back to clear (%.2f)" % Transition.rect.color.a)
+	expect(Transition.rect.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+		"and stops swallowing clicks")
+
+	# And a second transition is possible afterwards, which is the whole reason
+	# the flag has to be cleared rather than merely set.
+	Transition.fade_to("res://scenes/title.tscn")
+	expect(Transition._transitioning, "another transition can start once the first is done")
+	for _i in 120:
+		await get_tree().process_frame
+		if not Transition._transitioning:
+			break
+	expect(asked.size() == 2, "and it runs (%s)" % [asked])
+
+	Transition.change_scene = real

@@ -3,6 +3,13 @@ extends CanvasLayer
 
 var _transitioning := false
 
+## How the scene actually changes. Replaceable so a test can drive a whole
+## transition — the guard, the fade out, the fade back in and the flag being
+## released — without the scene it is running in being swapped out from under
+## it. In the demo this is exactly `get_tree().change_scene_to_file`.
+var change_scene: Callable = func(path: String) -> void:
+	get_tree().change_scene_to_file(path)
+
 @onready var rect : ColorRect = $FadeRect
 
 func _ready() -> void:
@@ -18,7 +25,7 @@ func fade_to(path: String) -> void:
 	var tw := create_tween()
 	tw.tween_property(rect, "color:a", 1.0, 0.4)
 	await tw.finished
-	get_tree().change_scene_to_file(path)
+	change_scene.call(path)
 	# Fade back in after scene loads (next frame)
 	await get_tree().process_frame
 	await get_tree().process_frame
