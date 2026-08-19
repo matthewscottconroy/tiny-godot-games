@@ -5,6 +5,9 @@ one's test suite was rewritten to drive the demo's real code instead of a
 reimplementation of its logic, and that turned up roughly twenty bugs — several
 of them the demo's entire point.
 
+Then the screenshot pipeline started working and found four more, in the one
+place a headless test suite can never look: the picture.
+
 This is the catalogue. Not "here are the bugs we fixed", which is what `git log`
 is for, but **the shapes they came in**: how each one stayed invisible, and what
 now catches it. The shapes are not specific to this repo. If you write Godot,
@@ -318,15 +321,65 @@ Commits during a mutation run are staged file by file, never `-A`.
 
 ---
 
+## 12. Nobody had ever looked at the picture
+
+**Shape.** The suites run headless, where there is no framebuffer and nothing to
+look at. So a demo can pass every assertion it has while presenting something
+nobody would accept for a second if they saw it.
+
+This mode had no instances until the screenshot pipeline started working,
+because until then nothing in the repo ever looked at a rendered frame. The
+first sweep found four.
+
+**Instances.**
+
+- `bouncing-ball`'s four walls were `StaticBody2D`s carrying a collision shape
+  and nothing visual. Collision shapes are drawn by the editor, never by a
+  running game, so the demo opened onto a ball falling through empty space and
+  rebounding off nothing — the one thing it exists to show. Its suite verified
+  the ball stayed inside the box; there was no box to see.
+- `browser`'s tag bar was an `HBoxContainer` holding a button per tag, and
+  fourteen of them have a minimum width of 1255px. A container cannot be squeezed
+  below its minimum, so the whole layout was forced wider than the 900px window
+  and Godot centred the overflow, pushing the demo list off the left edge and the
+  detail panel off the right. The suite passed 20/20: it drove the catalogue,
+  which was fine, and never looked at the scene.
+- `cellular-automata` opened onto an empty grid. A falling-sand demo that does
+  nothing until the reader guesses they are meant to click is teaching nothing in
+  its first and most important second.
+- `gamepad-input` blanked its whole readout when no pad was connected, which is
+  the state every reader without a gamepad sees — and the state the gallery
+  shows. Moving it to a resting panel then exposed a second problem the empty
+  version had hidden: the button line was positioned as if nothing were above it,
+  and six axis rows overlap it.
+
+**Why it hides.** Headless is the only mode the tests run in, and a headless
+viewport has no picture to check. The failure is only visible to an eye.
+
+**What catches it now.** `tools/screenshots.sh` captures a frame per demo, and
+`tools/check_screenshots.py` reports which frames have nothing in them — it cuts
+the image into a grid and counts the cells holding anything other than the
+background, since flatness alone is useless (a frame with 35 boids in it is 98%
+background). Neither runs in CI; both are run locally and their output committed.
+
+The individual fixes also got assertions that do not need an eye:
+`bouncing-ball` checks each wall is drawn where its collider is, `browser` checks
+no control extends past the viewport, `cellular-automata` checks its opening
+frame has sand already falling, and `gamepad-input` checks its two labels do not
+overlap. Those are the general forms — the next thing to overflow will not be
+the tag bar.
+
+---
+
 ## The pattern behind the patterns
 
-Ten of the eleven modes share one property: **nothing reports an error.**
+Eleven of the twelve modes share one property: **nothing reports an error.**
 
 A refused assignment warns. An aborted function returns `null`. An empty group is
-a valid group. A missing occluder is an absence. A wrong sign is a number. The
-only signal available is the difference between what the code *should* do and
-what it *does*, and the only way to get at that difference is to run the real
-code and check the real result.
+a valid group. A missing occluder is an absence. A wrong sign is a number. An
+invisible wall still stops the ball. The only signal available is the difference
+between what the code *should* do and what it *does*, and the only way to get at
+that difference is to run the real code and check the real result.
 
 That is the whole argument for the conversion this repo went through, and it is
 why the gates added along the way — the warning gate, the abort gate, the mutation
