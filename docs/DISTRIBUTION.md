@@ -86,17 +86,31 @@ component decision rather than a repo-wide one, and nothing here forecloses it.
 
 ## Pipelines that need more than Godot
 
-Two of the tools here cannot run on a machine with only the editor installed:
+Two of the tools here need something the editor alone does not provide:
 
-| Pipeline | Needs | Why it is not in CI yet |
-|----------|-------|-------------------------|
-| `tools/screenshots.sh` | a display (`xvfb-run`) | Godot's headless mode uses a dummy renderer, so a capture returns null |
+| Pipeline | Needs | Why |
+|----------|-------|-----|
+| `tools/screenshots.sh` | a display — `xvfb-run`, or an existing session | Godot's headless mode uses a dummy renderer, so a capture returns null |
 | `tools/export_web.sh` | web export templates (~1GB) | a separate download from the editor |
 
 `tools/preflight.sh` reports which pipelines can run here and what each missing
 one needs, so the answer arrives before a capture starts rather than partway
-through it. Both scripts still refuse to run and say why, so a machine without
-the prerequisites produces a message rather than blank images or failed exports.
+through it.
 
-Neither has been validated end to end. That is recorded here rather than left
-to be discovered, and it is the honest state: the scripts are a starting point.
+Screenshots prefer `xvfb-run` and fall back to whatever display session is
+already running, which works but opens and closes a window per demo for the
+duration of the sweep. With neither, the script refuses and says so rather than
+writing blank images.
+
+The web export has one non-obvious cost. Every export writes its own copy of the
+WebAssembly engine — 39MB, byte-identical every time — so the full set is 6.2GB,
+past what GitHub Pages will host and an absurd download for demos that are a few
+kilobytes each. Godot's loader can share it: `executable` is the base path it
+appends `.wasm` to, and `mainPack` is the data file, so one shared engine plus
+161 small packs is the same gallery at about 40MB. `tools/share_web_engine.py`
+does that rewrite, and `export_web.sh` calls it at the end of every run because a
+fresh export writes its own copy again.
+
+Neither pipeline runs in CI. Both need a large download or a display that a
+runner would have to set up per job, for output that changes only when a demo's
+appearance does — so they are run locally and their results committed.
