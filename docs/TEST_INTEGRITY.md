@@ -271,8 +271,8 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing**. The floor stands at 549/676
-(81.2%), with 74 of 166 suites catching every mutation sampled.
+its logic, and **no suite catches nothing**. The floor stands at 562/676
+(83.1%), with 79 of 166 suites catching every mutation sampled.
 
 The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
@@ -310,10 +310,28 @@ Two test smells worth naming, because both look like thorough tests:
   trail was capped at 12, which a trail trimmed to a single dot every frame
   satisfies equally well.
 
+- **A cap tested by reimplementing the trimming is a cap tested against
+  itself.** `dash-ability`'s trail assertion did the capping arithmetic in the
+  suite rather than driving the demo's loop.
+- **"It did not happen" needs the right window.** `dash-ability`'s "the player
+  does not dash on its own" checked the dash flag sixty frames later, by which
+  time a dash that had started and finished was invisible. Its cooldown was
+  still set, and that is what the assertion reads now.
+
 And one trap in writing the test itself: `multiplayer-prediction`'s deep-copy
 test passed while both mutants survived, because the step function it supplied
 copied defensively and hid the sharing the test existed to expose. A test's own
 fixtures can be careful enough to make the bug unreachable.
+
+Six more followed — `scene-transition`, `combo-system`, `dialogue-box`,
+`cooldown-shoot` and `dash-ability` — and `combo-system` is the one that
+mattered. It advertised seven combos and could perform four: pressing L, L fires
+Double Cut on the second press and cleared the history, so the third L started
+from nothing and Triple Slash, Spin Attack and Ground Slam were unreachable. Its
+suite could not have found that, because `_check_sequence()` was a copy of the
+demo's `_check()` that matched against a list handed to it and never cleared
+anything — it agreed about which combos existed and disagreed about which could
+be performed.
 
 One survivor recurred across four demos and looks unreachable:
 `Input.is_action_just_pressed("ui_up") and is_on_floor()`. The input cannot be
