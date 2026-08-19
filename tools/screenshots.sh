@@ -10,7 +10,8 @@
 # REQUIRES A DISPLAY. Godot's --headless mode uses a dummy rendering driver:
 # there is no framebuffer, so get_viewport().get_texture().get_image() returns
 # null and nothing can be captured. This script therefore runs Godot under
-# xvfb-run, a virtual X server.
+# a virtual X server (xvfb-run), or the desktop session if one is already
+# running.
 #
 #   Debian/Ubuntu:  sudo apt-get install xvfb
 #   Fedora:         sudo dnf install xorg-x11-server-Xvfb
@@ -59,16 +60,29 @@ if ! command -v "$GODOT" >/dev/null 2>&1; then
   exit 127
 fi
 
-if ! command -v xvfb-run >/dev/null 2>&1; then
+# How to give Godot a framebuffer. A virtual X server is preferred — it keeps
+# the capture off the user's screen and works on a headless CI runner. Failing
+# that, an existing desktop session will do: the windows are visible while it
+# runs, which is worth saying out loud rather than surprising someone.
+RUNNER=()
+if command -v xvfb-run >/dev/null 2>&1; then
+  RUNNER=(xvfb-run -a)
+elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+  echo "note: xvfb-run not found; capturing on the session already running." >&2
+  echo "      Windows will open and close on screen until this finishes." >&2
+else
   cat >&2 <<'MSG'
-error: xvfb-run not found.
+error: no framebuffer available.
 
-Screenshots need a real framebuffer. Godot's --headless renderer is a dummy
-driver that cannot produce an image, so this script runs Godot under a virtual
-X server instead.
+Screenshots need one. Godot's --headless renderer is a dummy driver that cannot
+produce an image, so this script needs either a virtual X server or a desktop
+session to draw into.
 
   Debian/Ubuntu:  sudo apt-get install xvfb
   Fedora:         sudo dnf install xorg-x11-server-Xvfb
+
+Or run it from inside a graphical session. tools/preflight.sh reports which of
+these is available here.
 MSG
   exit 127
 fi
@@ -103,7 +117,7 @@ for demo in "${demos[@]}"; do
 
   # Movie Maker forces a fixed frame rate and writes one PNG per frame, so the
   # capture is deterministic regardless of how fast the machine is.
-  xvfb-run -a "$GODOT" --path "$demo" "$scene" \
+  "${RUNNER[@]}" "$GODOT" --path "$demo" "$scene" \
       --write-movie "$frames/frame.png" \
       --fixed-fps 60 --quit-after "$TOTAL_FRAMES" >/dev/null 2>&1
 

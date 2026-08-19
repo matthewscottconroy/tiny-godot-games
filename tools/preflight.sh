@@ -63,11 +63,16 @@ if [ "$missing_required" -eq 0 ]; then
   report ok "doc checks" "tools/check_docs.py, build_index.py, build_tags.py"
 fi
 
-# --- Screenshots: need a virtual display ------------------------------------
+# --- Screenshots: need a framebuffer, virtual or real -----------------------
+# A virtual X server is preferred: it keeps the capture off the screen and works
+# on a CI runner. A desktop session will do otherwise, at the cost of windows
+# opening while it runs.
 if command -v xvfb-run >/dev/null 2>&1; then
   report ok "screenshots" "tools/screenshots.sh — xvfb-run available"
+elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+  report ok "screenshots" "tools/screenshots.sh — no xvfb, will draw on the session already running"
 else
-  report missing "screenshots" "xvfb-run not found (apt: xvfb, dnf: xorg-x11-server-Xvfb)"
+  report missing "screenshots" "no xvfb-run and no display session (apt: xvfb, dnf: xorg-x11-server-Xvfb)"
   missing_optional=1
 fi
 

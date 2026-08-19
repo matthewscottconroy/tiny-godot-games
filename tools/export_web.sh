@@ -7,12 +7,13 @@
 #   OUT=build/web tools/export_web.sh    # where the builds go
 #
 # ---------------------------------------------------------------------------
-# STATUS: this has NOT been run end to end. It needs Godot's web export
-# templates (~1GB), which are not present in the environment it was written in.
-# Treat it as a starting point to validate rather than a working pipeline.
+# This needs Godot's web export templates, which are a separate ~1GB download
+# from the editor. `tools/preflight.sh` says whether they are installed before
+# you start, rather than the export failing once per demo when they are not.
 #
-# `tools/preflight.sh` says whether the templates are installed before you
-# start, rather than the export failing per demo when they are not.
+# Every export writes its own 39MB copy of the WebAssembly engine, and the copies
+# are byte-identical. Left alone that is 6.2GB for the full set, so the run ends
+# by calling tools/share_web_engine.py, which collapses them to one shared copy.
 # ---------------------------------------------------------------------------
 #
 # Godot exports from a named preset in export_presets.cfg, and none of the demos
@@ -118,6 +119,13 @@ PRESET
 
   [ "$had_preset" -eq 0 ] && rm -f "$preset"
 done
+
+# One engine, not one per demo. Skipped when nothing exported, because there is
+# then nothing to share and the script would only report an empty directory.
+if [ "$exported" -gt 0 ] && [ -x tools/share_web_engine.py ]; then
+  echo
+  OUT="$OUT" tools/share_web_engine.py
+fi
 
 echo
 echo "======================================"
