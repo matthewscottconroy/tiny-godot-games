@@ -19,7 +19,7 @@ func _ready() -> void:
 	_test_every_button_is_named()
 	_test_the_names_are_unique()
 	_test_it_says_when_nothing_is_plugged_in()
-	_test_the_readout_is_empty_without_a_pad()
+	_test_the_readout_rests_at_zero_without_a_pad()
 	_test_vibrating_without_a_pad_is_harmless()
 	_report()
 
@@ -122,15 +122,53 @@ func _test_it_says_when_nothing_is_plugged_in() -> void:
 	expect(m.connected_label.text.to_lower().contains("no gamepad"), "naming the problem")
 	expect(m.connected_label.modulate != Color.WHITE, "and colours it as a warning")
 
-func _test_the_readout_is_empty_without_a_pad() -> void:
+## Without a pad the demo shows the panel at rest rather than nothing at all.
+##
+## It used to blank the readout, which left anyone without a gamepad — including
+## anyone reading the gallery — looking at an empty window. The list of axis
+## names is half of what this demo is for and does not need hardware to be worth
+## reading. What must not survive is a *reading*: a value left over from a pad
+## that has been unplugged would be a lie.
+func _test_the_readout_rests_at_zero_without_a_pad() -> void:
 	print("the readout")
 	var m := _make()
 	m.axis_label.text = "stale"
 	m.button_label.text = "stale"
 	m._process(0.0)
-	# Leftover readings from a pad that has been unplugged would be a lie.
-	expect(m.axis_label.text.is_empty(), "no axis readings are shown without a pad")
-	expect(m.button_label.text.is_empty(), "and no button ones")
+
+	expect(m.active_pad() == m.NO_PAD, "the demo knows there is no pad")
+	expect(not m.axis_label.text.contains("stale"), "the readout is rewritten, not left as it was")
+	expect(m.button_label.text.contains("(none)"), "no buttons are reported as pressed")
+
+	_quiet_failures = 0
+	for axis_name in m.AXIS_NAMES.values():
+		expect_quiet(m.axis_label.text.contains(axis_name), "%s is listed" % axis_name)
+	expect(_quiet_failures == 0, "every axis is named even with nothing plugged in")
+
+	# Every reading is zero — the panel is at rest, not reporting phantom input.
+	var readings := 0
+	for line in m.axis_label.text.split("\n"):
+		var parts: PackedStringArray = (line as String).split("  ", false)
+		if parts.size() < 2:
+			continue
+		readings += 1
+		expect_quiet(parts[parts.size() - 1].strip_edges() == "0.000",
+			"%s reads zero" % parts[0])
+	expect(readings == m.AXIS_NAMES.size(), "one line per axis (%d)" % readings)
+	expect(_quiet_failures == 0, "and every one of them reads zero")
+
+	# The same call with a pad id must still go through Input, or the readout
+	# would be permanently stuck at rest.
+	expect(m.axis_value(m.NO_PAD, JOY_AXIS_LEFT_X) == 0.0, "an absent pad reads zero")
+
+	# The axis list used to be blank here, so the button line was positioned as
+	# if nothing were above it. Now that the list is always six axes long, the
+	# two labels have to be checked against each other rather than eyeballed.
+	var axes_bottom: float = m.axis_label.position.y + m.axis_label.get_minimum_size().y
+	expect(axes_bottom <= m.button_label.position.y,
+		"the axis list ends above the button line (%.0f <= %.0f)"
+		% [axes_bottom, m.button_label.position.y])
+
 
 func _test_vibrating_without_a_pad_is_harmless() -> void:
 	print("the vibrate button")

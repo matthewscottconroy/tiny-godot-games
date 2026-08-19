@@ -12,6 +12,8 @@ Real games expose every aspect of this demo: fighting games use raw axis values 
 
 This demo covers the complete gamepad loop: detecting connections at startup and dynamically, reading all six standard axes with deadzone filtering, polling all buttons, and triggering motor vibration.
 
+With nothing plugged in it shows the same panel at rest — every axis named and reading zero, both sticks centred, no buttons down — rather than blanking. The list of axis names is half of what this demo is for, and it does not need hardware to be worth reading. What it never shows is a leftover value from a pad that has been unplugged.
+
 ## How It Works
 
 ### Node Tree

@@ -26,15 +26,15 @@ modulate = Color(1, 0.6, 0.3, 1)
 offset_left = 8.0
 offset_top = 74.0
 offset_right = 632.0
-offset_bottom = 190.0
+offset_bottom = 250.0
 text = ""
 theme_override_font_sizes/font_size = 14
 
 [node name="ButtonLabel" type="Label" parent="."]
 offset_left = 8.0
-offset_top = 200.0
+offset_top = 256.0
 offset_right = 632.0
-offset_bottom = 310.0
+offset_bottom = 290.0
 text = ""
 theme_override_font_sizes/font_size = 14
 

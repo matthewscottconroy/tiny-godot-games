@@ -54,25 +54,36 @@ func _refresh_devices() -> void:
 		connected_label.text = "Connected: " + ", ".join(names)
 		connected_label.modulate = Color.SEA_GREEN
 
-func _process(_delta: float) -> void:
-	var pads := Input.get_connected_joypads()
-	if pads.is_empty():
-		axis_label.text   = ""
-		button_label.text = ""
-		queue_redraw()
-		return
+## The id of the pad being reported, or NO_PAD when there is none.
+##
+## The demo used to blank the whole panel when nothing was plugged in, which
+## left a reader with no gamepad looking at an empty window — including anyone
+## reading the gallery. It draws the same panel at rest instead: every axis at
+## zero, both sticks centred, no buttons down. The list of axis names is half of
+## what this demo is for, and it does not need hardware to be worth reading.
+const NO_PAD := -1
 
-	var id  := pads[0]
+func active_pad() -> int:
+	var pads := Input.get_connected_joypads()
+	return NO_PAD if pads.is_empty() else pads[0]
+
+## An axis reading, or a resting zero when there is no pad to read from.
+func axis_value(id: int, ax: JoyAxis) -> float:
+	return 0.0 if id == NO_PAD else apply_deadzone(Input.get_joy_axis(id, ax))
+
+func _process(_delta: float) -> void:
+	var id := active_pad()
+
 	var axes := []
 	for ax: JoyAxis in AXIS_NAMES:
-		var val := apply_deadzone(Input.get_joy_axis(id, ax))
-		axes.append("  %-20s  %.3f" % [AXIS_NAMES[ax], val])
+		axes.append("  %-20s  %.3f" % [AXIS_NAMES[ax], axis_value(id, ax)])
 	axis_label.text = "Axes (deadzone %.2f):\n" % DEADZONE + "\n".join(axes)
 
 	var pressed_btns := []
-	for b: JoyButton in BUTTON_NAMES:
-		if Input.is_joy_button_pressed(id, b):
-			pressed_btns.append(BUTTON_NAMES[b])
+	if id != NO_PAD:
+		for b: JoyButton in BUTTON_NAMES:
+			if Input.is_joy_button_pressed(id, b):
+				pressed_btns.append(BUTTON_NAMES[b])
 	button_label.text = "Buttons pressed: " + (", ".join(pressed_btns) if pressed_btns else "(none)")
 	queue_redraw()
 
@@ -90,9 +101,7 @@ func _vibrate() -> void:
 		Input.start_joy_vibration(pads[0], 0.6, 0.6, 0.5)
 
 func _draw() -> void:
-	if Input.get_connected_joypads().is_empty():
-		return
-	var id := Input.get_connected_joypads()[0]
+	var id := active_pad()
 	# Left stick circle
 	_draw_stick(Vector2(180, 380), id, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y, "L")
 	# Right stick circle
@@ -101,17 +110,17 @@ func _draw() -> void:
 	_draw_trigger(Vector2(80, 320), id, JOY_AXIS_TRIGGER_LEFT, "LT")
 	_draw_trigger(Vector2(560, 320), id, JOY_AXIS_TRIGGER_RIGHT, "RT")
 
-func _draw_stick(center: Vector2, id: int, ax_x: int, ax_y: int, label: String) -> void:
+func _draw_stick(center: Vector2, id: int, ax_x: JoyAxis, ax_y: JoyAxis, label: String) -> void:
 	draw_circle(center, 40, Color(0.2, 0.2, 0.2))
 	draw_arc(center, 40, 0, TAU, 32, Color(0.5, 0.5, 0.5), 2)
-	var raw := Vector2(Input.get_joy_axis(id, ax_x), Input.get_joy_axis(id, ax_y))
+	var raw := Vector2(axis_value(id, ax_x), axis_value(id, ax_y))
 	var val := Vector2.ZERO if raw.length() < DEADZONE else raw
 	draw_circle(center + val * 30, 10, Color.CORNFLOWER_BLUE)
 	draw_string(ThemeDB.fallback_font, center + Vector2(-6, 6), label,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.WHITE)
 
-func _draw_trigger(pos: Vector2, id: int, ax: int, label: String) -> void:
-	var val := maxf(Input.get_joy_axis(id, ax), 0.0)
+func _draw_trigger(pos: Vector2, id: int, ax: JoyAxis, label: String) -> void:
+	var val := maxf(axis_value(id, ax), 0.0)
 	draw_rect(Rect2(pos, Vector2(30, 60)), Color(0.2, 0.2, 0.2))
 	draw_rect(Rect2(pos + Vector2(0, 60 * (1.0 - val)), Vector2(30, 60 * val)), Color.GOLD)
 	draw_rect(Rect2(pos, Vector2(30, 60)), Color(0.6, 0.6, 0.6), false, 2)
