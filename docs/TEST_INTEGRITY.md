@@ -271,8 +271,8 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing**. The floor stands at 539/676
-(79.7%), with 71 of 166 suites catching every mutation sampled.
+its logic, and **no suite catches nothing**. The floor stands at 549/676
+(81.2%), with 74 of 166 suites catching every mutation sampled.
 
 The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
@@ -292,6 +292,28 @@ only ever hit from the origin, where `target - source` and `target + source`
 give the same direction, so it could not tell a subtraction from an addition and
 the mutation that reverses every recoil in the demo survived it. A test fixture
 sitting at (0, 0) hides sign errors.
+
+`homing-projectile`, `status-effects` and `multiplayer-prediction` were the
+next three, all in the same shape, and `multiplayer-prediction` is the one to
+read: its component was covered exhaustively while the demo around it — the
+shared simulate step, the two queues carrying inputs to the server and states
+back, and the keys that make it demonstrate anything — had nothing at all.
+
+Two test smells worth naming, because both look like thorough tests:
+
+- **A fixture at the origin hides sign errors.** `target - source` and
+  `target + source` are the same vector when one of them is `(0, 0)`.
+  `knockback` only ever hit from the origin and `homing-projectile` only ever
+  launched from it, so in both demos the mutation that reverses every direction
+  survived. Put the fixture somewhere arbitrary.
+- **A bound with no floor is half a test.** `homing-projectile` asserted its
+  trail was capped at 12, which a trail trimmed to a single dot every frame
+  satisfies equally well.
+
+And one trap in writing the test itself: `multiplayer-prediction`'s deep-copy
+test passed while both mutants survived, because the step function it supplied
+copied defensively and hid the sharing the test existed to expose. A test's own
+fixtures can be careful enough to make the bug unreachable.
 
 One survivor recurred across four demos and looks unreachable:
 `Input.is_action_just_pressed("ui_up") and is_on_floor()`. The input cannot be
