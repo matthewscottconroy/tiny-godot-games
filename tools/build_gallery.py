@@ -29,8 +29,9 @@ open its README.
 
 Screenshots are produced by `tools/screenshots.sh`, which runs each demo on a
 real display and keeps one frame — so they show the actual thing rather than
-hand-picked marketing shots. A demo whose image is missing simply has not been
-captured yet.
+hand-picked marketing shots — and `tools/check_screenshots.py` reports any demo
+whose opening frame has nothing in it, which is how four of them were found to
+be showing nothing at all.
 
 Looking for a route rather than a catalogue? See [learning paths](LEARNING_PATHS.md).
 
