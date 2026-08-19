@@ -107,9 +107,22 @@ WebAssembly engine — 39MB, byte-identical every time — so the full set is 6.
 past what GitHub Pages will host and an absurd download for demos that are a few
 kilobytes each. Godot's loader can share it: `executable` is the base path it
 appends `.wasm` to, and `mainPack` is the data file, so one shared engine plus
-161 small packs is the same gallery at about 40MB. `tools/share_web_engine.py`
-does that rewrite, and `export_web.sh` calls it at the end of every run because a
+161 small packs is the same gallery at **44MB**. `tools/share_web_engine.py` does
+that rewrite, and `export_web.sh` calls it at the end of every run because a
 fresh export writes its own copy again.
+
+The catch is that `executable` is the base path for everything the engine fetches
+for itself, not just the wasm — its `locateFile()` builds
+`${executable}.audio.worklet.js` the same way. Moving the engine without moving
+the worklets leaves every demo looking for them beside it, which does not fail
+at load: it fails the first time a demo plays a sound, and reads as a demo with
+no audio. They move too, under the names the engine derives. The boot splash is
+identical across demos as well (3.8MB of one PNG) and is referenced by the page
+rather than the engine, so it moves under a name of our choosing.
+
+`share_web_engine.py --check` walks every URL each page will request and checks
+it against the disk, which is the guard worth having — most of those requests
+happen long after the loading screen.
 
 Neither pipeline runs in CI. Both need a large download or a display that a
 runner would have to set up per job, for output that changes only when a demo's
