@@ -77,6 +77,7 @@ tools/preflight.sh        # which of the pipelines below can run here
 tools/check_docs.py       # README structure, control claims, index drift
 tools/new-demo.sh <name>  # scaffold a demo that is green from the start
 tools/screenshots.sh      # capture one PNG per demo (xvfb, or the live session)
+tools/check_screenshots.py # which demos open onto an empty screen
 tools/build_gallery.py    # write docs/GALLERY.md from those screenshots
 tools/export_web.sh       # export demos for the browser (needs export templates)
 tools/mutate.py           # how much of each demo the tests actually reach
