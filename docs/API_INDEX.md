@@ -43,6 +43,7 @@ ones where you are looking for *the* example rather than *an* example.
 | `NavigationServer2D.bake_from_source_geometry_data()` | [navigation-agent](../navigation-agent) |
 | `Performance.get_monitor()` | [performance-profiling](../performance-profiling) |
 | `PhysicsRayQueryParameters2D.create()` | [line-of-sight](../line-of-sight) |
+| `PhysicsServer2D.body_set_state()` | [bouncing-ball](../bouncing-ball) |
 | `ResourceLoader.load_threaded_get()` | [thread-loading](../thread-loading) |
 | `ResourceLoader.load_threaded_get_status()` | [thread-loading](../thread-loading) |
 | `ResourceLoader.load_threaded_request()` | [thread-loading](../thread-loading) |
@@ -104,7 +105,7 @@ ones where you are looking for *the* example rather than *an* example.
 | `draw_line()` | [animation-tree](../animation-tree), [audio-positional](../audio-positional), [behavior-tree](../behavior-tree), [bezier-path](../bezier-path), [buoyancy](../buoyancy), [camera-deadzone](../camera-deadzone), [camera-rooms](../camera-rooms), [camera-zoom](../camera-zoom) _(+50 more)_ |
 | `draw_polygon()` | [boid-flocking](../boid-flocking), [checkpoint-system](../checkpoint-system), [noise-terrain](../noise-terrain), [parallax-scroll](../parallax-scroll), [radial-menu](../radial-menu), [steering-behaviors](../steering-behaviors), [vision-cone](../vision-cone) |
 | `draw_polyline()` | [input-recording](../input-recording), [pathfinding-astar](../pathfinding-astar), [procedural-animation](../procedural-animation), [radial-menu](../radial-menu), [steering-behaviors](../steering-behaviors) |
-| `draw_rect()` | [2d-lighting](../2d-lighting), [2d-water](../2d-water), [ability-system](../ability-system), [accessibility-options](../accessibility-options), [animated-sprite](../animated-sprite), [animated-walk](../animated-walk), [animation-tree](../animation-tree), [area-trigger](../area-trigger) _(+119 more)_ |
+| `draw_rect()` | [2d-lighting](../2d-lighting), [2d-water](../2d-water), [ability-system](../ability-system), [accessibility-options](../accessibility-options), [animated-sprite](../animated-sprite), [animated-walk](../animated-walk), [animation-tree](../animation-tree), [area-trigger](../area-trigger) _(+120 more)_ |
 | `draw_string()` | [2d-lighting](../2d-lighting), [ability-system](../ability-system), [accessibility-options](../accessibility-options), [audio-positional](../audio-positional), [behavior-tree](../behavior-tree), [bezier-path](../bezier-path), [buoyancy](../buoyancy), [camera-deadzone](../camera-deadzone) _(+49 more)_ |
 | `get_wall_normal()` | [ledge-grab](../ledge-grab), [wall-jump](../wall-jump), [wall-slide](../wall-slide) |
 | `is_on_floor()` | [animated-walk](../animated-walk), [camera-deadzone](../camera-deadzone), [camera-follow](../camera-follow), [camera-rooms](../camera-rooms), [checkpoint-system](../checkpoint-system), [combo-system](../combo-system), [coyote-time](../coyote-time), [dash-ability](../dash-ability) _(+23 more)_ |
@@ -115,4 +116,4 @@ ones where you are looking for *the* example rather than *an* example.
 
 ---
 
-_97 APIs across 165 demos._
+_98 APIs across 165 demos._
