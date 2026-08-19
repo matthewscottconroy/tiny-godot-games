@@ -24,6 +24,7 @@ func _ready() -> void:
 	_test_search_and_tag_together()
 	_test_the_tag_list_is_sorted_and_unique()
 	_test_a_missing_collection_is_handled()
+	await _test_the_window_holds_the_whole_layout()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -187,3 +188,54 @@ func expect_quiet(cond: bool, label: String) -> void:
 	if not cond:
 		_quiet_failures += 1
 		print("  (", label, " — failed)")
+
+# --- the real scene ----------------------------------------------------------
+
+## Every control has to fit inside the window.
+##
+## A container cannot be squeezed below its minimum size, so one row of fourteen
+## tag buttons — 1255px of them — made the whole layout wider than the 900px
+## window and Godot centred the overflow, pushing the demo list off the left
+## edge and the detail panel off the right. Nothing errored; the browser simply
+## showed a column of blank rows.
+##
+## Checking the geometry rather than the tag bar specifically, because the next
+## thing to overflow will not be the tag bar.
+func _test_the_window_holds_the_whole_layout() -> void:
+	print("the window")
+	var window := get_window()
+	window.size = Vector2i(900, 620)
+	var scene: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var view := get_viewport().get_visible_rect()
+	var overflowing: Array[String] = []
+	_collect_overflow(scene, view, overflowing)
+	expect(overflowing.is_empty(),
+		"nothing is laid out beyond the window (%s)"
+		% ("all inside" if overflowing.is_empty() else ", ".join(overflowing)))
+
+	# The tag bar is the one that overflowed, so pin the property that fixed it:
+	# it must be free to wrap rather than committed to a single row.
+	var bar: Control = scene.get_node("Layout/Tags")
+	expect(bar.get_child_count() > 5, "the tag bar carries a button per tag (%d)" % bar.get_child_count())
+	expect(bar.get_combined_minimum_size().x < view.size.x,
+		"the tag bar's minimum width fits the window (%.0f < %.0f)"
+		% [bar.get_combined_minimum_size().x, view.size.x])
+	expect(bar.get_global_rect().size.y > bar.get_child(0).get_global_rect().size.y,
+		"the tag bar wrapped onto more than one row")
+
+	scene.queue_free()
+
+func _collect_overflow(node: Node, view: Rect2, out: Array[String]) -> void:
+	if node is Control:
+		var rect: Rect2 = (node as Control).get_global_rect()
+		if rect.position.x < view.position.x - 0.5 \
+				or rect.position.y < view.position.y - 0.5 \
+				or rect.end.x > view.end.x + 0.5 \
+				or rect.end.y > view.end.y + 0.5:
+			out.append("%s %s" % [node.name, rect])
+	for child in node.get_children():
+		_collect_overflow(child, view, out)

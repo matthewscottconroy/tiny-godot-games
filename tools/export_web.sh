@@ -34,13 +34,16 @@
 #
 # The other audio demos (dynamic-music, music-sequencer) share the gesture
 # restriction but still show their visuals, so they are exported.
+#
+# `browser` is also skipped. It is not a demo — it is the launcher, and it works
+# by starting a second Godot process, which a web page cannot do.
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
 GODOT="${GODOT:-godot}"
 OUT="${OUT:-build/web}"
-SKIP_DEFAULT="multiplayer-rpc thread-loading http-request procedural-sfx"
+SKIP_DEFAULT="multiplayer-rpc thread-loading http-request procedural-sfx browser"
 SKIP="${SKIP:-$SKIP_DEFAULT}"
 
 if ! command -v "$GODOT" >/dev/null 2>&1; then

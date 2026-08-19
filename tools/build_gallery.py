@@ -27,8 +27,8 @@ HEADER = """# Gallery
 Every demo, with a frame captured from its actual running scene. Click a demo to
 open its README.
 
-Screenshots are produced by `tools/screenshots.sh`, which runs each demo under a
-virtual display and keeps one frame — so they show the real thing rather than
+Screenshots are produced by `tools/screenshots.sh`, which runs each demo on a
+real display and keeps one frame — so they show the actual thing rather than
 hand-picked marketing shots. A demo whose image is missing simply has not been
 captured yet.
 

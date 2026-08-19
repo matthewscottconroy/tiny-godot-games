@@ -19,7 +19,11 @@ var _shown: Array = []
 var _tag := ""
 
 @onready var _search: LineEdit = $Layout/Top/Search
-@onready var _tag_bar: HBoxContainer = $Layout/Tags
+# HFlow, not HBox: fourteen tag buttons in one row have a minimum width of
+# 1255px, and a container cannot be squeezed below its minimum — the whole
+# layout was forced wider than the window and overflowed off both edges,
+# taking the demo list with it. HFlowContainer wraps instead.
+@onready var _tag_bar: HFlowContainer = $Layout/Tags
 @onready var _list: ItemList = $Layout/Body/List
 @onready var _title: Label = $Layout/Body/Detail/Title
 @onready var _category: Label = $Layout/Body/Detail/Category

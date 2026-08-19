@@ -31,13 +31,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Search demos, categories, tags…"
 
-[node name="Tags" type="HBoxContainer" parent="Layout"]
+[node name="Tags" type="HFlowContainer" parent="Layout"]
 layout_mode = 2
 
 [node name="Body" type="HSplitContainer" parent="Layout"]
 layout_mode = 2
 size_flags_vertical = 3
-split_offset = 300
+split_offset = 60
 
 [node name="List" type="ItemList" parent="Layout/Body"]
 layout_mode = 2
