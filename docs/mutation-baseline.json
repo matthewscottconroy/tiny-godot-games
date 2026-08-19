@@ -1,9 +1,9 @@
 {
- "killed": 518,
- "tried": 664,
- "demos": 165,
+ "killed": 539,
+ "tried": 676,
+ "demos": 166,
  "limit": 5,
  "seed": 1,
- "ratio": 0.7801,
+ "ratio": 0.7973,
  "note": "Mutation score floor. Raise it by improving suites; never lower it. Check it with the same --limit it was recorded at. See docs/TEST_INTEGRITY.md."
 }

@@ -271,7 +271,10 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing** — the last three were
+its logic, and **no suite catches nothing**. The floor stands at 539/676
+(79.7%), with 71 of 166 suites catching every mutation sampled.
+
+The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
 beyond its score. `line-of-sight` tested the ray-casting helper thoroughly and
 never drove the enemy that decides whether it is alerted. `camera-follow`'s
@@ -280,6 +283,22 @@ invisible while every test only reads configuration and shoves the player off
 the level the moment one lets the physics run. `animated-sprite` restated the
 animation rules inline and checked its own copy against itself, in the repo that
 documents that as a failure mode.
+
+The three weakest after them — `object-pool`, `knockback` and
+`checkpoint-system`, all at 20% — shared one shape: each drove its demo's
+*reusable component* thoroughly and never touched the scripts around it, which
+is where every survivor lived. `knockback`'s is the one to remember: its suite
+only ever hit from the origin, where `target - source` and `target + source`
+give the same direction, so it could not tell a subtraction from an addition and
+the mutation that reverses every recoil in the demo survived it. A test fixture
+sitting at (0, 0) hides sign errors.
+
+One survivor recurred across four demos and looks unreachable:
+`Input.is_action_just_pressed("ui_up") and is_on_floor()`. The input cannot be
+pressed headless — but the other half of the condition can be held from the
+outside, because loosening the `and` to an `or` launches the player on every
+grounded frame. "With nothing pressed, a player on the floor stays on it" killed
+it in all four.
 
 The smoke gate carries the demos whose output is genuinely pixels or sound. It
 now fails on engine warnings, which is how a refused operation — a shader
