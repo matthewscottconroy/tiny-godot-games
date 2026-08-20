@@ -178,8 +178,15 @@ func _draw() -> void:
 	# State label
 	var state_text := "NORMAL" if _state == PState.NORMAL else "HANGING"
 	var state_col := Color(0.5, 0.9, 0.5) if _state == PState.NORMAL else Color(1.0, 0.75, 0.2)
-	draw_string(ThemeDB.fallback_font, Vector2(320, 50), state_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, state_col)
+	draw_string(ThemeDB.fallback_font, Vector2(0, 50), state_text,
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 16, state_col)
 
 	# Title and hints
-	draw_string(ThemeDB.fallback_font, Vector2(320, 28), "Ledge Hang", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Color.WHITE)
-	draw_string(ThemeDB.fallback_font, Vector2(320, 468), "arrow keys: move/jump    up: pull-up    down: drop    (grab ledge automatically)", HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color(0.8, 0.8, 0.8))
+	# CENTER needs a width to centre within; with -1 ("no limit") the alignment
+	# is ignored and the text is drawn from `pos`, which for a long line runs it
+	# off the right edge.
+	draw_string(ThemeDB.fallback_font, Vector2(0, 28), "Ledge Hang",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 20, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(0, 468),
+			"arrow keys: move/jump    up: pull-up    down: drop    (grab ledge automatically)",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 12, Color(0.8, 0.8, 0.8))

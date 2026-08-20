@@ -135,8 +135,15 @@ func _draw() -> void:
 	# Mode label
 	var mode_text := "ATTRACT" if _attract else "REPEL"
 	var mode_col := Color(0.9, 0.3, 0.2) if _attract else Color(0.2, 0.5, 1.0)
-	draw_string(ThemeDB.fallback_font, Vector2(320, 55), mode_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18, mode_col)
+	draw_string(ThemeDB.fallback_font, Vector2(0, 55), mode_text,
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 18, mode_col)
 
 	# Title and hints
-	draw_string(ThemeDB.fallback_font, Vector2(320, 30), "Magnet", HORIZONTAL_ALIGNMENT_CENTER, -1, 22, Color.WHITE)
-	draw_string(ThemeDB.fallback_font, Vector2(320, 468), "Drag magnet    A: toggle attract/repel    R: reset", HORIZONTAL_ALIGNMENT_CENTER, -1, 13, Color(0.8, 0.8, 0.8))
+	# CENTER needs a width to centre within; with -1 ("no limit") the alignment
+	# is ignored and the text is drawn from `pos`, which for a long line runs it
+	# off the right edge.
+	draw_string(ThemeDB.fallback_font, Vector2(0, 30), "Magnet",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 22, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(0, 468),
+			"Drag magnet    A: toggle attract/repel    R: reset",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 13, Color(0.8, 0.8, 0.8))

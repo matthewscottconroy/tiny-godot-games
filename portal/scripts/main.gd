@@ -165,8 +165,15 @@ func _draw() -> void:
 		draw_arc(ball["pos"], BALL_R, 0, TAU, 24, Color(0.5, 0.45, 0.4), 1.5)
 
 	# UI
-	draw_string(ThemeDB.fallback_font, Vector2(320, 30), "Portal", HORIZONTAL_ALIGNMENT_CENTER, -1, 22, Color.WHITE)
-	draw_string(ThemeDB.fallback_font, Vector2(320, 468), "LClick: orange portal  RClick: blue portal  Space: spawn ball  R: reset", HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color(0.8, 0.8, 0.8))
+	# HORIZONTAL_ALIGNMENT_CENTER needs a width to centre within; with the -1
+	# that means "no limit" the alignment is ignored and the text is simply
+	# drawn from `pos`. Passing the window width and starting at the left edge
+	# is what actually centres it — otherwise the hint line ran off the right.
+	draw_string(ThemeDB.fallback_font, Vector2(0, 30), "Portal",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 22, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(0, 468),
+			"LClick: orange portal  RClick: blue portal  Space: spawn ball  R: reset",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 12, Color(0.8, 0.8, 0.8))
 
 func _draw_portal(pos: Vector2, normal: Vector2, color: Color) -> void:
 	var angle := normal.angle() + PI / 2.0

@@ -116,11 +116,19 @@ func _draw() -> void:
 
 	# t-value label near dot
 	var label_offset := perp * 20.0 + Vector2(0, -10)
-	draw_string(ThemeDB.fallback_font, dot_pos + label_offset, "t=%.2f" % _t, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.WHITE)
+	# LEFT, not CENTER: this label is placed relative to the dot it belongs to,
+	# and there is no width to centre it within.
+	draw_string(ThemeDB.fallback_font, dot_pos + label_offset, "t=%.2f" % _t,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.WHITE)
 
 	# Title
-	draw_string(ThemeDB.fallback_font, Vector2(320, 30), "Bezier Path", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Color.WHITE)
-	draw_string(ThemeDB.fallback_font, Vector2(320, 468), "Drag control points    A: reset", HORIZONTAL_ALIGNMENT_CENTER, -1, 13, Color(0.8, 0.8, 0.8))
+	# CENTER needs a width to centre within; with -1 ("no limit") the alignment
+	# is ignored and the text is drawn from `pos`, which for a long line runs it
+	# off the right edge.
+	draw_string(ThemeDB.fallback_font, Vector2(0, 30), "Bezier Path",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 20, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(0, 468), "Drag control points    A: reset",
+			HORIZONTAL_ALIGNMENT_CENTER, 640, 13, Color(0.8, 0.8, 0.8))
 
 func _draw_dashed_line(from: Vector2, to: Vector2, color: Color, width: float, dash_len: float) -> void:
 	var total := from.distance_to(to)
