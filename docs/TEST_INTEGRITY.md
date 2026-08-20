@@ -271,8 +271,8 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing**. The floor stands at 582/676
-(86.1%), with 88 of 166 suites catching every mutation sampled.
+its logic, and **no suite catches nothing**. The floor stands at 601/676
+(88.9%), with 94 of 166 suites catching every mutation sampled.
 
 The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
@@ -330,6 +330,18 @@ Two test smells worth naming, because both look like thorough tests:
   displaced high byte everywhere except at a transition. A 20Hz tone moves less
   than one high byte between neighbouring samples, so there the displacement is
   a jump the wave cannot make.
+- **Integration can happen before the check you are testing.** `portal` moves a
+  ball and *then* resolves collisions, so a ball started barely overlapping a
+  surface has already left the region by the time the resolver runs. The first
+  version of that contact test exercised nothing and passed; it starts deep
+  inside the surface now.
+- **A mirror-image comparison sees nothing when both sides flip.** `portal`'s
+  velocity rotation has two separate mistakes that each reverse the exit drift,
+  so "one way differs from the other way" held under both. Pin the direction
+  outright.
+- **`absf()` hides a reversal.** `polygon-clip`'s shoelace sum walked backwards
+  only negates the result, and every assertion took the absolute value. The sign
+  *is* the winding order, so a known square in a known order pins it.
 - **One scene at a time.** `camera-follow` and `footstep-audio` both added a
   fresh copy of the world per test and left it in the tree. Invisible while
   every test only reads configuration; the moment one lets the physics run, the
