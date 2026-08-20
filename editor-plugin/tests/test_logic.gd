@@ -160,6 +160,39 @@ func _test_the_keys_drive_the_spawner() -> void:
 		_press(m, KEY_1)
 	expect(spawner.points >= 3, "the point count stops at a figure that is still a shape")
 
+	# The stride keys, and both ends of their range. A stride of zero would step
+	# nowhere and hang the ring builder; one above the point count is a stride
+	# that never returns to its start.
+	var skip: int = spawner.skip
+	_press(m, KEY_4)
+	expect(spawner.skip == skip + 1, "a key lengthens the stride (%d)" % spawner.skip)
+	_press(m, KEY_3)
+	expect(spawner.skip == skip, "and another shortens it (%d)" % spawner.skip)
+
+	for i in 40:
+		_press(m, KEY_3)
+	expect(spawner.skip == 1, "the stride floors at one (%d)" % spawner.skip)
+	for i in 40:
+		_press(m, KEY_4)
+	expect(spawner.skip == 8, "and caps at eight (%d)" % spawner.skip)
+
+	# Only a fresh press counts. A release or an auto-repeat reaching the match
+	# would run the ring settings away while a key is merely held down.
+	_press(m, KEY_3)
+	_press(m, KEY_3)
+	var settled: int = spawner.skip
+	var released := InputEventKey.new()
+	released.keycode = KEY_4
+	released.pressed = false
+	m._unhandled_key_input(released)
+	expect(spawner.skip == settled, "a key coming back up changes nothing")
+	var repeat := InputEventKey.new()
+	repeat.keycode = KEY_4
+	repeat.pressed = true
+	repeat.echo = true
+	m._unhandled_key_input(repeat)
+	expect(spawner.skip == settled, "nor does an auto-repeat (%d)" % spawner.skip)
+
 func _test_the_readout_reports_the_shape() -> void:
 	print("the readout")
 	var m := _make()

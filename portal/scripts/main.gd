@@ -5,11 +5,19 @@ const BALL_R := 10.0
 const PORTAL_R := 22.0
 const PORTAL_ENTRY_DIST := 18.0
 
+# The normal points into the room, away from the surface.
+#
+# The ceiling is here because the room needs closing: without it a ball thrown
+# upward leaves over the top and never comes back, and since nothing culls a
+# ball that has gone, they accumulate off screen for as long as the demo runs.
+# The bounce code always had a branch for a downward-facing normal; there was
+# simply no surface with one.
 const SURFACES: Array = [
-	{"rect": Rect2(0, 440, 640, 40),   "normal": Vector2(0, -1)},
-	{"rect": Rect2(0, 0, 20, 480),     "normal": Vector2(1, 0)},
-	{"rect": Rect2(620, 0, 20, 480),   "normal": Vector2(-1, 0)},
-	{"rect": Rect2(200, 280, 240, 20), "normal": Vector2(0, -1)},
+	{"rect": Rect2(0, 440, 640, 40),   "normal": Vector2(0, -1)},   # floor
+	{"rect": Rect2(0, 0, 640, 20),     "normal": Vector2(0, 1)},    # ceiling
+	{"rect": Rect2(0, 0, 20, 480),     "normal": Vector2(1, 0)},    # left wall
+	{"rect": Rect2(620, 0, 20, 480),   "normal": Vector2(-1, 0)},   # right wall
+	{"rect": Rect2(200, 280, 240, 20), "normal": Vector2(0, -1)},   # platform
 ]
 
 var _portal_a: Dictionary = {"pos": Vector2.ZERO, "normal": Vector2(0, -1), "active": false}
@@ -32,8 +40,6 @@ func _input(event: InputEvent) -> void:
 				_place_portal(_portal_a, event.position)
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				_place_portal(_portal_b, event.position)
-		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			pass
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_SPACE:
 			_spawn_ball()

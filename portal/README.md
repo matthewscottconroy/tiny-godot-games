@@ -12,6 +12,26 @@ The tricky part is not the teleportation itself but the velocity rotation. A bal
 
 ## How It Works
 
+### The Room
+
+`SURFACES` is a list of rectangles with the normal pointing into the room:
+
+```gdscript
+const SURFACES: Array = [
+    {"rect": Rect2(0, 440, 640, 40),   "normal": Vector2(0, -1)},   # floor
+    {"rect": Rect2(0, 0, 640, 20),     "normal": Vector2(0, 1)},    # ceiling
+    {"rect": Rect2(0, 0, 20, 480),     "normal": Vector2(1, 0)},    # left wall
+    {"rect": Rect2(620, 0, 20, 480),   "normal": Vector2(-1, 0)},   # right wall
+    {"rect": Rect2(200, 280, 240, 20), "normal": Vector2(0, -1)},   # platform
+]
+```
+
+The ceiling is here because the room needs closing. Without it a ball thrown
+upward leaves over the top and never comes back — and since nothing culls a ball
+that has gone, they accumulate off screen for as long as the demo runs. The
+bounce code always had a branch for a downward-facing normal; there was simply
+no surface with one, so it was unreachable.
+
 ### Portal Placement
 
 Clicking near a surface projects the click position onto the closest surface rectangle and places the portal there:
