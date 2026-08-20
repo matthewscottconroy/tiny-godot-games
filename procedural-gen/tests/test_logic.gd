@@ -14,6 +14,8 @@ func _ready() -> void:
 	_test_terrain_reads_height_as_bands()
 	_test_caves_are_a_two_tone_split()
 	_test_islands_have_water_at_the_edges()
+	_test_the_island_bands_run_sea_sand_grass_rock()
+	_test_moisture_runs_from_dry_to_wet()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -129,3 +131,91 @@ func _test_islands_have_water_at_the_edges() -> void:
 	var corner: Color = m._sample_color(0, 0, 0.2)
 	expect(middle != corner, "the falloff makes position matter, not just height")
 	expect(corner.b > corner.r, "the corners of the map are sea")
+
+## The island view has the same bands as terrain, in the same order.
+##
+## The test above compares the middle of the map with a corner, which only
+## proves position matters. The bands themselves — sea, then sand, then grass,
+## then rock as the ground rises — are four thresholds in a row, and any one of
+## them flipping leaves a map that still has four colours in it.
+func _test_the_island_bands_run_sea_sand_grass_rock() -> void:
+	print("the island's bands")
+	var m := _make()
+	m._set_mode(m.Mode.ISLAND)
+
+	# Sampled at the exact centre, where the falloff is zero, so `v` is the
+	# noise value and the thresholds can be hit directly.
+	var mid_x: int = m.MAP_W / 2
+	var mid_y: int = m.MAP_H / 2
+	var sea: Color = m._sample_color(mid_x, mid_y, -0.5)
+	var sand: Color = m._sample_color(mid_x, mid_y, -0.15)
+	var grass: Color = m._sample_color(mid_x, mid_y, 0.15)
+	var rock: Color = m._sample_color(mid_x, mid_y, 0.5)
+
+	expect(sea.b > sea.r and sea.b > sea.g, "the lowest band is blue — sea (%s)" % sea)
+	expect(sand.r > sand.b and sand.g > sand.b,
+		"then a pale band above it — sand (%s)" % sand)
+	expect(grass.g > grass.r and grass.g > grass.b,
+		"then green — grass (%s)" % grass)
+	expect(rock.r > rock.b and rock.g > rock.b and rock.r < sand.r,
+		"then a darker brown — rock (%s)" % rock)
+
+	# Four distinct bands, in order, and each one actually different.
+	var bands := [sea, sand, grass, rock]
+	var quiet := 0
+	for i in bands.size():
+		for j in range(i + 1, bands.size()):
+			if bands[i] == bands[j]:
+				quiet += 1
+	expect(quiet == 0, "no two bands share a colour")
+
+	# Rising ground never goes back to sea: the thresholds are ordered.
+	expect(m._sample_color(mid_x, mid_y, 0.9).b < sea.b,
+		"the highest ground is nothing like the sea")
+
+## The moisture view runs from dry to wet across the whole noise range.
+func _test_moisture_runs_from_dry_to_wet() -> void:
+	print("moisture")
+	var m := _make()
+	m._set_mode(m.Mode.MOISTURE)
+
+	# Noise runs -1..1 and the view remaps it to 0..1. Get that remap wrong and
+	# half the range lands outside 0..1, where the colour clamps flat.
+	var dry: Color = m._sample_color(0, 0, -1.0)
+	var wet: Color = m._sample_color(0, 0, 1.0)
+	var mid: Color = m._sample_color(0, 0, 0.0)
+
+	expect(dry != wet, "the two ends of the range are different colours")
+	expect(wet.g > dry.g, "wetter ground is greener (%.2f vs %.2f)" % [wet.g, dry.g])
+	expect(wet.b < dry.b, "and less blue (%.2f vs %.2f)" % [wet.b, dry.b])
+	expect(dry.b > 0.5, "the dry end is the deep blue the ramp starts on (%.2f)" % dry.b)
+
+	# The middle of the range sits between the ends rather than at one of them,
+	# which is what a mis-remapped input collapses.
+	expect(mid.g > dry.g and mid.g < wet.g,
+		"the middle of the range is between them (%.2f in %.2f..%.2f)"
+		% [mid.g, dry.g, wet.g])
+	expect(mid.b < dry.b and mid.b > wet.b, "on both channels that move")
+
+	# All three channels move with the ramp, in the direction the ramp says.
+	# Red rises with moisture too — subtract it instead and the driest ground
+	# has the *most* red in it, which reads as arid rather than deep water.
+	expect(wet.r > dry.r,
+		"the red channel rises with moisture as well (%.3f vs %.3f)" % [wet.r, dry.r])
+	expect(dry.r >= 0.0,
+		"and the dry end does not run off the bottom of it (%.3f)" % dry.r)
+
+	# Every channel stays in range, or the ramp is clipping and the far end of
+	# the map is a flat block of colour.
+	for n in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+		var c: Color = m._sample_color(0, 0, n)
+		expect_quiet(c.r >= 0.0 and c.r <= 1.0 and c.g >= 0.0 and c.g <= 1.0
+			and c.b >= 0.0 and c.b <= 1.0, "n=%.1f gives %s" % [n, c])
+	expect(_quiet_failures == 0, "no sample clips outside a drawable colour")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("    (", label, " — failed)")

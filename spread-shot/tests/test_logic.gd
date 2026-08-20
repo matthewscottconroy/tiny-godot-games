@@ -14,6 +14,7 @@ func _ready() -> void:
 	_test_facing_left_mirrors_the_fan()
 	_test_bullet_travels_along_its_direction()
 	_test_bullet_expires()
+	await test_the_gun_reloads_and_says_so()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -23,6 +24,73 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## The gun's cooldown, the readout it drives, and where the fan comes out.
+func test_the_gun_reloads_and_says_so() -> void:
+	print("the cooldown")
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	await get_tree().physics_frame
+	var player: CharacterBody2D = scene.get_node("Player")
+
+	player._cooldown = 0.0
+	expect(player.can_fire(), "a rested gun is ready")
+	expect(player.status_text() == "READY",
+		"and says so (%s)" % player.status_text())
+
+	player._cooldown = player.FIRE_COOLDOWN
+	expect(not player.can_fire(), "a just-fired gun is not")
+	expect(player.status_text().begins_with("CD"),
+		"and the readout counts it down instead (%s)" % player.status_text())
+
+	# It counts down, not up — an unclamped timer running the wrong way leaves
+	# the gun permanently ready or permanently jammed.
+	var before: float = player._cooldown
+	player.tick_cooldown(1.0 / 60.0)
+	expect(player._cooldown < before,
+		"the cooldown ages downward (%.3f -> %.3f)" % [before, player._cooldown])
+	for _i in 120:
+		player.tick_cooldown(1.0 / 60.0)
+	expect(player._cooldown == 0.0,
+		"and stops at zero rather than going negative (%.3f)" % player._cooldown)
+	expect(player.can_fire(), "so the gun comes back")
+
+	# Firing puts the fan in front of the player, on the side it faces.
+	player._facing = 1.0
+	expect(player.muzzle().x > player.global_position.x,
+		"facing right, the fan starts to the right (%s)" % player.muzzle())
+	player._facing = -1.0
+	expect(player.muzzle().x < player.global_position.x, "facing left, to the left")
+	expect(is_equal_approx(player.muzzle().distance_to(player.global_position),
+			player.MUZZLE_OFFSET),
+		"always one muzzle length out (%.1f)"
+		% player.muzzle().distance_to(player.global_position))
+
+	# A released key leaves the aim where it was.
+	expect(player.facing_for(0.0, -1.0) == -1.0, "no input keeps the facing")
+	expect(player.facing_for(1.0, -1.0) == 1.0, "a push right turns it right")
+	expect(player.facing_for(-0.5, 1.0) == -1.0,
+		"and a partial push left is still left (%.0f)" % player.facing_for(-0.5, 1.0))
+
+	# Nothing pressed, nothing fired and nothing jumped.
+	player._cooldown = 0.0
+	var quiet := scene.get_child_count()
+	for _i in 40:
+		await get_tree().physics_frame
+	expect(player.can_fire(), "the gun is off cooldown")
+	expect(scene.get_child_count() == quiet,
+		"but nothing is fired with no key pressed (%d -> %d)"
+		% [quiet, scene.get_child_count()])
+	expect(player.is_on_floor(), "and the player is on the ground")
+	var resting: float = player.global_position.y
+	var highest := resting
+	for _i in 40:
+		await get_tree().physics_frame
+		highest = minf(highest, player.global_position.y)
+	expect(resting - highest < 4.0,
+		"where it stays (rose %.1f px)" % (resting - highest))
+
+	scene.queue_free()
 
 func _report() -> void:
 	var summary := "[spread-shot] %d/%d passed" % [_pass, _pass + _fail]
