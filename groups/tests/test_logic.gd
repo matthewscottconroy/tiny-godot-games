@@ -14,6 +14,8 @@ func _ready() -> void:
 	_test_frozen_enemy_does_not_move()
 	_test_unfrozen_enemy_moves()
 	_test_bounces_off_the_bounds()
+	_test_it_bounces_off_all_four_walls()
+	_test_it_survives_until_its_last_hit_point()
 	_test_group_call_reaches_every_member()
 	_test_group_call_skips_non_members()
 	_report()
@@ -94,6 +96,74 @@ func _test_bounces_off_the_bounds() -> void:
 	e._process(0.5)
 	expect(e.vel.x < 0.0, "velocity reverses at the boundary")
 	expect(e.position.x <= 580.0, "and the position is clamped back inside")
+
+## Bouncing on every wall, and only when it reaches one.
+##
+## The test above checks one edge, heading one way. The bounds are four
+## comparisons across two lines, and any one of them flipping still leaves an
+## enemy that bounces — just off the wrong wall, or off nothing.
+func _test_it_bounces_off_all_four_walls() -> void:
+	print("all four walls")
+	var cases := [
+		["right", Vector2(579, 200), Vector2(120, 0)],
+		["left", Vector2(61, 200), Vector2(-120, 0)],
+		["bottom", Vector2(300, 389), Vector2(0, 120)],
+		["top", Vector2(300, 81), Vector2(0, -120)],
+	]
+	for case in cases:
+		var e := _make(case[1], case[2])
+		var before: Vector2 = e.vel
+		e._process(0.5)
+		expect_quiet(e.vel.dot(before) < 0.0,
+			"%s: velocity reverses (%s -> %s)" % [case[0], before, e.vel])
+	expect(_quiet_failures == 0, "it turns around at each of the four walls")
+
+	# And stays inside all of them afterwards.
+	for case in cases:
+		var e := _make(case[1], case[2])
+		for _i in 40:
+			e._process(1.0 / 30.0)
+		expect_quiet(e.position.x >= 60.0 and e.position.x <= 580.0
+			and e.position.y >= 80.0 and e.position.y <= 390.0,
+			"%s: stays inside after bouncing (%s)" % [case[0], e.position])
+	expect(_quiet_failures == 0, "and never leaves the play area")
+
+	# Well inside, it does not bounce at all — a comparison the wrong way round
+	# would have it reversing every frame in open space.
+	var free := _make(Vector2(320, 235), Vector2(120, 90))
+	var heading: Vector2 = free.vel
+	for _i in 5:
+		free._process(1.0 / 60.0)
+	expect(free.vel.is_equal_approx(heading),
+		"an enemy in open space keeps going (%s -> %s)" % [heading, free.vel])
+	expect(free.position.x > 320.0 and free.position.y > 235.0,
+		"and travels the way it was pointed (%s)" % free.position)
+
+## An enemy dies at zero and not before.
+func _test_it_survives_until_its_last_hit_point() -> void:
+	print("dying")
+	var e := _make()
+	var full: int = e.hp
+	expect(full > 1, "an enemy starts with more than one hit point (%d)" % full)
+
+	e.take_damage(full - 1)
+	expect(e.hp == 1, "damage short of lethal leaves it on one (%d)" % e.hp)
+	expect(not e.is_queued_for_deletion(),
+		"and alive — an enemy that dies while it still has hit points is a demo "
+		+ "with nothing to shoot at")
+	expect(e.hp_label.text.contains("1"),
+		"with the readout following (%s)" % e.hp_label.text)
+
+	e.take_damage(1)
+	expect(e.hp == 0, "the last point kills it (%d)" % e.hp)
+	expect(e.is_queued_for_deletion(), "and it removes itself")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("    (", label, " — failed)")
 
 func _test_group_call_reaches_every_member() -> void:
 	print("call_group")

@@ -26,7 +26,11 @@ func _ready() -> void:
 		wall_set[w] = true
 
 func is_wall(cell: Vector2i) -> bool:
-	return wall_set.has(cell)
+	# get(), not has(): with has() the value stored against each cell is never
+	# read, so the line that writes it means nothing and nothing can hold it.
+	# Reading the value makes the dictionary a map rather than a set pretending
+	# to be one, and costs the same.
+	return wall_set.get(cell, false)
 
 func cell_to_world(cell: Vector2i) -> Vector2:
 	return Vector2(cell.x * CELL + CELL * 0.5, cell.y * CELL + CELL * 0.5)

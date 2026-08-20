@@ -13,6 +13,8 @@ func _ready() -> void:
 	_test_every_direction_moves_one_cell()
 	_test_cell_to_world_centres_the_sprite()
 	_test_walls_exist_in_the_demo_grid()
+	_test_the_border_encloses_the_board()
+	_test_only_a_fresh_direction_press_moves()
 	_test_repeated_moves_accumulate()
 	_report()
 
@@ -129,6 +131,91 @@ func _test_walls_exist_in_the_demo_grid() -> void:
 			if scene.is_wall(Vector2i(x, y)):
 				walls += 1
 	expect(walls > 0, "the demo builds a maze rather than an empty field")
+
+## The border runs all the way round.
+##
+## "The demo builds a maze rather than an empty field" is satisfied by a single
+## wall. What keeps the player on the board is a closed border, and the far two
+## sides are built from `ROWS - 1` and `COLS - 1` — off-by-one there puts them
+## outside the grid, where nothing is ever drawn and nothing ever blocks, and
+## the player walks off the edge of the world.
+func _test_the_border_encloses_the_board() -> void:
+	print("the border")
+	var scene := _scene()
+	var quiet := 0
+	for x in scene.COLS:
+		if not scene.is_wall(Vector2i(x, 0)):
+			quiet += 1
+		if not scene.is_wall(Vector2i(x, scene.ROWS - 1)):
+			quiet += 1
+	for y in scene.ROWS:
+		if not scene.is_wall(Vector2i(0, y)):
+			quiet += 1
+		if not scene.is_wall(Vector2i(scene.COLS - 1, y)):
+			quiet += 1
+	expect(quiet == 0, "every cell on all four edges is a wall (%d gaps)" % quiet)
+
+	# And the inside is not solid, or there is nowhere to walk.
+	var open_cells := 0
+	for y in range(1, scene.ROWS - 1):
+		for x in range(1, scene.COLS - 1):
+			if not scene.is_wall(Vector2i(x, y)):
+				open_cells += 1
+	expect(open_cells > 0, "with open ground inside it (%d cells)" % open_cells)
+
+	# Interior walls exist too — a bare border is a room, not a maze.
+	var inside_walls := 0
+	for y in range(1, scene.ROWS - 1):
+		for x in range(1, scene.COLS - 1):
+			if scene.is_wall(Vector2i(x, y)):
+				inside_walls += 1
+	expect(inside_walls > 0, "and obstacles within it (%d cells)" % inside_walls)
+
+	# A cell just outside the grid is not a wall, which is what an off-by-one
+	# border would have built instead of the real one.
+	expect(not scene.is_wall(Vector2i(0, scene.ROWS)),
+		"nothing is recorded past the bottom edge")
+	expect(not scene.is_wall(Vector2i(scene.COLS, 0)),
+		"nor past the right one")
+
+## A direction only moves the player on a fresh press of a direction key.
+func _test_only_a_fresh_direction_press_moves() -> void:
+	print("the key")
+	var scene := _scene()
+	var p := _player(scene)
+	var start: Vector2i = p.grid_pos
+	var d := _open_cell(scene, start)
+	# Real key events, not InputEventAction: the demo asks is_echo(), which only
+	# a key event carries, and ui_* are bound to the arrow keys by default.
+	var code := KEY_UP
+	if d == Vector2i(0, 1): code = KEY_DOWN
+	elif d == Vector2i(-1, 0): code = KEY_LEFT
+	elif d == Vector2i(1, 0): code = KEY_RIGHT
+
+	# A key coming back up is not a move, or every press would move twice.
+	p._unhandled_input(_key_event(code, false, false))
+	expect(p.grid_pos == start, "a release does not move the player")
+
+	# Nor is an auto-repeat: holding a key would otherwise skate across the board.
+	p._unhandled_input(_key_event(code, true, true))
+	expect(p.grid_pos == start, "nor an auto-repeat")
+
+	# A key that is not a direction does nothing at all.
+	p._unhandled_input(_key_event(KEY_ENTER, true, false))
+	expect(p.grid_pos == start, "nor a key with no direction on it")
+
+	# And a real press does.
+	p._unhandled_input(_key_event(code, true, false))
+	expect(p.grid_pos == start + d,
+		"a fresh press moves one cell (%s -> %s)" % [start, p.grid_pos])
+
+func _key_event(code: Key, pressed: bool, echo: bool) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.physical_keycode = code
+	event.pressed = pressed
+	event.echo = echo
+	return event
 
 func _test_repeated_moves_accumulate() -> void:
 	print("successive moves")

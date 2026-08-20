@@ -31,12 +31,18 @@ const COLS  := 16
 const ROWS  := 12
 ```
 
-`wall_set: Dictionary` maps `Vector2i` cell coordinates to `true`. Checking membership is O(1) by hash:
+`wall_set: Dictionary` maps `Vector2i` cell coordinates to whether they are walls. The lookup is O(1) by hash:
 
 ```gdscript
 func is_wall(cell: Vector2i) -> bool:
-    return wall_set.has(cell)
+    return wall_set.get(cell, false)
 ```
+
+`get(cell, false)` rather than `has(cell)`, which would work equally well and is
+what this demo used to do. The difference is that `has()` never reads the value
+stored against a key, so the line that writes it means nothing — and a line
+nothing reads is one no test can hold. Reading it makes this a map rather than a
+set pretending to be one, at the same cost.
 
 `cell_to_world(cell: Vector2i) -> Vector2` converts a grid coordinate to the world pixel at the cell's center:
 ```gdscript
@@ -87,8 +93,8 @@ In continuous movement, position is a float updated every frame. In grid movemen
 A `Dictionary` with `Vector2i` keys gives O(1) lookup:
 ```gdscript
 wall_set[Vector2i(4, 2)] = true
-wall_set.has(Vector2i(4, 2))  # → true
-wall_set.has(Vector2i(5, 5))  # → false
+wall_set.get(Vector2i(4, 2), false)  # → true
+wall_set.get(Vector2i(5, 5), false)  # → false
 ```
 
 Alternatives (checking a 2D array, iterating a list) are O(1) and O(n) respectively. The Dictionary approach scales to sparse, large, or procedurally generated maps.
