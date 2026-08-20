@@ -271,8 +271,8 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing**. The floor stands at 562/676
-(83.1%), with 79 of 166 suites catching every mutation sampled.
+its logic, and **no suite catches nothing**. The floor stands at 582/676
+(86.1%), with 88 of 166 suites catching every mutation sampled.
 
 The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
@@ -303,9 +303,15 @@ Two test smells worth naming, because both look like thorough tests:
 
 - **A fixture at the origin hides sign errors.** `target - source` and
   `target + source` are the same vector when one of them is `(0, 0)`.
-  `knockback` only ever hit from the origin and `homing-projectile` only ever
-  launched from it, so in both demos the mutation that reverses every direction
-  survived. Put the fixture somewhere arbitrary.
+  `knockback` only ever hit from the origin, `homing-projectile` only ever
+  launched from it, and `quadtree` rooted every tree there — in all three the
+  mutation that reverses a direction survived. `quadtree` is the clearest: a
+  tree at the origin cannot tell `x + hw` from `x - hw` in any way its tests
+  were looking at, because the node still reports four children, the count is
+  still right, and objects that should have landed in a misplaced quadrant
+  simply vanish. Put the fixture somewhere arbitrary. `combo-system` had the
+  same trap in *time* — its window is `now - then`, and a suite running inside
+  the first second of engine uptime cannot tell that from `now + then`.
 - **A bound with no floor is half a test.** `homing-projectile` asserted its
   trail was capped at 12, which a trail trimmed to a single dot every frame
   satisfies equally well.
@@ -317,6 +323,18 @@ Two test smells worth naming, because both look like thorough tests:
   does not dash on its own" checked the dash flag sixty frames later, by which
   time a dash that had started and finished was invisible. Its cooldown was
   still set, and that is what the assertion reads now.
+- **A generated buffer can be well-formed and still wrong.**
+  `footstep-audio` checked its tone was the right length and mix rate, which
+  silence satisfies. Peak, envelope and smoothness all survive the two bytes of
+  a sample being written to the wrong indices, because a smooth wave hides a
+  displaced high byte everywhere except at a transition. A 20Hz tone moves less
+  than one high byte between neighbouring samples, so there the displacement is
+  a jump the wave cannot make.
+- **One scene at a time.** `camera-follow` and `footstep-audio` both added a
+  fresh copy of the world per test and left it in the tree. Invisible while
+  every test only reads configuration; the moment one lets the physics run, the
+  stacked players depenetrate off each other and the one being watched is shoved
+  off the level.
 
 And one trap in writing the test itself: `multiplayer-prediction`'s deep-copy
 test passed while both mutants survived, because the step function it supplied
