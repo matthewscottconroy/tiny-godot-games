@@ -14,6 +14,9 @@ func _ready() -> void:
 	await _test_the_swap_is_a_fade_not_a_cut()
 	_test_both_layers_keep_playing_throughout()
 	_test_the_two_layers_are_different_music()
+	_test_the_phases_run_forward()
+	_test_the_combat_layer_is_a_sum_of_two_tones()
+	_test_a_switch_to_the_current_state_does_nothing()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -127,3 +130,86 @@ func _test_the_two_layers_are_different_music() -> void:
 	expect(source.contains("220.0"), "the calm layer has its own pitch")
 	expect(source.contains("440.0") and source.contains("330.0"),
 		"and the combat layer is a different, thicker chord")
+
+## The phases advance, and wrap at a whole cycle rather than running away.
+func _test_the_phases_run_forward() -> void:
+	print("the phase")
+	var m := _make()
+
+	var p := 0.0
+	var went_up := 0
+	var wrapped := 0
+	# One full cycle of the 220 Hz tone is MIX_RATE / 220 samples.
+	for i in int(m.MIX_RATE / 220.0) + 4:
+		var next: float = m.advance_phase(p, 220.0)
+		if next > p:
+			went_up += 1
+		else:
+			wrapped += 1
+		p = next
+	expect(went_up > 0, "the phase advances (%d steps forward)" % went_up)
+	expect(wrapped >= 1, "and wraps once per cycle rather than climbing (%d)" % wrapped)
+	expect(p >= 0.0 and p < 1.0, "staying inside one cycle (%.4f)" % p)
+
+	# A higher frequency covers a cycle in fewer samples, which is the only
+	# thing the frequency argument does.
+	var slow := 0
+	var fast := 0
+	var a := 0.0
+	var b := 0.0
+	for i in int(m.MIX_RATE / 440.0) + 1:
+		var na: float = m.advance_phase(a, 220.0)
+		var nb: float = m.advance_phase(b, 440.0)
+		if na < a: slow += 1
+		if nb < b: fast += 1
+		a = na
+		b = nb
+	expect(fast > slow, "the higher tone wraps more often (%d vs %d)" % [fast, slow])
+
+## Combat is two tones added together, not subtracted.
+func _test_the_combat_layer_is_a_sum_of_two_tones() -> void:
+	print("the combat mix")
+	var m := _make()
+
+	# A quarter of the way through both cycles, each tone is at its peak: added
+	# they reinforce, subtracted they cancel to silence.
+	var both_up: float = m.combat_sample(0.25, 0.25)
+	expect(is_equal_approx(both_up, 0.5),
+		"two peaks together make the loudest sample (%.3f)" % both_up)
+
+	# One peak up and one down: added they cancel, subtracted they reinforce.
+	var opposed: float = m.combat_sample(0.25, 0.75)
+	expect(absf(opposed) < 0.001,
+		"a peak and a trough cancel (%.3f)" % opposed)
+
+	# The two layers peak at the same level, so neither is obviously louder
+	# than the other through the crossfade.
+	var calm_peak: float = m.calm_sample(0.25)
+	expect(is_equal_approx(calm_peak, 0.4),
+		"the calm layer peaks at 0.4 (%.3f)" % calm_peak)
+	expect(both_up > calm_peak,
+		"and the combat layer is no quieter (%.3f vs %.3f)" % [both_up, calm_peak])
+
+	# Both start and end a cycle at silence, so the buffer has no step in it
+	# where the phase wraps.
+	expect(absf(m.calm_sample(0.0)) < 0.001, "the calm tone starts at silence")
+	expect(absf(m.combat_sample(0.0, 0.0)) < 0.001, "and so does the combat mix")
+
+## Asking for the state you are already in changes nothing.
+func _test_a_switch_to_the_current_state_does_nothing() -> void:
+	print("the guard")
+	# Its own scene: _make() hands out one shared instance, and the tests above
+	# leave it in whatever state they finished in. "The demo opens calm" is only
+	# a claim about a demo that has just opened.
+	var m: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(m)
+	expect(m._state == "calm", "the demo opens calm (%s)" % m._state)
+	expect(not m.wants("calm"), "so it does not want to switch to calm")
+	expect(m.wants("combat"), "but it does want to switch to combat")
+
+	m._transition("combat")
+	expect(m._state == "combat", "switching sets the state (%s)" % m._state)
+	expect(not m.wants("combat"), "and now combat is the one it will not repeat")
+	expect(m.wants("calm"), "while calm is the one it will")
+
+	m.queue_free()

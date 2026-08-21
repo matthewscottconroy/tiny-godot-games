@@ -70,6 +70,50 @@ func _test_the_tone_is_generated() -> void:
 	expect(stream.format == AudioStreamWAV.FORMAT_16_BITS, "as 16-bit samples")
 	expect(stream.data.size() > m.SAMPLE_RATE, "and long enough to loop smoothly")
 
+	# What is in the buffer, not just how much of it. Length, format and mix
+	# rate are all satisfied by silence — and by a buffer whose two bytes per
+	# sample are written to the wrong indices, because a smooth wave hides a
+	# displaced high byte everywhere except where it changes.
+	var loud := 0
+	for i in 200:
+		loud = maxi(loud, absi(_sample_at(stream.data, i)))
+	expect(loud > 20000, "the tone is actually loud (%d)" % loud)
+
+	# A low tone moves less than one high byte between neighbouring samples, so
+	# any disturbance of the bytes shows up as a step the wave cannot make.
+	var slow: AudioStreamWAV = m._make_tone(20.0, 0.2)
+	var biggest := 0
+	for i in range(1, 400):
+		biggest = maxi(biggest, absi(_sample_at(slow.data, i) - _sample_at(slow.data, i - 1)))
+	expect(biggest < 250,
+		"a 20Hz tone steps smoothly, well under one high byte (%d)" % biggest)
+
+	# And it is a sine: it crosses zero twice per cycle and starts there.
+	expect(absi(_sample_at(slow.data, 0)) < 200,
+		"the tone starts at silence (%d)" % _sample_at(slow.data, 0))
+	var crossings := 0
+	var cycle := int(m.SAMPLE_RATE / 20.0)
+	for i in range(1, cycle + 1):
+		if signi(_sample_at(slow.data, i)) != signi(_sample_at(slow.data, i - 1)):
+			crossings += 1
+	expect(crossings == 2, "and crosses zero twice per cycle (%d)" % crossings)
+
+	# A higher tone fits more cycles into the same buffer, which is the only
+	# thing the frequency argument does.
+	var fast: AudioStreamWAV = m._make_tone(40.0, 0.2)
+	var fast_crossings := 0
+	for i in range(1, cycle + 1):
+		if signi(_sample_at(fast.data, i)) != signi(_sample_at(fast.data, i - 1)):
+			fast_crossings += 1
+	expect(fast_crossings > crossings,
+		"twice the frequency crosses zero twice as often (%d vs %d)"
+		% [fast_crossings, crossings])
+
+## The signed 16-bit sample at index `i`, read the way the engine reads it.
+func _sample_at(data: PackedByteArray, i: int) -> int:
+	var raw := data[i * 2] | (data[i * 2 + 1] << 8)
+	return raw - 65536 if raw > 32767 else raw
+
 func _test_the_player_is_positional() -> void:
 	print("the player")
 	var m := _make()

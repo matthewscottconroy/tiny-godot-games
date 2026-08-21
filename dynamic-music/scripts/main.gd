@@ -29,11 +29,30 @@ func _ready() -> void:
 	_combat_player.volume_db = -80.0
 
 
+## Whether switching to `target` would change anything. Pressing C while already
+## calm must not restart the crossfade, or holding the key would keep the volume
+## pinned at the start of a fade that never finishes.
+func wants(target: String) -> bool:
+	return _state != target
+
+## One sample of the calm layer: a single 220 Hz tone.
+func calm_sample(phase: float) -> float:
+	return sin(TAU * phase) * 0.4
+
+## One sample of the combat layer: two tones a fifth apart, summed. Half the
+## amplitude each, so the pair peaks at the same level as the calm layer's one.
+func combat_sample(phase1: float, phase2: float) -> float:
+	return sin(TAU * phase1) * 0.25 + sin(TAU * phase2) * 0.25
+
+## Advance a phase by one sample at `freq`, wrapping at a whole cycle.
+func advance_phase(phase: float, freq: float) -> float:
+	return fmod(phase + freq / MIX_RATE, 1.0)
+
 func _process(_delta: float) -> void:
 	# --- Input ---
-	if Input.is_key_pressed(KEY_C) and _state != "calm":
+	if Input.is_key_pressed(KEY_C) and wants("calm"):
 		_transition("calm")
-	if Input.is_key_pressed(KEY_F) and _state != "combat":
+	if Input.is_key_pressed(KEY_F) and wants("combat"):
 		_transition("combat")
 
 	# --- Fill calm buffer (220 Hz sine) ---
@@ -41,19 +60,19 @@ func _process(_delta: float) -> void:
 	if calm_pb:
 		var n := calm_pb.get_frames_available()
 		for i in n:
-			var s := sin(TAU * _calm_phase) * 0.4
+			var s := calm_sample(_calm_phase)
 			calm_pb.push_frame(Vector2(s, s))
-			_calm_phase = fmod(_calm_phase + 220.0 / MIX_RATE, 1.0)
+			_calm_phase = advance_phase(_calm_phase, 220.0)
 
 	# --- Fill combat buffer (440 Hz + 330 Hz mix) ---
 	var combat_pb := _combat_player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if combat_pb:
 		var n := combat_pb.get_frames_available()
 		for i in n:
-			var s := sin(TAU * _combat_phase1) * 0.25 + sin(TAU * _combat_phase2) * 0.25
+			var s := combat_sample(_combat_phase1, _combat_phase2)
 			combat_pb.push_frame(Vector2(s, s))
-			_combat_phase1 = fmod(_combat_phase1 + 440.0 / MIX_RATE, 1.0)
-			_combat_phase2 = fmod(_combat_phase2 + 330.0 / MIX_RATE, 1.0)
+			_combat_phase1 = advance_phase(_combat_phase1, 440.0)
+			_combat_phase2 = advance_phase(_combat_phase2, 330.0)
 
 	queue_redraw()
 
