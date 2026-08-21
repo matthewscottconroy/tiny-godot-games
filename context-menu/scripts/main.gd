@@ -7,7 +7,17 @@ var _menu_items: Array = []
 var _menu_visible: bool = false
 var _menu_pos: Vector2 = Vector2.ZERO
 var _highlighted_item: int = -1
-var _bg_color: Color = Color(0.12, 0.12, 0.18)
+## The backgrounds the "Change Background" item cycles through, in order. A
+## constant rather than a local rebuilt on every click, so the cycle can be
+## checked against the list it is supposed to be walking.
+const BG_OPTIONS: Array = [
+	Color(0.12, 0.12, 0.18),
+	Color(0.05, 0.15, 0.10),
+	Color(0.15, 0.08, 0.08),
+	Color(0.10, 0.08, 0.18),
+]
+
+var _bg_color: Color = BG_OPTIONS[0]
 var _shapes: Array = []
 var _log: Array = []
 
@@ -55,18 +65,12 @@ func _action_clear_all() -> void:
 
 
 func _action_change_bg() -> void:
-	var options: Array = [
-		Color(0.12, 0.12, 0.18),
-		Color(0.05, 0.15, 0.10),
-		Color(0.15, 0.08, 0.08),
-		Color(0.10, 0.08, 0.18),
-	]
 	var current_idx := 0
-	for i in range(options.size()):
-		if _bg_color.is_equal_approx(options[i]):
+	for i in range(BG_OPTIONS.size()):
+		if _bg_color.is_equal_approx(BG_OPTIONS[i]):
 			current_idx = i
 			break
-	_bg_color = options[(current_idx + 1) % options.size()]
+	_bg_color = BG_OPTIONS[(current_idx + 1) % BG_OPTIONS.size()]
 	_push_log("Background color changed")
 
 

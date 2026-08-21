@@ -17,6 +17,9 @@ func _ready() -> void:
 	_test_clear_empties_the_canvas()
 	_test_the_background_cycles_and_comes_back_round()
 	_test_the_log_keeps_only_the_last_few_lines()
+	_test_escape_closes_the_menu_and_nothing_else_does()
+	_test_the_highlight_follows_the_cursor()
+	_test_a_click_outside_the_item_list_runs_nothing()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -40,11 +43,22 @@ func _make() -> Node2D:
 	add_child(m)
 	return m
 
-func _click(m: Node2D, at: Vector2, button: int) -> void:
+func _click(m: Node2D, at: Vector2, button: int, pressed: bool = true) -> void:
 	var e := InputEventMouseButton.new()
 	e.button_index = button
-	e.pressed = true
+	e.pressed = pressed
 	e.position = at
+	m._input(e)
+
+func _motion(m: Node2D, at: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = at
+	m._input(e)
+
+func _key(m: Node2D, code: Key, pressed: bool = true) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = pressed
 	m._input(e)
 
 ## The middle of menu row `row`, in screen coordinates.
@@ -161,6 +175,46 @@ func _test_the_background_cycles_and_comes_back_round() -> void:
 	expect(seen.size() > 2, "through several colours")
 	expect(m._bg_color == first or seen.has(first), "and returns to where it started")
 
+	# Forward through the list, not backward. "Every colour is reached and it
+	# wraps" is satisfied by walking the ring the other way, and a menu item
+	# labelled "change background" that steps backwards is not wrong so much as
+	# unpredictable — the same click gives a different answer depending on which
+	# way round the author thought the list ran.
+	var fresh := _make()
+	var palette: Array = fresh.BG_OPTIONS
+	expect(palette.size() > 2, "there are enough colours for a direction to show (%d)"
+		% palette.size())
+	var start := -1
+	for i in palette.size():
+		if (palette[i] as Color).is_equal_approx(fresh._bg_color):
+			start = i
+	expect(start >= 0, "the current background is one of them")
+
+	fresh._action_change_bg()
+	expect((fresh._bg_color as Color).is_equal_approx(palette[(start + 1) % palette.size()]),
+		"one step forward lands on the next colour (%s)" % fresh._bg_color)
+	fresh._action_change_bg()
+	expect((fresh._bg_color as Color).is_equal_approx(palette[(start + 2) % palette.size()]),
+		"and again on the one after (%s)" % fresh._bg_color)
+
+	# Every step lands on a real colour, so the index never goes negative.
+	_quiet_failures = 0
+	for i in palette.size() * 2:
+		fresh._action_change_bg()
+		var found := false
+		for c in palette:
+			if (c as Color).is_equal_approx(fresh._bg_color):
+				found = true
+		expect_quiet(found, "step %d landed on %s" % [i, fresh._bg_color])
+	expect(_quiet_failures == 0, "cycling never lands outside the palette")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("    (", label, " — failed)")
+
 func _test_the_log_keeps_only_the_last_few_lines() -> void:
 	print("the log")
 	var m := _make()
@@ -168,3 +222,80 @@ func _test_the_log_keeps_only_the_last_few_lines() -> void:
 		m._action_show_info()
 	expect(m._log.size() <= 5, "the log is trimmed rather than growing forever")
 	expect(m._log.size() > 0, "and keeps the recent lines")
+
+## Escape closes the menu; other keys and key releases do not.
+##
+## The handler checks the key *and* that it is a press. Either check dropped
+## turns "press Escape" into "press anything" or "any Escape event", and a menu
+## that closes on the key coming back up cannot be driven by holding Escape at
+## all.
+func _test_escape_closes_the_menu_and_nothing_else_does() -> void:
+	print("escape")
+	var m := _make()
+
+	_click(m, Vector2(200.0, 200.0), MOUSE_BUTTON_RIGHT)
+	expect(m._menu_visible, "the menu is open")
+
+	_key(m, KEY_ESCAPE, false)
+	expect(m._menu_visible, "releasing Escape leaves it open")
+
+	_key(m, KEY_A, true)
+	expect(m._menu_visible, "another key leaves it open")
+
+	_key(m, KEY_ESCAPE, true)
+	expect(not m._menu_visible, "pressing Escape closes it")
+	expect(m._highlighted_item == -1,
+		"and forgets which row was highlighted (%d)" % m._highlighted_item)
+
+	# Closed already, Escape is harmless rather than an error.
+	_key(m, KEY_ESCAPE, true)
+	expect(not m._menu_visible, "and pressing it again does nothing")
+
+	# The menu starts closed, so a stray highlight cannot survive from a
+	# previous opening.
+	var fresh := _make()
+	expect(not fresh._menu_visible, "a new menu starts closed")
+	expect(fresh._highlighted_item == -1, "with no row highlighted")
+
+## Moving the cursor over the open menu highlights the row under it.
+func _test_the_highlight_follows_the_cursor() -> void:
+	print("the highlight")
+	var m := _make()
+	_click(m, Vector2(200.0, 200.0), MOUSE_BUTTON_RIGHT)
+	expect(m._highlighted_item == -1, "nothing is highlighted when it opens")
+
+	_motion(m, _row_centre(m, 0))
+	expect(m._highlighted_item == 0, "the first row highlights (%d)" % m._highlighted_item)
+
+	_motion(m, _row_centre(m, 0) + Vector2(2.0, 0.0))
+	expect(m._highlighted_item == 0, "and stays highlighted within itself")
+
+	_motion(m, _row_centre(m, 1))
+	expect(m._highlighted_item == 1, "moving down highlights the next (%d)" % m._highlighted_item)
+
+	_motion(m, Vector2(600.0, 460.0))
+	expect(m._highlighted_item == -1,
+		"and moving off the menu clears it (%d)" % m._highlighted_item)
+
+	# A closed menu tracks nothing, or the highlight would drift while invisible.
+	_key(m, KEY_ESCAPE, true)
+	_motion(m, _row_centre(m, 0))
+	expect(m._highlighted_item == -1, "a closed menu does not track the cursor")
+
+## A click on the menu that is not on a row runs nothing, and still closes.
+func _test_a_click_outside_the_item_list_runs_nothing() -> void:
+	print("clicking past the rows")
+	var m := _make()
+	var before: int = m._log.size()
+
+	_click(m, Vector2(200.0, 200.0), MOUSE_BUTTON_RIGHT)
+	# Well below the last row, but on the same screen: the index comes back
+	# out of range and must not be used to reach into the item list.
+	_click(m, Vector2(210.0, 460.0), MOUSE_BUTTON_LEFT)
+	expect(not m._menu_visible, "the menu closes")
+	expect(m._log.size() == before, "and nothing ran (%d entries)" % m._log.size())
+
+	# A real row does run, so the guard is not simply refusing everything.
+	_click(m, Vector2(200.0, 200.0), MOUSE_BUTTON_RIGHT)
+	_click(m, _row_centre(m, 0), MOUSE_BUTTON_LEFT)
+	expect(m._log.size() > before, "while clicking a row does run it (%d)" % m._log.size())

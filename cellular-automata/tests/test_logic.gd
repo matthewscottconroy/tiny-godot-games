@@ -386,13 +386,20 @@ func _test_the_divider_stands_between_the_two_materials() -> void:
 
 	var sand_x: Array[int] = []
 	var water_x: Array[int] = []
-	var stone_x: Array[int] = []
+	# Stone above the bowl's floor only. The floor itself runs the whole width,
+	# so counting every stone cell between the two materials averages in a
+	# dozen floor cells and the divider barely moves the answer — which is a
+	# measurement of the floor wearing the divider's name.
+	var divider_x: Array[int] = []
+	var floor_row: int = m.GRID_H - 6
 	for y in m.GRID_H:
 		for x in m.GRID_W:
 			match m._grid[y][x]:
 				m.Cell.SAND: sand_x.append(x)
 				m.Cell.WATER: water_x.append(x)
-				m.Cell.STONE: stone_x.append(x)
+				m.Cell.STONE:
+					if y < floor_row:
+						divider_x.append(x)
 	expect(sand_x.size() > 0 and water_x.size() > 0, "the world opens with both materials")
 
 	var sand_right: int = sand_x.max()
@@ -402,7 +409,7 @@ func _test_the_divider_stands_between_the_two_materials() -> void:
 
 	# A stone divider stands in the gap between them.
 	var between := 0
-	for x in stone_x:
+	for x in divider_x:
 		if x > sand_right and x < water_left:
 			between += 1
 	expect(between > 0,
@@ -412,7 +419,7 @@ func _test_the_divider_stands_between_the_two_materials() -> void:
 	# It stands in the middle of the bowl, so the two halves are the same size.
 	# Off to one side and one material has visibly more room than the other.
 	var divider_sum := 0
-	for x in stone_x:
+	for x in divider_x:
 		if x > sand_right and x < water_left:
 			divider_sum += x
 	var divider_centre := float(divider_sum) / float(between)

@@ -16,6 +16,9 @@ func _ready() -> void:
 	_test_dragging_a_control_point()
 	_test_clicking_away_grabs_nothing()
 	_test_the_dot_loops_around_the_curve()
+	_test_the_grab_radius_has_an_edge()
+	_test_hovering_reports_the_point_under_the_cursor()
+	_test_only_a_press_of_A_resets_the_curve()
 	_test_a_resets_the_shape()
 	_report()
 
@@ -166,3 +169,92 @@ func _test_a_resets_the_shape() -> void:
 	m._input(e)
 	for i in 4:
 		expect(m._points[i] == m.DEFAULT_POINTS[i], "A puts control point %d back" % i)
+
+## A control point is grabbed only within the handle's radius.
+##
+## "Clicking a point picks it up" and "clicking the middle of the screen does
+## not" leave the comparison itself untested: a radius test the wrong way round
+## grabs everything except the point you clicked, which the first case cannot
+## see because it is standing on the point and the second cannot see because the
+## screen centre is far from all four.
+func _test_the_grab_radius_has_an_edge() -> void:
+	print("the grab radius")
+	var m := _make()
+	var handle: Vector2 = m._points[1]
+
+	# Just inside, and just outside, the same handle.
+	_click(m, handle + Vector2(14.0, 0.0), true)
+	expect(m._drag == 1, "a click just inside the radius grabs it (%d)" % m._drag)
+	_click(m, handle, false)
+
+	_click(m, handle + Vector2(18.0, 0.0), true)
+	expect(m._drag == -1, "one just outside does not (%d)" % m._drag)
+	_click(m, handle, false)
+
+	# Far outside, in the direction of no handle at all.
+	_click(m, handle + Vector2(200.0, 0.0), true)
+	expect(m._drag == -1, "and one well away certainly does not (%d)" % m._drag)
+	_click(m, handle, false)
+
+	# Each of the four is grabbable, so the search covers all of them rather
+	# than stopping at the first.
+	_quiet_failures = 0
+	for i in range(4):
+		_click(m, m._points[i], true)
+		expect_quiet(m._drag == i, "point %d is grabbable (got %d)" % [i, m._drag])
+		_click(m, m._points[i], false)
+	expect(_quiet_failures == 0, "all four control points can be picked up")
+
+## Hovering reports which point is under the cursor, and forgets it when it
+## leaves.
+func _test_hovering_reports_the_point_under_the_cursor() -> void:
+	print("hovering")
+	var m := _make()
+	_move(m, m._points[2])
+	expect(m._hovered == 2, "the point under the cursor is the hovered one (%d)" % m._hovered)
+	_move(m, m._points[2] + Vector2(200.0, 100.0))
+	expect(m._hovered == -1,
+		"moving away leaves nothing hovered (%d)" % m._hovered)
+	_move(m, m._points[0])
+	expect(m._hovered == 0, "and moving onto another reports that one (%d)" % m._hovered)
+
+## A resets the curve — the key going down, and only that key.
+func _test_only_a_press_of_A_resets_the_curve() -> void:
+	print("the reset key")
+	var m := _make()
+	_move(m, m._points[1])
+	_click(m, m._points[1], true)
+	_move(m, Vector2(500.0, 60.0))
+	_click(m, Vector2(500.0, 60.0), false)
+	expect(m._points[1] == Vector2(500.0, 60.0), "a handle has been dragged away")
+
+	var released := InputEventKey.new()
+	released.keycode = KEY_A
+	released.pressed = false
+	m._input(released)
+	expect(m._points[1] == Vector2(500.0, 60.0),
+		"releasing A does not reset — the curve would snap back on key-up")
+
+	var other := InputEventKey.new()
+	other.keycode = KEY_B
+	other.pressed = true
+	m._input(other)
+	expect(m._points[1] == Vector2(500.0, 60.0), "and neither does another key")
+
+	var pressed := InputEventKey.new()
+	pressed.keycode = KEY_A
+	pressed.pressed = true
+	m._input(pressed)
+	expect(m._points[1] == m.DEFAULT_POINTS[1],
+		"while pressing A puts it back (%s)" % m._points[1])
+	_quiet_failures = 0
+	for i in range(4):
+		expect_quiet(m._points[i] == m.DEFAULT_POINTS[i], "point %d is back" % i)
+	expect(_quiet_failures == 0, "along with every other control point")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("    (", label, " — failed)")

@@ -49,7 +49,7 @@ Each entry in the `specs` array may contain:
 | `"label"` | `String` | `""` | Text drawn inside the circle |
 | *any other key* | any | — | Passed through unchanged in click signal |
 
-### Output Signal — `circle_clicked`
+### Output Signals
 
 ```gdscript
 signal circle_clicked(index: int, data: Dictionary)
@@ -71,6 +71,22 @@ func _on_circle_clicked(index: int, data: Dictionary) -> void:
 ```
 
 `index` is the zero-based position in the array passed to `configure()`. `data` is a copy of that circle's spec — including any extra keys the caller added. The caller stores all extra data in the spec and retrieves it from the click signal, eliminating parallel state.
+
+
+### `hover_changed`
+
+```gdscript
+signal hover_changed(index: int)
+```
+
+Emitted when the circle under the cursor changes, with `-1` when the cursor
+leaves them all. It is the *edge*, not the stream: moving the mouse within one
+circle emits nothing, because a caller showing a tooltip or playing a sound
+wants to be told once per circle entered.
+
+That guard is the same shape as a setter that only emits on a real change, and
+it is worth having for the same reason — a component that fires on every mouse
+move pushes the "has this actually changed?" question onto every caller.
 
 ### Layout (`_place`)
 
@@ -144,12 +160,14 @@ func _gui_input(event: InputEvent) -> void:
 | `Color.lightened(amount)` | Return a lighter copy of a color (0.0–1.0 amount) |
 | `Dictionary.get(key, default)` | Safe key access with a fallback value |
 | `signal circle_clicked(index, data)` | Typed signal — decouples component from caller |
+| `signal hover_changed(index)` | The circle under the cursor, `-1` for none |
 
 ## Controls
 
 | Input | Action |
 |-------|--------|
 | Left-click on a circle | Emit `circle_clicked` with index and spec |
+| Move onto or off a circle | Emit `hover_changed` with the new index |
 | Left / Right arrow, Space | Cycle through the three built-in presets |
 
 ## Key Constants

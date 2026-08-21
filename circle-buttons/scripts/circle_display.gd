@@ -2,10 +2,17 @@
 ##
 ## Input:  configure(specs: Array[Dictionary]) — set number, size, color of circles
 ## Output: signal circle_clicked(index: int, data: Dictionary) — which was clicked
+##         signal hover_changed(index: int) — which is under the cursor, -1 none
 extends Control
 class_name CircleDisplay
 
 signal circle_clicked(index: int, data: Dictionary)
+
+## The circle under the cursor changed. -1 means the cursor left them all.
+##
+## Emitted only when it actually changes, not on every mouse move — a caller
+## showing a tooltip or playing a sound wants the edge, not the stream.
+signal hover_changed(index: int)
 
 var _circles: Array = []
 var _hovered: int = -1
@@ -84,6 +91,7 @@ func _gui_input(event: InputEvent) -> void:
 		var prev := _hovered
 		_hovered = _hit_test(event.position)
 		if _hovered != prev:
+			hover_changed.emit(_hovered)
 			queue_redraw()
 
 func _hit_test(local_pos: Vector2) -> int:

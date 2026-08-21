@@ -17,6 +17,8 @@ func _ready() -> void:
 	_test_data_preserved()
 	_test_configure_replaces_previous_set()
 	_test_click_signal()
+	_test_a_click_that_misses_announces_nothing()
+	_test_hovering_redraws_only_when_it_changes()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -127,3 +129,88 @@ func _report() -> void:
 	print(summary)
 	if _fail > 0:
 		push_error(summary)
+
+## Only a left press on a circle announces a click.
+##
+## The test above clicks the middle of the only circle, which cannot see a
+## button check joined with `or` (a release would fire too), nor a hit test
+## whose "found one" comparison is inverted — index 0 is the one value that
+## `>= 0` and `<= 0` agree on.
+func _test_a_click_that_misses_announces_nothing() -> void:
+	print("clicks that should not count")
+	var d := _make([
+		{"radius": 30.0, "label": "a"},
+		{"radius": 30.0, "label": "b"},
+	])
+	var heard: Array[int] = []
+	d.circle_clicked.connect(func(index: int, _data: Dictionary) -> void:
+		heard.append(index))
+
+	# A release over a circle: the press is what counts, or every click fires
+	# twice and drag-away-to-cancel is impossible.
+	d._gui_input(_button(MOUSE_BUTTON_LEFT, false, _center_of_circle(d, 0)))
+	expect(heard.is_empty(), "a button release announces nothing (%s)" % [heard])
+
+	# The right button is not the left one.
+	d._gui_input(_button(MOUSE_BUTTON_RIGHT, true, _center_of_circle(d, 0)))
+	expect(heard.is_empty(), "nor does the right button (%s)" % [heard])
+
+	# A press in the gap between the circles hits nothing.
+	d._gui_input(_button(MOUSE_BUTTON_LEFT, true, Vector2(-500.0, -500.0)))
+	expect(heard.is_empty(), "nor a press that misses every circle (%s)" % [heard])
+
+	# And a real press on each circle announces that one — including index 0,
+	# which is the index a "did we hit anything" test is most likely to get
+	# wrong, and the last one, which proves the search does not stop early.
+	d._gui_input(_button(MOUSE_BUTTON_LEFT, true, _center_of_circle(d, 0)))
+	expect(heard == [0], "a press on the first circle reports 0 (%s)" % [heard])
+	d._gui_input(_button(MOUSE_BUTTON_LEFT, true, _center_of_circle(d, 1)))
+	expect(heard == [0, 1], "and on the second reports 1 (%s)" % [heard])
+
+## Hovering redraws when the circle under the cursor changes, and not otherwise.
+func _test_hovering_redraws_only_when_it_changes() -> void:
+	print("hover tracking")
+	var d := _make([
+		{"radius": 30.0, "label": "a"},
+		{"radius": 30.0, "label": "b"},
+	])
+	expect(d._hovered == -1, "nothing is hovered to begin with (%d)" % d._hovered)
+
+	# hover_changed is the edge, not the stream: a caller showing a tooltip
+	# wants to be told once per circle entered, not once per mouse move.
+	var announced: Array[int] = []
+	d.hover_changed.connect(func(index: int) -> void: announced.append(index))
+
+	d._gui_input(_motion(_center_of_circle(d, 1)))
+	expect(d._hovered == 1, "moving onto a circle hovers it (%d)" % d._hovered)
+	expect(announced == [1], "and says so once (%s)" % [announced])
+
+	d._gui_input(_motion(_center_of_circle(d, 1) + Vector2(2.0, 0.0)))
+	expect(d._hovered == 1, "moving within it keeps it hovered (%d)" % d._hovered)
+	expect(announced == [1], "without announcing it again (%s)" % [announced])
+
+	d._gui_input(_motion(Vector2(-500.0, -500.0)))
+	expect(d._hovered == -1, "moving off everything clears it (%d)" % d._hovered)
+	expect(announced == [1, -1], "and reports the cursor leaving (%s)" % [announced])
+
+	d._gui_input(_motion(Vector2(-400.0, -400.0)))
+	expect(announced == [1, -1], "once, however far it keeps moving (%s)" % [announced])
+
+	d._gui_input(_motion(_center_of_circle(d, 0)))
+	expect(d._hovered == 0, "and onto another reports that one (%d)" % d._hovered)
+	expect(announced == [1, -1, 0], "announcing the new one (%s)" % [announced])
+
+func _button(index: int, pressed: bool, at: Vector2) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = index
+	event.pressed = pressed
+	event.position = at
+	return event
+
+func _motion(at: Vector2) -> InputEventMouseMotion:
+	var event := InputEventMouseMotion.new()
+	event.position = at
+	return event
+
+func _center_of_circle(d: Control, i: int) -> Vector2:
+	return d._center_of(d._circles[i])
