@@ -271,8 +271,8 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing**. The floor stands at 601/676
-(88.9%), with 94 of 166 suites catching every mutation sampled.
+its logic, and **no suite catches nothing**. The floor stands at 616/676
+(91.1%), with 102 of 166 suites catching every mutation sampled.
 
 The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
@@ -401,6 +401,28 @@ rest:
   walking into range waited up to two thirds of a second for its first shot.
 - `cellular-automata`'s own water test asserted the wrong row and passed about
   half the time, depending on which way a coin-flip sent the drop.
+
+## An error the gate does not know about is an error that never happened
+
+`run-tests.sh` fails a suite on a list of abort-class messages, because a
+GDScript error abandons the function it happens in and everything above it still
+reports a pass. The list is a list of *strings Godot prints*, which makes it
+exactly as good as its coverage of them — and twice it has been short.
+
+Assigning `Dictionary.keys()` to an `Array[int]` raises "Trying to assign an
+array of type", where the list had only "Trying to assign value of type". A
+test written that way passed with its assertions silently missing.
+
+Worse: reading one index past the end of an `Array` raises "Invalid access of
+index '80' on a base object of type: 'Array'", where the list had "Invalid
+index" and "Out of bounds" — neither of which is a substring of it. A mutation
+that produced that error 1680 times in a single run was scored as a survivor.
+
+Both are in the list now. `tools/mutate.py` carries the same patterns and fails
+any run that raises one, rather than trusting the summary line: a mutant that
+makes the demo throw every frame is caught, whatever the suite prints. When you
+see an abort in a suite, check the message is one the gate would have matched
+before assuming it would have been caught.
 
 ## The measurement has to be taken the same way twice
 
