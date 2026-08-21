@@ -17,6 +17,9 @@ func _ready() -> void:
 	test_changed_signal_fires_once_per_real_change()
 	test_round_trip_through_dict()
 	test_from_dict_tolerates_junk()
+	test_cycling_goes_forward_through_the_list()
+	test_setting_a_palette_to_itself_is_not_a_change()
+	test_an_empty_dict_restores_the_defaults()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -150,3 +153,96 @@ func test_from_dict_tolerates_junk() -> void:
 	s.from_dict({"text_scale": 50.0})
 	expect(is_equal_approx(s.text_scale, AccessibilitySettings.MAX_TEXT_SCALE),
 		"an out-of-range scale is clamped rather than rejected")
+
+## Cycling steps forward through the palettes, in order.
+##
+## The test above only checks that every palette is reached and that it wraps —
+## which stepping backwards does just as well, in reverse. What a reader
+## clicking "next" expects is the next one.
+func test_cycling_goes_forward_through_the_list() -> void:
+	print("cycling forward")
+	var s := _make()
+	var order: Array = AccessibilitySettings.PALETTES.keys()
+	expect(order.size() > 2,
+		"there are enough palettes for a direction to mean something (%d)" % order.size())
+
+	var start := order.find(int(s.palette))
+	expect(start >= 0, "the current palette is one of them")
+	s.cycle_palette()
+	expect(int(s.palette) == order[(start + 1) % order.size()],
+		"cycling moves to the next one, not the previous (%d)" % int(s.palette))
+	s.cycle_palette()
+	expect(int(s.palette) == order[(start + 2) % order.size()],
+		"and keeps going the same way (%d)" % int(s.palette))
+
+	# Every index stays inside the list: stepping backwards past zero would
+	# produce a negative key that PALETTES has no entry for.
+	for i in order.size() * 2:
+		s.cycle_palette()
+		expect_quiet(AccessibilitySettings.PALETTES.has(int(s.palette)),
+			"palette %d is a real one" % int(s.palette))
+	expect(_quiet_failures == 0, "cycling never lands outside the list")
+
+## Setting a value to what it already is is not a change.
+##
+## The setters guard on inequality before emitting. Invert that guard and
+## `changed` fires only when nothing changed, which is exactly backwards — every
+## listener redraws on the writes that do nothing and misses the ones that
+## matter.
+func test_setting_a_palette_to_itself_is_not_a_change() -> void:
+	print("no-op writes")
+	var s := _make()
+	var count := {"n": 0}
+	s.changed.connect(func() -> void: count["n"] += 1)
+
+	s.palette = s.palette
+	expect(count["n"] == 0,
+		"writing the palette it already has emits nothing (%d)" % count["n"])
+
+	var other := AccessibilitySettings.Palette.DEFAULT
+	for key in AccessibilitySettings.PALETTES:
+		if key != int(s.palette):
+			other = key as AccessibilitySettings.Palette
+			break
+	s.palette = other
+	expect(count["n"] == 1, "a real change emits once (%d)" % count["n"])
+	expect(int(s.palette) == int(other), "and takes effect (%d)" % int(s.palette))
+
+	s.palette = other
+	expect(count["n"] == 1, "writing it again emits nothing more (%d)" % count["n"])
+
+## An empty dictionary restores the defaults, not the opposites of them.
+func test_an_empty_dict_restores_the_defaults() -> void:
+	print("empty settings")
+	var s := _make()
+	# Turn everything on first, so a fallback that returns the wrong default
+	# cannot be mistaken for the value simply not changing.
+	s.reduced_motion = true
+	s.shape_cues = true
+	s.text_scale = AccessibilitySettings.MAX_TEXT_SCALE
+	s.palette = AccessibilitySettings.PALETTES.keys()[1] as AccessibilitySettings.Palette
+
+	s.from_dict({})
+	expect(not s.reduced_motion,
+		"motion is not reduced by default — the setting is opt-in")
+	expect(not s.shape_cues,
+		"and shape cues are off by default, since they add clutter for readers "
+		+ "who do not need them")
+	expect(is_equal_approx(s.text_scale, 1.0),
+		"text is at its normal size (%.2f)" % s.text_scale)
+	expect(int(s.palette) == int(AccessibilitySettings.Palette.DEFAULT),
+		"and the palette is the default one (%d)" % int(s.palette))
+
+	# A partial dictionary takes what it has and defaults the rest, which is
+	# what makes an older settings file still load.
+	s.reduced_motion = true
+	s.from_dict({"reduced_motion": true})
+	expect(s.reduced_motion, "a value that is present is used")
+	expect(not s.shape_cues, "and the ones that are absent still fall back")
+
+var _quiet_failures := 0
+
+func expect_quiet(cond: bool, label: String) -> void:
+	if not cond:
+		_quiet_failures += 1
+		print("    (", label, " — failed)")

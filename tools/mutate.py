@@ -271,6 +271,19 @@ def _frame_budget(demo):
             return digits
     return "5"
 
+# The same abort-class errors run-tests.sh fails a suite on — keep the two lists
+# in step. A mutation that
+# makes the demo raise one of these every frame is caught — the suite would not
+# survive a real run — but the summary line can still say n/n, because a GDScript
+# error abandons the function it happens in and everything above it still passed.
+# Without this the mutant reads as a survivor and the score is flattered.
+ABORT_RE = re.compile(
+    r"previously freed|Invalid access to property|Nonexistent function"
+    r"|Invalid type in function|Invalid index|Out of bounds|null instance"
+    r"|Division By Zero|Invalid assignment|Trying to assign value of type"
+    r"|Trying to assign an array of type|Invalid access of index")
+
+
 def _kill_tree(proc):
     """Kill the suite and anything it started."""
     try:
@@ -315,6 +328,8 @@ def run_suite(demo, timeout=90):
             return False      # killed: a mutant that hangs is a mutant caught
     except OSError:
         return False
+    if ABORT_RE.search(captured):
+        return False          # a run that raised is a run that failed
     summary = re.findall(r"(\d+)/(\d+) passed", captured)
     if not summary:
         return False          # no summary at all: the suite did not complete

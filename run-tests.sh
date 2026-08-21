@@ -40,7 +40,7 @@ ERROR_RE='Parse Error|SCRIPT ERROR|SHADER ERROR|Failed to load|Failed to instant
 # smaller n/n passed, and the counts still agree. Deliberately narrower than
 # ERROR_RE — a suite that drives a script outside its scene logs "Node not
 # found" for each @onready, which is noise rather than a failure.
-SUITE_ABORT_RE='previously freed|Invalid access to property|Nonexistent function|Invalid type in function|Invalid index|Out of bounds|null instance|Division By Zero|Invalid assignment|Trying to assign value of type'
+SUITE_ABORT_RE='previously freed|Invalid access to property|Nonexistent function|Invalid type in function|Invalid index|Out of bounds|null instance|Division By Zero|Invalid assignment|Trying to assign value of type|Trying to assign an array of type|Invalid access of index'
 
 # Warnings count too. Godot reports a refused operation as a warning rather
 # than an error, so a feature can silently do nothing and still pass every

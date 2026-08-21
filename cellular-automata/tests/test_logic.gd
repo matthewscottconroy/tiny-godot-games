@@ -19,6 +19,9 @@ func _ready() -> void:
 	_test_water_spreads_out_flat()
 	_test_nothing_is_created_or_destroyed()
 	_test_the_scan_direction_alternates()
+	_test_water_spreads_to_both_sides()
+	_test_a_key_release_selects_nothing()
+	_test_the_divider_stands_between_the_two_materials()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -264,3 +267,169 @@ func _test_the_scan_direction_alternates() -> void:
 	expect(m._scan_right != first, "each step scans the opposite way from the last")
 	m._step()
 	expect(m._scan_right == first, "alternating, so neither direction biases the pile")
+	# And it starts on a known foot, so two worlds stepped the same number of
+	# times resolve their ties the same way — which is what makes seed_world
+	# reproducible at all.
+	expect(first, "a fresh world starts scanning rightward")
+
+## Water levels out in both directions.
+##
+## Each side is guarded by its own edge check, and a guard that can never be
+## true simply stops water going that way — which looks like water with a lean
+## rather than water that is broken.
+func _test_water_spreads_to_both_sides() -> void:
+	print("water spreads both ways")
+	var m := _make_empty()
+	var floor_y: int = m.GRID_H - 1
+	var middle: int = m.GRID_W / 2
+	# A column of water on a floor, with open ground either side of it.
+	for y in range(floor_y - 6, floor_y + 1):
+		m._grid[y][middle] = m.Cell.WATER
+
+	for _i in 40:
+		m._step()
+
+	var leftmost: int = m.GRID_W
+	var rightmost := -1
+	for y in m.GRID_H:
+		for x in m.GRID_W:
+			if m._grid[y][x] == m.Cell.WATER:
+				leftmost = mini(leftmost, x)
+				rightmost = maxi(rightmost, x)
+	expect(leftmost < middle,
+		"water runs left of where it was poured (%d < %d)" % [leftmost, middle])
+	expect(rightmost > middle,
+		"and right of it (%d > %d)" % [rightmost, middle])
+	expect(middle - leftmost > 1 and rightmost - middle > 1,
+		"a real puddle either side, not one cell (%d .. %d)" % [leftmost, rightmost])
+
+	# Poured against the left wall it still spreads, which is the case the edge
+	# guard exists for — and it must not fall off the grid doing it.
+	var edge := _make_empty()
+	for y in range(floor_y - 6, floor_y + 1):
+		edge._grid[y][0] = edge.Cell.WATER
+	for _i in 40:
+		edge._step()
+	var counted := 0
+	for y in edge.GRID_H:
+		for x in edge.GRID_W:
+			if edge._grid[y][x] == edge.Cell.WATER:
+				counted += 1
+	expect(counted == 7, "no water is lost off the left edge (%d of 7)" % counted)
+
+	# And against the right wall, which is the other half of the same guard —
+	# and the half that reads one cell past the end of the row if it is wrong.
+	var right := _make_empty()
+	var last: int = right.GRID_W - 1
+	for y in range(floor_y - 6, floor_y + 1):
+		right._grid[y][last] = right.Cell.WATER
+	for _i in 40:
+		right._step()
+	var right_count := 0
+	for y in right.GRID_H:
+		for x in right.GRID_W:
+			if right._grid[y][x] == right.Cell.WATER:
+				right_count += 1
+	expect(right_count == 7, "nor off the right edge (%d of 7)" % right_count)
+
+	# Sand piled against the right wall is the same guard on the diagonal.
+	var corner := _make_empty()
+	for y in range(floor_y - 6, floor_y + 1):
+		corner._grid[y][last] = corner.Cell.SAND
+	for _i in 40:
+		corner._step()
+	var grains := 0
+	for y in corner.GRID_H:
+		for x in corner.GRID_W:
+			if corner._grid[y][x] == corner.Cell.SAND:
+				grains += 1
+	expect(grains == 7, "and no sand either (%d of 7)" % grains)
+
+## A key coming back up does not pick a material.
+func _test_a_key_release_selects_nothing() -> void:
+	print("key releases")
+	var m := _make_empty()
+	m._selected = m.Cell.SAND
+
+	var release := InputEventKey.new()
+	release.keycode = KEY_2
+	release.pressed = false
+	m._input(release)
+	expect(m._selected == m.Cell.SAND,
+		"releasing a number key leaves the material alone (%d)" % m._selected)
+
+	var repeat := InputEventKey.new()
+	repeat.keycode = KEY_2
+	repeat.pressed = true
+	repeat.echo = true
+	m._input(repeat)
+	expect(m._selected == m.Cell.SAND, "and neither does an auto-repeat")
+
+	var mouse := InputEventMouseMotion.new()
+	m._input(mouse)
+	expect(m._selected == m.Cell.SAND, "nor a mouse event")
+
+	var press := InputEventKey.new()
+	press.keycode = KEY_2
+	press.pressed = true
+	m._input(press)
+	expect(m._selected == m.Cell.WATER, "while a fresh press does (%d)" % m._selected)
+
+## The opening arrangement keeps the sand and the water apart.
+##
+## The bowl has a divider down the middle so both behaviours are visible side by
+## side from the first frame. Put it anywhere else and the two run together,
+## which is one pile of mixed material rather than two demonstrations.
+func _test_the_divider_stands_between_the_two_materials() -> void:
+	print("the divider")
+	var m := _make()
+
+	var sand_x: Array[int] = []
+	var water_x: Array[int] = []
+	var stone_x: Array[int] = []
+	for y in m.GRID_H:
+		for x in m.GRID_W:
+			match m._grid[y][x]:
+				m.Cell.SAND: sand_x.append(x)
+				m.Cell.WATER: water_x.append(x)
+				m.Cell.STONE: stone_x.append(x)
+	expect(sand_x.size() > 0 and water_x.size() > 0, "the world opens with both materials")
+
+	var sand_right: int = sand_x.max()
+	var water_left: int = water_x.min()
+	expect(sand_right < water_left,
+		"the sand is entirely left of the water (%d < %d)" % [sand_right, water_left])
+
+	# A stone divider stands in the gap between them.
+	var between := 0
+	for x in stone_x:
+		if x > sand_right and x < water_left:
+			between += 1
+	expect(between > 0,
+		"with stone standing between the two (%d cells in %d..%d)"
+		% [between, sand_right, water_left])
+
+	# It stands in the middle of the bowl, so the two halves are the same size.
+	# Off to one side and one material has visibly more room than the other.
+	var divider_sum := 0
+	for x in stone_x:
+		if x > sand_right and x < water_left:
+			divider_sum += x
+	var divider_centre := float(divider_sum) / float(between)
+	expect(absf(divider_centre - m.GRID_W * 0.5) <= 1.0,
+		"centred in the bowl (%.1f of %d)" % [divider_centre, m.GRID_W])
+
+	# And after settling they are still apart, which is what the divider is for.
+	for _i in 120:
+		m._step()
+	var settled_sand := -1
+	var settled_water: int = m.GRID_W
+	for y in m.GRID_H:
+		for x in m.GRID_W:
+			if m._grid[y][x] == m.Cell.SAND:
+				settled_sand = maxi(settled_sand, x)
+			elif m._grid[y][x] == m.Cell.WATER:
+				settled_water = mini(settled_water, x)
+	expect(settled_sand < settled_water,
+		"and they stay apart once everything has fallen (%d < %d)"
+		% [settled_sand, settled_water])
