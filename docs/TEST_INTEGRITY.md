@@ -271,8 +271,8 @@ suite at once would be a rewrite of most of the collection's tests; the ratchet
 exists so it can happen a few demos at a time without anything sliding backwards.
 
 All 165 are done: every suite drives the demo's own code rather than a copy of
-its logic, and **no suite catches nothing**. The floor stands at 616/676
-(91.1%), with 102 of 166 suites catching every mutation sampled.
+its logic, and **no suite catches nothing**. The floor stands at 628/676
+(92.9%), with 108 of 166 suites catching every mutation sampled.
 
 The last three suites that caught nothing were
 `animated-sprite`, `camera-follow` and `line-of-sight`, and each hid something
@@ -429,7 +429,9 @@ test is asking about behaviour rather than about luck.
 
 `tools/flakecheck.sh` runs each suite several times and reports any that do not
 agree with themselves. It defaults to the demos whose scripts use the global RNG
-— 37 of the 165 — because those are the ones that can differ at all.
+— 37 of the 165 — because those are the ones that can differ at all. After the
+two fixes above, forty runs of each of those thirty-seven — 1,480 runs — produced
+no disagreement, and four consecutive full-suite runs were clean.
 
 ## An error the gate does not know about is an error that never happened
 
