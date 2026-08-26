@@ -13,6 +13,7 @@ func _ready() -> void:
 	_test_the_corners_map_to_the_corners()
 	_test_r_puts_the_light_back_in_the_middle()
 	_test_other_keys_leave_it_alone()
+	await _test_a_flat_viewport_is_refused()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -22,6 +23,37 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## A viewport with no width, or no height, aims nothing.
+##
+## The guard rejects either dimension being zero, because the aim divides by
+## both. Joined with `and` it only rejects a viewport that is zero in *both*
+## directions — so a window one pixel wide divides by zero on the other axis and
+## puts the light at infinity.
+func _test_a_flat_viewport_is_refused() -> void:
+	print("degenerate viewports")
+	var m := _make()
+	var before: Vector2 = m._rect.material.get_shader_parameter("light_uv")
+
+	# A real aim moves it, so the guard is not simply refusing everything.
+	get_window().size = Vector2i(640, 480)
+	await get_tree().process_frame
+	m.aim_light(Vector2(160.0, 120.0))
+	var aimed: Vector2 = m._rect.material.get_shader_parameter("light_uv")
+	expect(aimed != before, "a normal aim moves the light (%s)" % aimed)
+	expect(aimed.x > 0.0 and aimed.x < 1.0 and aimed.y > 0.0 and aimed.y < 1.0,
+		"into the unit square the shader works in (%s)" % aimed)
+
+	# Zero on either axis is refused. Asked directly, because a window cannot be
+	# resized to zero — Godot clamps it — so the guard cannot be reached by
+	# shrinking the real viewport.
+	expect(m.is_aimable(Vector2(640.0, 480.0)), "a real viewport is aimable")
+	expect(not m.is_aimable(Vector2(0.0, 480.0)),
+		"one with no width is not — the aim would divide by zero")
+	expect(not m.is_aimable(Vector2(640.0, 0.0)), "nor one with no height")
+	expect(not m.is_aimable(Vector2(0.0, 0.0)), "nor one with neither")
+	expect(not m.is_aimable(Vector2(-10.0, 480.0)),
+		"and a negative size is not a viewport either")
 
 func _report() -> void:
 	var summary := "[normal-map-lighting] %d/%d passed" % [_pass, _pass + _fail]

@@ -18,6 +18,7 @@ func _ready() -> void:
 	test_skip_advances()
 	test_clear_drops_everything()
 	test_signals()
+	test_a_caption_lasts_as_long_as_it_asks_for()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -27,6 +28,53 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## A caption stays up for its whole duration, then goes.
+##
+## Every test above either shows a line or skips it outright, so the countdown
+## itself was never watched: a comparison inverted to "expired while there is
+## time left" hides each caption on the frame it appears, and one inverted the
+## other way leaves it up for ever. Both look like a queue that works.
+func test_a_caption_lasts_as_long_as_it_asks_for() -> void:
+	print("the countdown")
+	var s := _make()
+	s.say("A line long enough to sit on screen for a while")
+	var showing: Dictionary = s.current()
+	expect(not showing.is_empty(), "the line is showing")
+	var wanted: float = s._remaining
+	expect(wanted > 0.0, "with time on the clock (%.2f)" % wanted)
+
+	# Most of the way through, it is still up.
+	s.update(wanted * 0.5)
+	expect(not s.current().is_empty(),
+		"halfway through, it is still on screen")
+	expect(s._remaining > 0.0, "with time left (%.2f)" % s._remaining)
+
+	s.update(wanted * 0.4)
+	expect(not s.current().is_empty(), "and at nine tenths, still there")
+
+	# Past the end, it goes.
+	s.update(wanted * 0.2)
+	expect(s.current().is_empty(),
+		"once the clock runs out it is gone (%s)" % s.current())
+
+	# A caption with a queue behind it hands over rather than stopping.
+	var q := _make()
+	q.say("first")
+	q.say("second")
+	var first_text: String = q.current().get("text", "")
+	q.update(q._remaining * 0.5)
+	expect(q.current().get("text", "") == first_text,
+		"the first line holds while its time runs (%s)" % q.current().get("text", ""))
+	q.update(q._remaining + 0.1)
+	expect(q.current().get("text", "") != first_text,
+		"and the second follows it (%s)" % q.current().get("text", ""))
+	expect(not q.current().is_empty(), "rather than nothing at all")
+
+	# Ageing an empty queue is harmless and does not resurrect anything.
+	var idle := _make()
+	idle.update(1.0)
+	expect(idle.current().is_empty(), "ageing with nothing showing stays empty")
 
 func _report() -> void:
 	var summary := "[subtitle-system] %d/%d passed" % [_pass, _pass + _fail]

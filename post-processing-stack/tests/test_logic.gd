@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_the_passes_are_independent()
 	_test_the_readout_reports_all_three()
 	_test_the_scene_underneath_keeps_moving()
+	_test_a_key_release_toggles_nothing()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -24,6 +25,38 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## A key release does not toggle an effect.
+##
+## The handler tests that the event is a key *and* that it is a press. Joined
+## with `or`, every mouse move and every key release runs the match — so each
+## press toggles twice, once down and once up, and nothing appears to change at
+## all.
+func _test_a_key_release_toggles_nothing() -> void:
+	print("releases")
+	var m := _make()
+	var before: bool = m._vignette
+
+	var released := InputEventKey.new()
+	released.keycode = KEY_1
+	released.pressed = false
+	m._input(released)
+	expect(m._vignette == before,
+		"releasing 1 leaves the vignette as it was (%s)" % m._vignette)
+
+	m._input(InputEventMouseMotion.new())
+	expect(m._vignette == before, "and a mouse move changes nothing")
+
+	var pressed := InputEventKey.new()
+	pressed.keycode = KEY_1
+	pressed.pressed = true
+	m._input(pressed)
+	expect(m._vignette != before, "while pressing it does toggle (%s)" % m._vignette)
+
+	# Down-then-up is one toggle, not two.
+	m._input(released)
+	expect(m._vignette != before,
+		"and letting go does not toggle it back (%s)" % m._vignette)
 
 func _report() -> void:
 	var summary := "[post-processing-stack] %d/%d passed" % [_pass, _pass + _fail]
