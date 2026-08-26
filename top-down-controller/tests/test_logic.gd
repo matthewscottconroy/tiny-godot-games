@@ -13,6 +13,7 @@ func _ready() -> void:
 	_test_tiny_input_is_treated_as_none()
 	_test_facing_is_remembered()
 	_test_facing_starts_somewhere_sensible()
+	_test_the_readout_says_which_way_it_is_facing()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -22,6 +23,35 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## The readout names the heading while moving and IDLE while standing.
+func _test_the_readout_says_which_way_it_is_facing() -> void:
+	print("the readout")
+	var p := _make()
+
+	p.update_facing(Vector2.RIGHT)
+	expect(p.status_text(Vector2.RIGHT) != "IDLE",
+		"moving reports a heading (%s)" % p.status_text(Vector2.RIGHT))
+	expect(p.status_text(Vector2.RIGHT).ends_with("°"),
+		"in degrees (%s)" % p.status_text(Vector2.RIGHT))
+	expect(p.status_text(Vector2.ZERO) == "IDLE",
+		"and standing still reports IDLE (%s)" % p.status_text(Vector2.ZERO))
+
+	# The angle follows the facing, so different directions read differently.
+	p.update_facing(Vector2.RIGHT)
+	var east: String = p.status_text(Vector2.RIGHT)
+	p.update_facing(Vector2.DOWN)
+	var south: String = p.status_text(Vector2.DOWN)
+	expect(east != south,
+		"different headings read differently (%s vs %s)" % [east, south])
+
+	# Released keys keep the last heading on screen rather than blinking to
+	# IDLE and back — but a genuinely still character does say IDLE.
+	p.update_facing(Vector2.DOWN)
+	expect(p.status_text(Vector2.ZERO) == "IDLE",
+		"letting go reports IDLE (%s)" % p.status_text(Vector2.ZERO))
+	expect(p._last_dir == Vector2.DOWN,
+		"while the facing itself is remembered (%s)" % p._last_dir)
 
 func _report() -> void:
 	var summary := "[top-down-controller] %d/%d passed" % [_pass, _pass + _fail]

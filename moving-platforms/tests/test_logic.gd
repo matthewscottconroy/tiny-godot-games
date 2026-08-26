@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_axis_is_normalised()
 	_test_constant_linear_velocity_tracks_motion()
 	_test_velocity_reverses_with_direction()
+	await _test_the_player_stays_down_untouched()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -25,6 +26,30 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## Nothing pressed, nothing happens.
+##
+## The jump reads Input, which a headless test cannot press. Its other half is
+## is_on_floor(), and loosening the `and` to an `or` launches the player on
+## every grounded frame — which is visible from the outside without pressing
+## anything at all.
+func _test_the_player_stays_down_untouched() -> void:
+	print("standing still")
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	var player: CharacterBody2D = scene.find_child("Player", true, false)
+	expect(player != null, "the scene has a player")
+	for _i in 60:
+		await get_tree().physics_frame
+	expect(player.is_on_floor(), "the player settles on the ground")
+	var resting: float = player.global_position.y
+	var highest := resting
+	for _i in 40:
+		await get_tree().physics_frame
+		highest = minf(highest, player.global_position.y)
+	expect(resting - highest < 4.0,
+		"and stays there with no key pressed (rose %.1f px)" % (resting - highest))
+	scene.queue_free()
 
 func _report() -> void:
 	var summary := "[moving-platforms] %d/%d passed" % [_pass, _pass + _fail]

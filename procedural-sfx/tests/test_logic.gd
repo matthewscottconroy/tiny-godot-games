@@ -17,6 +17,8 @@ func _ready() -> void:
 	_test_the_beep_and_chirp_fade_out()
 	_test_the_chirp_climbs()
 	_test_samples_stay_in_range()
+	_test_the_waveform_ring_scrolls_forward()
+	_test_an_effect_knows_when_it_is_done()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -26,6 +28,58 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## The ring buffer walks forward and wraps.
+func _test_the_waveform_ring_scrolls_forward() -> void:
+	print("the ring buffer")
+	var m := _make()
+
+	expect(m.advance_head(0) == 1, "the head steps forward (%d)" % m.advance_head(0))
+	expect(m.advance_head(m.WAVEFORM_SAMPLES - 1) == 0,
+		"and wraps at the end rather than running past it (%d)"
+		% m.advance_head(m.WAVEFORM_SAMPLES - 1))
+
+	# Never negative: stepping backwards would index the array from its end and
+	# eventually off the front of it.
+	_quiet_failures = 0
+	var head := 0
+	for i in m.WAVEFORM_SAMPLES * 2:
+		head = m.advance_head(head)
+		expect_quiet(head >= 0 and head < m.WAVEFORM_SAMPLES,
+			"step %d gave head %d" % [i, head])
+	expect(_quiet_failures == 0, "the head stays inside the buffer for two whole laps")
+	expect(head == 0, "and comes back to where it started (%d)" % head)
+
+	# Samples land in order, each in the next slot.
+	m._wave_head = 0
+	for i in 4:
+		m.push_wave(float(i + 1) * 0.1)
+	expect(m._wave_head == 4, "four pushes advance the head four places (%d)" % m._wave_head)
+	_quiet_failures = 0
+	for i in 4:
+		expect_quiet(is_equal_approx(m._wave_buf[i], float(i + 1) * 0.1),
+			"slot %d holds %.1f (got %.3f)" % [i, float(i + 1) * 0.1, m._wave_buf[i]])
+	expect(_quiet_failures == 0, "and each sample is in the slot it was written to")
+
+## An effect knows when it has finished.
+func _test_an_effect_knows_when_it_is_done() -> void:
+	print("finishing")
+	var m := _make()
+	m._start_sfx("beep")
+	expect(m._gen_total > 0, "the effect asked for some frames (%d)" % m._gen_total)
+	expect(not m.is_finished(), "and is not finished before playing any")
+
+	m._gen_frames = m._gen_total - 1
+	expect(not m.is_finished(), "nor with one frame left to play")
+	m._gen_frames = m._gen_total
+	expect(m.is_finished(), "it is finished once it has played them all")
+	m._gen_frames = m._gen_total + 10
+	expect(m.is_finished(), "and stays finished past the end")
+
+	# Starting again rewinds it, so a second press replays rather than staying
+	# silent because the counter is still past the end.
+	m._start_sfx("beep")
+	expect(not m.is_finished(), "starting it again makes it unfinished")
 
 func _report() -> void:
 	var summary := "[procedural-sfx] %d/%d passed" % [_pass, _pass + _fail]

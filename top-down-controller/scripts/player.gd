@@ -33,7 +33,17 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()
 	queue_redraw()
 	if _label:
-		_label.text = "IDLE" if dir == Vector2.ZERO else "%.0f°" % rad_to_deg(_last_dir.angle())
+		_label.text = status_text(dir)
+
+## What the readout says: the heading while moving, IDLE while standing.
+##
+## It reports `_last_dir` rather than `dir`, so the angle stays on screen when
+## the keys are released instead of blinking away — the reader can see which way
+## the character is facing while it is still.
+func status_text(dir: Vector2) -> String:
+	if dir == Vector2.ZERO:
+		return "IDLE"
+	return "%.0f°" % rad_to_deg(_last_dir.angle())
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, 14, Color.DODGER_BLUE)

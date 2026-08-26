@@ -41,21 +41,37 @@ func _process(_delta: float) -> void:
 	if pb:
 		var n := pb.get_frames_available()
 		for i in n:
-			if _gen_frames >= _gen_total:
+			if is_finished():
 				pb.push_frame(Vector2.ZERO)
-				# Still record silence in ring buffer
-				_wave_buf[_wave_head] = 0.0
-				_wave_head = (_wave_head + 1) % WAVEFORM_SAMPLES
+				push_wave(0.0)     # silence is still part of the trace
 				continue
 			var t := float(_gen_frames) / float(_gen_total)
 			var s := _get_sample(t)
 			pb.push_frame(Vector2(s, s) * 0.5)
-			_wave_buf[_wave_head] = s * 0.5
-			_wave_head = (_wave_head + 1) % WAVEFORM_SAMPLES
+			push_wave(s * 0.5)
 			_gen_frames += 1
 
 	queue_redraw()
 
+
+## Has the current effect played all the frames it asked for?
+##
+## Separated from _process because everything around it needs an
+## AudioStreamGeneratorPlayback, which the headless driver does not provide —
+## so the loop as written could not be reached by a test at all.
+func is_finished() -> bool:
+	return _gen_frames >= _gen_total
+
+## Record one sample in the ring buffer the waveform is drawn from.
+func push_wave(sample: float) -> void:
+	_wave_buf[_wave_head] = sample
+	_wave_head = advance_head(_wave_head)
+
+## The next slot in the ring. Wrapping forward is what makes the trace scroll;
+## stepping the other way walks off the front of the array into negative
+## indices, which an Array quietly accepts until it does not.
+static func advance_head(head: int) -> int:
+	return (head + 1) % WAVEFORM_SAMPLES
 
 func _start_sfx(type: String) -> void:
 	_gen_type = type
