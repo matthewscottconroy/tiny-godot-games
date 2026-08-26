@@ -282,11 +282,17 @@ func _test_water_spreads_to_both_sides() -> void:
 	var m := _make_empty()
 	var floor_y: int = m.GRID_H - 1
 	var middle: int = m.GRID_W / 2
-	# A column of water on a floor, with open ground either side of it.
-	for y in range(floor_y - 6, floor_y + 1):
+	# A tall column of water on a floor, with open ground either side of it.
+	# Tall enough that the settled puddle is unmistakably wide: seven cells
+	# spread over seven columns leaves each side one or two wide, which is a
+	# coin flip away from failing.
+	for y in range(floor_y - 15, floor_y + 1):
 		m._grid[y][middle] = m.Cell.WATER
 
-	for _i in 40:
+	# Long enough for the level to settle. Which side a grain takes first is a
+	# coin flip, so a short run can leave one side a single cell wide — this
+	# assertion failed about one run in ten at forty steps.
+	for _i in 200:
 		m._step()
 
 	var leftmost: int = m.GRID_W
@@ -300,7 +306,7 @@ func _test_water_spreads_to_both_sides() -> void:
 		"water runs left of where it was poured (%d < %d)" % [leftmost, middle])
 	expect(rightmost > middle,
 		"and right of it (%d > %d)" % [rightmost, middle])
-	expect(middle - leftmost > 1 and rightmost - middle > 1,
+	expect(middle - leftmost >= 3 and rightmost - middle >= 3,
 		"a real puddle either side, not one cell (%d .. %d)" % [leftmost, rightmost])
 
 	# Poured against the left wall it still spreads, which is the case the edge

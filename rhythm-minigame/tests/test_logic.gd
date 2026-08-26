@@ -159,9 +159,17 @@ func _test_a_longer_combo_is_worth_more() -> void:
 
 func _test_notes_spawn_on_the_beat() -> void:
 	print("the beat")
+	# The demo spawns on three beats in four, using the global RNG. Seeding it
+	# makes that draw the same every run — without this the test asks whether
+	# three consecutive coin flips all came up tails, which they do about once
+	# in sixty runs, and the suite fails in CI for no reason anyone can see.
+	seed(20240821)
+
 	var m := _make()
 	# Not every beat spawns a note, so this counts beats' worth of time rather
-	# than expecting one note per beat.
+	# than expecting one note per beat. Notes older than about 1.75s have
+	# already fallen past the miss line and been removed, so what is left at the
+	# end is only the last few beats' worth.
 	for i in int(m.BEAT_INTERVAL * 60.0) * 8:
 		m._process(STEP)
 	expect(m._notes.size() > 0, "notes appear as the beats go by")

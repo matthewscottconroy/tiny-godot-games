@@ -402,6 +402,35 @@ rest:
 - `cellular-automata`'s own water test asserted the wrong row and passed about
   half the time, depending on which way a coin-flip sent the drop.
 
+## A test that passes most of the time
+
+Godot seeds the global RNG at startup, so a demo calling `randf()` behaves
+differently on every run. A suite that asserts on the outcome then passes most
+of the time and fails in CI for no reason anyone can reproduce — which is worse
+than failing always, because the next person reruns it, sees green, and moves on.
+
+Two turned up one full-suite run apart, both mine:
+
+- `cellular-automata` poured a seven-cell column of water and asked for more
+  than one cell of puddle on each side. Which side a grain takes first is a coin
+  flip, so the settled puddle straddled the pour point unevenly about one run in
+  ten.
+- `rhythm-minigame` spawns a note on three beats in four and removes notes that
+  have fallen past the miss line. By the end of the test window only the last
+  three beats' worth could still be on screen, so the assertion that any note
+  exists was asking whether three consecutive draws had all come up tails —
+  about one run in sixty.
+
+Two fixes, and the second is better. Widening the assertion until the margin is
+comfortable works, and is right when the demo's behaviour is genuinely
+statistical. Seeding is right when it is not: `seed(20240821)` at the top of the
+test makes the demo's own `randf()` draw the same sequence every run, so the
+test is asking about behaviour rather than about luck.
+
+`tools/flakecheck.sh` runs each suite several times and reports any that do not
+agree with themselves. It defaults to the demos whose scripts use the global RNG
+— 37 of the 165 — because those are the ones that can differ at all.
+
 ## An error the gate does not know about is an error that never happened
 
 `run-tests.sh` fails a suite on a list of abort-class messages, because a

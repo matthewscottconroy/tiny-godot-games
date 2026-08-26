@@ -81,6 +81,7 @@ tools/check_screenshots.py # which demos open onto an empty screen
 tools/build_gallery.py    # write docs/GALLERY.md from those screenshots
 tools/export_web.sh       # export demos for the browser (needs export templates)
 tools/mutate.py           # how much of each demo the tests actually reach
+tools/flakecheck.sh       # suites that disagree with themselves between runs
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions these enforce, and
