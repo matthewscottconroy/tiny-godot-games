@@ -39,11 +39,20 @@ func _ready() -> void:
 func _get_player_rect() -> Rect2:
 	return Rect2(_pos.x - PLAYER_W * 0.5, _pos.y - PLAYER_H, PLAYER_W, PLAYER_H)
 
+## True on the frame a button goes down, and not while it is held.
+##
+## Extracted from _physics_process because the two flags it compares are read
+## from Input, which a headless test cannot press. Without the edge, holding
+## jump would pull the player up the moment it grabbed a ledge and holding down
+## would drop it again immediately.
+static func just_pressed(now: bool, last: bool) -> bool:
+	return now and not last
+
 func _physics_process(delta: float) -> void:
 	var jump_pressed := Input.is_action_pressed("ui_up")
 	var down_pressed := Input.is_action_pressed("ui_down")
-	var jump_just := jump_pressed and not _jump_pressed_last
-	var down_just := down_pressed and not _down_pressed_last
+	var jump_just := just_pressed(jump_pressed, _jump_pressed_last)
+	var down_just := just_pressed(down_pressed, _down_pressed_last)
 	_jump_pressed_last = jump_pressed
 	_down_pressed_last = down_pressed
 	tick(delta, Input.get_axis("ui_left", "ui_right"), jump_just, down_just)
@@ -61,7 +70,9 @@ func tick(delta: float, move_axis: float, jump_just: bool, down_just: bool) -> v
 			if _on_floor and jump_just:
 				_vel.y = JUMP_VEL
 			_pos += _vel * delta
-			_on_floor = false
+			# _resolve_collisions() clears _on_floor itself; clearing it here as
+			# well was a line no test could hold, because nothing could tell the
+			# two assignments apart.
 			_resolve_collisions()
 			# Ledge grab check: only when falling
 			if _vel.y > 0:

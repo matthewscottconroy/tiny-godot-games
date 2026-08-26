@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_the_minimap_is_fed_the_current_positions()
 	_test_the_player_joins_the_player_group()
 	_test_only_a_jump_key_press_latches_a_jump()
+	_test_either_key_of_a_pair_moves_the_player()
 	_test_a_latched_jump_is_spent_whether_or_not_it_fires()
 	_report()
 
@@ -173,3 +174,37 @@ func _test_a_latched_jump_is_spent_whether_or_not_it_fires() -> void:
 	# In mid-air the jump is dropped rather than stored, so it cannot fire late
 	# the moment the player lands.
 	expect(player.velocity.y > 0.0, "and a jump pressed off the floor does not launch the player")
+
+## Arrows and WASD are alternatives, not a chord.
+##
+## The two are joined with `or` for a reason: requiring both would mean holding
+## Left *and* A to walk left, which is not a control scheme anyone would guess.
+## The rule lives in its own function because the four flags it reads come from
+## Input, which a headless test cannot press.
+func _test_either_key_of_a_pair_moves_the_player() -> void:
+	print("the two control schemes")
+	var Player := load("res://scripts/player.gd")
+
+	expect(Player.axis_from(true, false, false, false) < 0.0,
+		"the left arrow alone walks left")
+	expect(Player.axis_from(false, true, false, false) < 0.0,
+		"and so does A alone")
+	expect(Player.axis_from(false, false, true, false) > 0.0,
+		"the right arrow alone walks right")
+	expect(Player.axis_from(false, false, false, true) > 0.0,
+		"and so does D alone")
+
+	# Both keys of a pair is still one direction, not two.
+	expect(Player.axis_from(true, true, false, false) == -1.0,
+		"holding both left keys is still one step of left (%.1f)"
+		% Player.axis_from(true, true, false, false))
+
+	# Opposite directions cancel, whichever scheme each came from.
+	expect(Player.axis_from(true, false, true, false) == 0.0,
+		"left and right cancel")
+	expect(Player.axis_from(false, true, false, true) == 0.0, "A and D cancel")
+	expect(Player.axis_from(true, false, false, true) == 0.0,
+		"and so do the two schemes mixed")
+
+	# Nothing pressed is standing still.
+	expect(Player.axis_from(false, false, false, false) == 0.0, "no keys, no movement")
