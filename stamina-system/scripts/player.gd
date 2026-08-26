@@ -9,6 +9,10 @@ const DRAIN_RATE   := 38.0
 const REGEN_RATE   := 18.0
 const REGEN_DELAY  := 0.8
 
+## Below this the bar turns amber — warning before the sprint cuts out, rather
+## than at the moment it does.
+const LOW_STAMINA  := 30.0
+
 var _stamina:       float = STAMINA_MAX
 var _sprinting:     bool  = false
 var _regen_wait:    float = 0.0
@@ -47,7 +51,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 
 	var h := Input.get_axis("ui_left", "ui_right")
-	tick_stamina(delta, Input.is_key_pressed(KEY_SHIFT) and h != 0.0)
+	tick_stamina(delta, wants_to_sprint(Input.is_key_pressed(KEY_SHIFT), h))
 	velocity.x = h * current_speed()
 	if Input.is_action_just_pressed("ui_up") and is_on_floor():
 		velocity.y = JUMP_VEL
@@ -56,9 +60,27 @@ func _physics_process(delta: float) -> void:
 
 	if _bar:
 		_bar.value  = _stamina
-		_bar.modulate = Color.GREEN if _stamina > 30.0 else Color.ORANGE_RED
+		_bar.modulate = bar_colour()
 	if _label:
-		_label.text = "SPRINTING" if _sprinting else ("DEPLETED" if _stamina <= 0.0 else "READY")
+		_label.text = status_text()
+
+## Sprinting takes both a held key and somewhere to run: standing still with
+## the key down must not burn stamina, or the meter empties while the player is
+## not moving. Separated from _physics_process because the key comes from Input.
+static func wants_to_sprint(key_held: bool, h_input: float) -> bool:
+	return key_held and h_input != 0.0
+
+## The stamina bar goes amber when it is running low, so the reader has warning
+## before it runs out rather than at the moment it does.
+func bar_colour() -> Color:
+	return Color.GREEN if _stamina > LOW_STAMINA else Color.ORANGE_RED
+
+## What the readout says. Three states, and they have to be told apart: a bar
+## that reads DEPLETED while it is full is worse than no bar at all.
+func status_text() -> String:
+	if _sprinting:
+		return "SPRINTING"
+	return "DEPLETED" if _stamina <= 0.0 else "READY"
 
 func _draw() -> void:
 	var col := Color.GOLD if _sprinting else Color.DODGER_BLUE

@@ -30,14 +30,29 @@ func _process(delta: float) -> void:
 	tick(delta, input_direction())
 
 func input_direction() -> Vector2:
+	return direction_from([
+		Input.is_key_pressed(KEY_LEFT), Input.is_key_pressed(KEY_A),
+		Input.is_key_pressed(KEY_RIGHT), Input.is_key_pressed(KEY_D),
+		Input.is_key_pressed(KEY_UP), Input.is_key_pressed(KEY_W),
+		Input.is_key_pressed(KEY_DOWN), Input.is_key_pressed(KEY_S),
+	])
+
+## The movement direction from eight key states, in the order
+## left, A, right, D, up, W, down, S.
+##
+## Each pair is an alternative — arrows or WASD — so one of the two is enough.
+## Requiring both would mean holding Left *and* A to walk left, which is not a
+## control scheme anyone would guess. Separated from input_direction() because
+## the flags come from Input, which a headless test cannot press.
+static func direction_from(keys: Array) -> Vector2:
 	var move := Vector2.ZERO
-	if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
+	if keys[0] or keys[1]:
 		move.x -= 1.0
-	if Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):
+	if keys[2] or keys[3]:
 		move.x += 1.0
-	if Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W):
+	if keys[4] or keys[5]:
 		move.y -= 1.0
-	if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S):
+	if keys[6] or keys[7]:
 		move.y += 1.0
 	return move
 

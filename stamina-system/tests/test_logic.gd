@@ -15,6 +15,9 @@ func _ready() -> void:
 	_test_stamina_never_exceeds_the_cap()
 	_test_tapping_sprint_does_not_dodge_the_delay()
 	_test_sprint_speed_applies_only_while_sprinting()
+	_test_standing_still_does_not_burn_stamina()
+	_test_the_readout_tells_the_three_states_apart()
+	await _test_the_player_stays_down_untouched()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -24,6 +27,81 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## Sprinting takes a key *and* somewhere to run.
+func _test_standing_still_does_not_burn_stamina() -> void:
+	print("sprinting on the spot")
+	var Player := load("res://scripts/player.gd")
+	expect(Player.wants_to_sprint(true, 1.0), "running with the key down is sprinting")
+	expect(Player.wants_to_sprint(true, -1.0), "in either direction")
+	expect(not Player.wants_to_sprint(true, 0.0),
+		"holding the key while standing still is not — the meter would empty "
+		+ "while the player was not moving")
+	expect(not Player.wants_to_sprint(false, 1.0),
+		"and running without the key is not sprinting either")
+	expect(not Player.wants_to_sprint(false, 0.0), "nor is doing neither")
+
+## The bar and the readout say which of the three states the player is in.
+func _test_the_readout_tells_the_three_states_apart() -> void:
+	print("the readout")
+	var m := _make()
+
+	m._stamina = m.STAMINA_MAX
+	m._sprinting = false
+	expect(m.status_text() == "READY",
+		"a full meter reads READY (%s)" % m.status_text())
+	expect(m.bar_colour() == Color.GREEN,
+		"and the bar is green (%s)" % m.bar_colour())
+
+	m._sprinting = true
+	expect(m.status_text() == "SPRINTING",
+		"sprinting says so (%s)" % m.status_text())
+
+	m._sprinting = false
+	m._stamina = 0.0
+	expect(m.status_text() == "DEPLETED",
+		"an empty meter reads DEPLETED (%s)" % m.status_text())
+	expect(m.bar_colour() == Color.ORANGE_RED,
+		"with an amber bar (%s)" % m.bar_colour())
+
+	# The warning colour arrives before the meter runs out, not with it.
+	m._stamina = m.LOW_STAMINA - 1.0
+	expect(m.bar_colour() == Color.ORANGE_RED,
+		"the bar warns below the threshold (%s)" % m.bar_colour())
+	expect(m.status_text() == "READY",
+		"while there is still stamina to spend (%s)" % m.status_text())
+	m._stamina = m.LOW_STAMINA + 1.0
+	expect(m.bar_colour() == Color.GREEN,
+		"and is green above it (%s)" % m.bar_colour())
+
+	# Sprinting wins over the meter: a sprint that has just started on a low
+	# meter still reads SPRINTING rather than DEPLETED.
+	m._stamina = 0.0
+	m._sprinting = true
+	expect(m.status_text() == "SPRINTING",
+		"sprinting is reported over an empty meter (%s)" % m.status_text())
+
+## Nothing pressed, nothing happens.
+##
+## The jump reads Input, which a headless test cannot press — but its other half
+## is is_on_floor(), and loosening the `and` to an `or` launches the player on
+## every grounded frame.
+func _test_the_player_stays_down_untouched() -> void:
+	print("standing still")
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	add_child(scene)
+	var player: CharacterBody2D = scene.get_node("Player")
+	for _i in 60:
+		await get_tree().physics_frame
+	expect(player.is_on_floor(), "the player settles on the ground")
+	var resting: float = player.global_position.y
+	var highest := resting
+	for _i in 40:
+		await get_tree().physics_frame
+		highest = minf(highest, player.global_position.y)
+	expect(resting - highest < 4.0,
+		"and stays there with no key pressed (rose %.1f px)" % (resting - highest))
+	scene.queue_free()
 
 func _report() -> void:
 	var summary := "[stamina-system] %d/%d passed" % [_pass, _pass + _fail]

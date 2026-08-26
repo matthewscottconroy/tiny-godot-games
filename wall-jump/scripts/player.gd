@@ -31,6 +31,28 @@ func gravity_scale(sliding: bool) -> float:
 func wall_jump_velocity(wall_normal_x: float) -> Vector2:
 	return Vector2(wall_normal_x * WALL_JUMP_VX, JUMP_VEL)
 
+## The way to face, given this frame's input. A released key reads as zero, and
+## overwriting the facing with it would leave the player pointing nowhere.
+static func facing_for(h_input: float, current: float) -> float:
+	return h_input if h_input != 0.0 else current
+
+## This frame's horizontal speed: driven while a key is held, eased to a stop
+## when it is released. Coasting to zero rather than snapping is what keeps a
+## wall jump's sideways launch alive for a moment after the key comes up.
+static func horizontal_velocity(h_input: float, current: float) -> float:
+	if h_input != 0.0:
+		return h_input * SPEED
+	return move_toward(current, 0.0, SPEED)
+
+## A wall jump needs a wall, no floor, and a fresh press — all three.
+##
+## Airborne is what separates it from an ordinary jump: standing in a corner
+## touching both, the floor jump is the one that should fire, because a wall
+## jump from the ground would fling the player sideways off a wall they were
+## merely leaning on.
+static func can_wall_jump(jump_pressed: bool, on_wall: bool, on_floor: bool) -> bool:
+	return jump_pressed and on_wall and not on_floor
+
 func _physics_process(delta: float) -> void:
 	# Gravity — reduced when sliding down a wall
 	var on_wall := is_on_wall()
@@ -42,19 +64,14 @@ func _physics_process(delta: float) -> void:
 	velocity.y += GRAVITY * gravity_scale(sliding) * delta
 
 	# Horizontal movement
-	if h_input != 0.0:
-		_facing = h_input
-		velocity.x = h_input * SPEED
-	else:
-		velocity.x = move_toward(velocity.x, 0.0, SPEED)
+	_facing = facing_for(h_input, _facing)
+	velocity.x = horizontal_velocity(h_input, velocity.x)
 
-	# Jump from floor
-	if on_floor and Input.is_action_just_pressed("ui_up"):
-		velocity.y = JUMP_VEL
-
-	# Wall jump
-	if on_wall and not on_floor and Input.is_action_just_pressed("ui_up"):
+	var jump := Input.is_action_just_pressed("ui_up")
+	if can_wall_jump(jump, on_wall, on_floor):
 		velocity = wall_jump_velocity(wall_normal_x)
+	elif on_floor and jump:
+		velocity.y = JUMP_VEL
 
 	move_and_slide()
 	queue_redraw()

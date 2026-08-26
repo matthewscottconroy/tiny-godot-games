@@ -21,6 +21,7 @@ func _ready() -> void:
 	_test_a_diagonal_is_no_faster_than_a_straight_line()
 	_test_the_player_wraps_at_every_edge()
 	_test_the_obstacles_fit_in_the_world()
+	_test_either_key_of_a_pair_moves()
 	_report()
 
 func expect(cond: bool, label: String) -> void:
@@ -30,6 +31,52 @@ func expect(cond: bool, label: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL  ", label)
+
+## Arrows and WASD are alternatives, not a chord.
+func _test_either_key_of_a_pair_moves() -> void:
+	print("the two control schemes")
+	var World := load("res://scripts/world.gd")
+	# left, A, right, D, up, W, down, S
+	var none := [false, false, false, false, false, false, false, false]
+
+	_quiet_failures = 0
+	var singles := {
+		0: Vector2.LEFT, 1: Vector2.LEFT,
+		2: Vector2.RIGHT, 3: Vector2.RIGHT,
+		4: Vector2.UP, 5: Vector2.UP,
+		6: Vector2.DOWN, 7: Vector2.DOWN,
+	}
+	for i in singles:
+		var keys := none.duplicate()
+		keys[i] = true
+		var got: Vector2 = World.direction_from(keys)
+		expect_quiet(got == singles[i],
+			"key %d alone gives %s (got %s)" % [i, singles[i], got])
+	expect(_quiet_failures == 0, "each of the eight keys moves on its own")
+
+	# Both keys of a pair is one step, not two.
+	var both := none.duplicate()
+	both[0] = true
+	both[1] = true
+	expect(World.direction_from(both) == Vector2.LEFT,
+		"holding both left keys is one step of left (%s)" % World.direction_from(both))
+
+	# Opposites cancel, across schemes as well as within one.
+	var opposed := none.duplicate()
+	opposed[0] = true      # left arrow
+	opposed[3] = true      # D
+	expect(World.direction_from(opposed) == Vector2.ZERO,
+		"an arrow and a letter in opposite directions cancel (%s)"
+		% World.direction_from(opposed))
+
+	# A diagonal is two axes at once, and the caller normalises it.
+	var diagonal := none.duplicate()
+	diagonal[2] = true     # right
+	diagonal[6] = true     # down
+	expect(World.direction_from(diagonal) == Vector2(1.0, 1.0),
+		"a diagonal is both axes (%s)" % World.direction_from(diagonal))
+
+	expect(World.direction_from(none) == Vector2.ZERO, "and no keys is no movement")
 
 func _report() -> void:
 	var summary := "[pixel-art-camera] %d/%d passed" % [_pass, _pass + _fail]
